@@ -26,8 +26,8 @@ It's very destructive and experimental, so don't use unless you desperately need
 - There is no build-time dependency for now, but FFmpeg is required to speed up/down audio at specific rate.
 
 ### How to build
-1. Run ./build.sh
-2. Binaries should be in 'bin' folder.
+1. Run `meson build && ninja -C build`
+2. Binaries should be in 'build' folder.
 
 ### How to use
 1. Grab `cosu-trainer` and `osumem`

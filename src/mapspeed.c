@@ -71,13 +71,14 @@ int edit_beatmap(const char* beatmap, double speed, const bool bpm, struct diffi
 
    FILE *dest = NULL; // we didn't open this file yet since file name is not decided yet
 
-   char result_file[512] = {0}; // result map file name
-   char audio_file[512] = {0}; // original audio file name
-   char new_audio_file[512] = {0}; // result audio file name
+   char *result_file = (char*) malloc(7 + 1 + strlen(beatmap) + 1); // result map file name
+   char *audio_file = NULL; // original audio file name
+   char *new_audio_file = NULL; // result audio file name
 
    int current_size = 1024; // it's initial size of line for now, may increase as we edit map
    int realloc_step = 1024; // program will increase size of line once it meets very long line
    char *line = (char*) malloc(current_size);
+   char *tmpline = NULL;
 
    bool read_mode = true; // program will read the entire file first (read_mode==true), and read again to write the new map file (read_mode==false)
    // it is used to read AR/OD and etc and preprocess before writing the actual result map file
@@ -109,7 +110,7 @@ int edit_beatmap(const char* beatmap, double speed, const bool bpm, struct diffi
          if (strchr(line, '\n') == NULL)
          {
             loop_again = true;
-            char *tmpline = (char*) realloc(line, current_size + realloc_step);
+            tmpline = (char*) realloc(line, current_size + realloc_step);
             if (!tmpline)
             {
                failure = true;
@@ -174,8 +175,8 @@ int edit_beatmap(const char* beatmap, double speed, const bool bpm, struct diffi
             }
             else if (sect == timingpoints)
             {
-               char* timestr = tkn(line);
-               char* beatlengthstr = nexttkn();
+               char *timestr = tkn(line);
+               char *beatlengthstr = nexttkn();
 
                if (bpm && read_mode)
                {
@@ -207,10 +208,10 @@ int edit_beatmap(const char* beatmap, double speed, const bool bpm, struct diffi
             else if (sect == hitobjects && !read_mode)
             {
                edited = true;
-               char* xstr = tkn(line);
-               char* ystr = nexttkn();
-               char* timestr = nexttkn();
-               char* typestr = nexttkn();
+               char *xstr = tkn(line);
+               char *ystr = nexttkn();
+               char *timestr = nexttkn();
+               char *typestr = nexttkn();
 
                int x = atoi(xstr);
                int y = atoi(ystr);
@@ -222,9 +223,9 @@ int edit_beatmap(const char* beatmap, double speed, const bool bpm, struct diffi
                char* linestart;
                if (type & (1<<3) || type & (1<<7)) // spinner or mania holds
                {
-                  char* spinnertoken = type & (1<<7) ? ":" : ","; // mania holds use : as separator for its length
-                  char* hitsoundstr = nexttkn();
-                  char* spinnerstr = strtok(NULL, spinnertoken);
+                  char *spinnertoken = type & (1<<7) ? ":" : ","; // mania holds use : as separator for its length
+                  char *hitsoundstr = nexttkn();
+                  char *spinnerstr = strtok(NULL, spinnertoken);
 
                   long spinnerlen = atol(spinnerstr) / speed;
 
@@ -289,7 +290,7 @@ int edit_beatmap(const char* beatmap, double speed, const bool bpm, struct diffi
                   edited = true;
                   fputs("Bookmarks: ", dest);
                   char *p = CUTFIRST(line, "Bookmarks: ");
-                  char* token;
+                  char *token;
                   token = tkn(p);
                   while (1)
                   {
@@ -313,8 +314,12 @@ int edit_beatmap(const char* beatmap, double speed, const bool bpm, struct diffi
                {
                   if (read_mode)
                   {
-                     char* filename = CUTFIRST(line, "AudioFilename: ");
+                     char *filename = CUTFIRST(line, "AudioFilename: ");
                      remove_newline(filename);
+
+                     int namelen = strlen(filename);
+                     audio_file = (char*) malloc(namelen + 1);
+                     new_audio_file = (char*) malloc(7 + 1 + namelen + 1);
                      strcpy(audio_file, filename);
                   }
                   else
@@ -545,6 +550,9 @@ cleanup:
    }
 
    free(line);
+   free(result_file);
+   free(audio_file);
+   free(new_audio_file);
 
    return failure ? 1 : 0;
 }

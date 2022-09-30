@@ -1,9 +1,12 @@
+#include <sys/types.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>
 #include <stdbool.h>
+#include <fcntl.h>
+
 #include "mapspeed.h"
 #include "emptyzip.h"
 
@@ -15,10 +18,10 @@ int main(int argc, char *argv[])
       return 1;
    }
 
-   char *path;
-   if (strcmp(argv[1], "auto") == 0)
+   char *path = NULL;
+   bool osumem = (strcmp(argv[1], "auto") == 0);
+   if (osumem)
    {
-      char buf[2048] = {0};
       char *song_folder = getenv("OSU_SONG_FOLDER");
       if (song_folder == NULL)
       {
@@ -26,20 +29,46 @@ int main(int argc, char *argv[])
          return 2;
       }
 
-      strcpy(buf, song_folder);
-      strcat(buf, "/");
+      int cursize = 2048;
+      char *buf = (char*) malloc(cursize);
+      char *tmpbuf = NULL;
 
-      int buflen = strlen(buf);
-      FILE *map_path = fopen("/tmp/osu_path", "r");
-      if (map_path != NULL && fgets(buf + buflen, sizeof buf - buflen, map_path) != NULL)
+      int path_fd = open("/tmp/osu_path", O_RDONLY);
+      ssize_t readbytes = read(path_fd, buf, cursize - 1);
+      ssize_t rb = 0;
+      do
       {
-         path = buf;
+         if (readbytes == -1 || rb == -1)
+         {
+            perror("/tmp/osu_path");
+            close(path_fd);
+            free(buf);
+            return 2;
+         }
+         if (!(readbytes >= cursize - 1)) break;
+
+         tmpbuf = (char*) realloc(buf, cursize + 1024);
+         if (tmpbuf == NULL)
+         {
+            printf("Failed reallocating buffer\n");
+            free(buf);
+            return 3;
+         }
+         cursize += 1024;
+         buf = tmpbuf;
+         rb = read(path_fd, buf + readbytes, 1024 - 1);
+         readbytes += rb;
       }
-      else
-      {
-         perror("/tmp/osu_path");
-         return -1;
-      }
+      while (1);
+
+      close(path_fd);
+      *(buf + readbytes) = '\0';
+
+      int pathsize = strlen(song_folder) + 1 + readbytes + 1;
+      path = (char*) malloc(pathsize);
+      snprintf(path, pathsize, "%s/%s", song_folder, buf);
+
+      free(buf);
    }
    else
    {
@@ -126,5 +155,8 @@ int main(int argc, char *argv[])
       snprintf(tempzippath, sizeof tempzippath, "../%s.osz", songfdname);
       ziperr = create_empty_zip(tempzippath);
    }
+
+   if (osumem) free(path);
+
    return (ziperr != 0 || bterr != 0) ? 1 : 0;
 }

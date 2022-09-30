@@ -235,47 +235,49 @@ int get_mapid(void *base_address)
    return id;
 }
 
-int get_mappath(char *songpath, int spsize, void *base_address)
+char *get_mappath(void *base_address)
 {
    void *beatmap_ptr = get_beatmap_ptr(base_address);
-   if (beatmap_ptr == NULL) return -1;
+   if (beatmap_ptr == NULL) return NULL;
 
    void *folder_ptr = NULL;
    void *path_ptr = NULL;
    int foldersize = 0;
    int pathsize = 0;
-   uint16_t buf[PATH_SIZE] = {0};
 
    if (!readmemory(beatmap_ptr + FOLDER_OFFSET, &folder_ptr, 4))
-      return -1;
+      return NULL;
 
-   if (!readmemory(folder_ptr + 4, &foldersize, 4) || foldersize > spsize)
-      return -1;
+   if (!readmemory(folder_ptr + 4, &foldersize, 4))
+      return NULL;
 
-   if (!readmemory(folder_ptr + 8, &buf, foldersize * 2))
-      return -1;
+   if (!readmemory(beatmap_ptr + PATH_OFFSET, &path_ptr, 4))
+      return NULL;
+
+   if (!readmemory(path_ptr + 4, &pathsize, 4))
+      return NULL;
+
+   int size = foldersize + 1 + pathsize + 1; // null and /
+   uint16_t *buf = (uint16_t*) calloc(size, 2);
+   char *songpath = (char*) calloc(size, 1);
+
+   if (!readmemory(folder_ptr + 8, buf, foldersize * 2))
+      return NULL;
 
    buf[foldersize] = '/';
 
-   if (!readmemory(beatmap_ptr + PATH_OFFSET, &path_ptr, 4))
-      return -1;
-
-   if (!readmemory(path_ptr + 4, &pathsize, 4) || foldersize + pathsize > spsize)
-      return -1;
-
-   if (!readmemory(path_ptr + 8, &(buf[foldersize + 1]), pathsize * 2))
-      return -1;
-
-   int size = foldersize + pathsize + 2; // null and /
+   if (!readmemory(path_ptr + 8, buf + foldersize + 1, pathsize * 2))
+      return NULL;
 
    int i;
    for (i = 0; i < size; i++)
    {
-      if (buf[i] > 127) return -2;
-      songpath[i] = buf[i];
+      if (*(buf+i) > 127) return NULL;
+      *(songpath+i) = *(buf+i);
    }
 
-   return 0;
+   free(buf);
+   return songpath;
 } // may change it to wchar_t since path may contain unicode characters, but i will just use char here for now to keep things simple
 
 volatile int run = 1;
@@ -289,8 +291,9 @@ int main(int argc, char *argv[])
    setbuf(stdout, NULL);
    int find_osu = -1;
    void *base = NULL;
-   char songpath[PATH_SIZE] = {0};
-   char oldpath[PATH_SIZE] = {0};
+
+   char *songpath = NULL;
+   char *oldpath = NULL;
 
    struct sigaction act;
    act.sa_handler = gotquitsig;
@@ -344,15 +347,18 @@ int main(int argc, char *argv[])
             }
          }
 
-         if (get_mappath(songpath, PATH_SIZE, base) == 0)
+         songpath = get_mappath(base);
+         if (songpath != NULL)
          {
-            if (strcmp(songpath, oldpath) != 0)
+            if (oldpath != NULL && strcmp(songpath, oldpath) == 0)
             {
-               strcpy(oldpath, songpath);
+               free(songpath);
+               goto contin;
             }
             else
             {
-               goto contin;
+               free(oldpath);
+               oldpath = songpath;
             }
          }
          else
@@ -388,5 +394,6 @@ contin:
    {
       perror("/tmp/osu_path");
    }
+   free(oldpath);
    return 0;
 }
