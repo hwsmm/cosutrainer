@@ -31,6 +31,12 @@ int main(int argc, char *argv[])
 
       int cursize = 2048;
       char *buf = (char*) malloc(cursize);
+      if (buf == NULL)
+      {
+         printf("Failed allocating buffer\n");
+         free(buf);
+         return 3;
+      }
       char *tmpbuf = NULL;
 
       int path_fd = open("/tmp/osu_path", O_RDONLY);
@@ -66,6 +72,12 @@ int main(int argc, char *argv[])
 
       int pathsize = strlen(song_folder) + 1 + readbytes + 1;
       path = (char*) malloc(pathsize);
+      if (path == NULL)
+      {
+         printf("Failed allocating\n");
+         free(buf);
+         return 3;
+      }
       snprintf(path, pathsize, "%s/%s", song_folder, buf);
 
       free(buf);

@@ -260,6 +260,13 @@ char *get_mappath(void *base_address)
    int size = foldersize + 1 + pathsize + 1; // null and /
    uint16_t *buf = (uint16_t*) calloc(size, 2);
    char *songpath = (char*) calloc(size, 1);
+   
+   if (!buf || !songpath)
+   {
+      free(buf);
+      free(songpath);
+      return NULL;
+   }
 
    if (!readmemory(folder_ptr + 8, buf, foldersize * 2))
       return NULL;

@@ -97,6 +97,12 @@ int edit_beatmap(const char* beatmap, double speed, const bool bpm, struct diffi
    int mode = 0; // map mode
 
    enum SECTION sect = root;
+   
+   if (result_file == NULL)
+   {
+      failure = true;
+      goto cleanup;
+   }
 
    do
    {
@@ -320,6 +326,11 @@ int edit_beatmap(const char* beatmap, double speed, const bool bpm, struct diffi
                      int namelen = strlen(filename);
                      audio_file = (char*) malloc(namelen + 1);
                      new_audio_file = (char*) malloc(7 + 1 + namelen + 1);
+                     if (!audio_file || !new_audio_file)
+                     {
+                        failure = true;
+                        goto cleanup;
+                     }
                      strcpy(audio_file, filename);
                   }
                   else
