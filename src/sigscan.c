@@ -19,11 +19,6 @@
 
 pid_t osu = -1;
 
-void set_osu(pid_t pid)
-{
-   osu = pid;
-}
-
 int find_and_set_osu()
 {
    if (osu > 0 && kill(osu, 0) == 0)
@@ -71,7 +66,7 @@ int find_and_set_osu()
 
                   if (readbytes != -1)
                   {
-                     if (strncmp(pidbuf, "osu!.exe", 8) == 0)
+                     if (CMPSTR(pidbuf, "osu!.exe"))
                      {
                         osupid = candidate;
                         ref = 0;
@@ -107,7 +102,7 @@ int find_and_set_osu()
 
    if (osupid != osu)
    {
-      set_osu(osupid);
+      osu = osupid;
       return 2;
    }
    return 1;
@@ -260,31 +255,32 @@ char *get_mappath(void *base_address)
    int size = foldersize + 1 + pathsize + 1; // null and /
    uint16_t *buf = (uint16_t*) calloc(size, 2);
    char *songpath = (char*) calloc(size, 1);
-   
+
    if (!buf || !songpath)
-   {
-      free(buf);
-      free(songpath);
-      return NULL;
-   }
+      goto readfail;
 
    if (!readmemory(folder_ptr + 8, buf, foldersize * 2))
-      return NULL;
+      goto readfail;
 
    buf[foldersize] = '/';
 
    if (!readmemory(path_ptr + 8, buf + foldersize + 1, pathsize * 2))
-      return NULL;
+      goto readfail;
 
    int i;
    for (i = 0; i < size; i++)
    {
-      if (*(buf+i) > 127) return NULL;
+      if (*(buf+i) > 127) goto readfail;
       *(songpath+i) = *(buf+i);
    }
 
    free(buf);
    return songpath;
+
+readfail:
+   free(songpath);
+   free(buf);
+   return NULL;
 } // may change it to wchar_t since path may contain unicode characters, but i will just use char here for now to keep things simple
 
 volatile int run = 1;

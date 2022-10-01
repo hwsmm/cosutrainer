@@ -97,7 +97,7 @@ int edit_beatmap(const char* beatmap, double speed, const bool bpm, struct diffi
    int mode = 0; // map mode
 
    enum SECTION sect = root;
-   
+
    if (result_file == NULL)
    {
       failure = true;
@@ -358,12 +358,12 @@ int edit_beatmap(const char* beatmap, double speed, const bool bpm, struct diffi
                if (!read_mode && diff.hp >= 0 && CMPSTR(line, "HPDrainRate"))
                {
                   edited = true;
-                  fprintf(dest, "HPDrainRate:%.2f\r\n", diff.hp);
+                  fprintf(dest, "HPDrainRate:%.1f\r\n", diff.hp);
                }
                else if (!read_mode && diff.cs >= 0 && CMPSTR(line, "CircleSize"))
                {
                   edited = true;
-                  fprintf(dest, "CircleSize:%.2f\r\n", diff.cs);
+                  fprintf(dest, "CircleSize:%.1f\r\n", diff.cs);
                }
                else if (CMPSTR(line, "OverallDifficulty"))
                {
@@ -376,7 +376,7 @@ int edit_beatmap(const char* beatmap, double speed, const bool bpm, struct diffi
                      if (diff.od != -2)
                      {
                         edited = true;
-                        fprintf(dest, "OverallDifficulty:%.2f\r\n", diff.od);
+                        fprintf(dest, "OverallDifficulty:%.1f\r\n", diff.od);
                      }
                   }
                }
@@ -400,7 +400,7 @@ int edit_beatmap(const char* beatmap, double speed, const bool bpm, struct diffi
                            arexists = true;
                            loop_again = true;
                         }
-                        fprintf(dest, "ApproachRate:%.2f\r\n", diff.ar);
+                        fprintf(dest, "ApproachRate:%.1f\r\n", diff.ar);
                      }
                   }
                }

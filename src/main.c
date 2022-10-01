@@ -57,6 +57,7 @@ int main(int argc, char *argv[])
          if (tmpbuf == NULL)
          {
             printf("Failed reallocating buffer\n");
+            close(path_fd);
             free(buf);
             return 3;
          }
@@ -104,9 +105,9 @@ int main(int argc, char *argv[])
       }
    }
 
-   char *identifier = "";
+   char *identifier = NULL;
    double speed = strtof(argv[2], &identifier);
-   bool bpm = identifier != NULL ? strncmp(identifier, "bpm", 3) == 0 : false;
+   bool bpm = identifier != NULL && strncmp(identifier, "bpm", 3) == 0;
 
    struct difficulty diff = { -2, -2, -1, -1 }; // -1 means scaling diffs to speed rate
    bool pitch = false;
@@ -163,9 +164,18 @@ int main(int argc, char *argv[])
    {
       char *songfdname = strrchr(path, '/') + 1;
 
-      char tempzippath[1024];
-      snprintf(tempzippath, sizeof tempzippath, "../%s.osz", songfdname);
-      ziperr = create_empty_zip(tempzippath);
+      int tempzipstrlen = 3 + strlen(songfdname) + 4 + 1;
+      char *tempzippath = (char*) malloc(tempzipstrlen);
+      if (tempzippath != NULL)
+      {
+         snprintf(tempzippath, tempzipstrlen, "../%s.osz", songfdname);
+         ziperr = create_empty_zip(tempzippath);
+         free(tempzippath);
+      }
+      else
+      {
+         ziperr = 3;
+      }
    }
 
    if (osumem) free(path);
