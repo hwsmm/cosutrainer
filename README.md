@@ -44,7 +44,7 @@ It's very destructive and experimental, so don't use unless you desperately need
 <rate|bpm> : '1.2' if you want to use rate, '220bpm' if you want to use bpm (it uses max bpm of map to calculate, so be careful)
 [a/o/h/c] : ar/od/hp/cs respectively. a9.9 to set ar as 9.9.
             cosu-trainer scales ar/od by default. use af/of to fix them
-[p] : if you want daycore/nightcore (not available for now)
+[p] : if you want daycore/nightcore
 [x/y/t] : xflip, yflip and transpose respectively.
 
 example: ./cosu-trainer auto 220bpm a7.2 c7.2 h7 p
