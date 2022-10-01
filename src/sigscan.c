@@ -58,6 +58,11 @@ int find_and_set_osu()
                if (!chdir(ent->d_name))
                {
                   commfd = open("comm", O_RDONLY);
+                  if (commfd == -1)
+                  {
+                     printf("Error while opening file\n");
+                     continue;
+                  }
                   ssize_t readbytes = read(commfd, &pidbuf, 16);
                   if (close(commfd) < 0)
                   {

@@ -29,6 +29,13 @@ int main(int argc, char *argv[])
          return 2;
       }
 
+      int path_fd = open("/tmp/osu_path", O_RDONLY);
+      if (path_fd == -1)
+      {
+         perror("/tmp/osu_path");
+         return 2;
+      }
+
       int cursize = 2048;
       char *buf = (char*) malloc(cursize);
       if (buf == NULL)
@@ -39,7 +46,6 @@ int main(int argc, char *argv[])
       }
       char *tmpbuf = NULL;
 
-      int path_fd = open("/tmp/osu_path", O_RDONLY);
       ssize_t readbytes = read(path_fd, buf, cursize - 1);
       ssize_t rb = 0;
       do

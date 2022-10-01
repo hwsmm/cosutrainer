@@ -333,7 +333,7 @@ int edit_beatmap(const char* beatmap, double speed, const bool bpm, struct diffi
                      }
                      strcpy(audio_file, filename);
                   }
-                  else if (speed != 1) // we don't actually convert audio if speed is 1.0
+                  else if (!read_mode && speed != 1) // we don't actually convert audio if speed is 1.0
                   {
                      edited = true;
                      if (change_audio_speed(audio_file, new_audio_file, speed, pitch) == 0)
