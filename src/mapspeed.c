@@ -316,7 +316,7 @@ int edit_beatmap(const char* beatmap, double speed, const bool bpm, struct diffi
             }
             else if (sect == general)
             {
-               if (speed != 1 && CMPSTR(line, "AudioFilename")) // don't edit mp3 when speed is 1.0
+               if (CMPSTR(line, "AudioFilename"))
                {
                   if (read_mode)
                   {
@@ -333,7 +333,7 @@ int edit_beatmap(const char* beatmap, double speed, const bool bpm, struct diffi
                      }
                      strcpy(audio_file, filename);
                   }
-                  else
+                  else if (speed != 1) // we don't actually convert audio if speed is 1.0
                   {
                      edited = true;
                      if (change_audio_speed(audio_file, new_audio_file, speed, pitch) == 0)
