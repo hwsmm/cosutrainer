@@ -127,7 +127,7 @@ int main(int argc, char *argv[])
       }
    }
 
-   struct difficulty diff = { -2, -2, -1, -1 }; // -1 means scaling diffs to speed rate
+   struct difficulty diff = { { fix, 0, 0 }, { fix, 0, 0 }, { scale, 0, 0 }, { scale, 0, 0 } };
    bool pitch = false;
    enum FLIP flip = none;
 
@@ -136,7 +136,7 @@ int main(int argc, char *argv[])
       int i;
       for (i = 3; i < argc; i++)
       {
-         float *dest = NULL;
+         struct diff *dest = NULL;
          char *curarg = argv[i];
          switch (*curarg)
          {
@@ -170,8 +170,14 @@ int main(int argc, char *argv[])
 
          if (dest != NULL)
          {
-            if (*(curarg + 1) == 'f') *dest = -2;
-            else *dest = atof(curarg + 1);
+            if (*(curarg + 1) == 'f') dest->mode = fix;
+            else
+            {
+               char *iden = NULL;
+               dest->user_value = strtof(curarg + 1, &iden);
+               if (*iden == 'c') dest->mode = cap;
+               else dest->mode = specify;
+            }
          }
       }
    }

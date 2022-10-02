@@ -276,7 +276,7 @@ char *get_mappath(void *base_address, int *length)
    for (i = 0; i < size; i++)
    {
       if (*(buf+i) > 127) goto readfail;
-      
+
       if (*(buf+i) == '\\') *(songpath+i) = '/'; // workaround: some installation put \ in song folder
       else *(songpath+i) = *(buf+i);
    }

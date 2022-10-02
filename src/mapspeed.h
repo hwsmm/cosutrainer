@@ -14,12 +14,24 @@ enum SPEED_MODE
    bpm, rate, guess
 };
 
+enum DIFF_MODE
+{
+   fix, scale, cap, specify
+};
+
+struct diff
+{
+   enum DIFF_MODE mode;
+   float user_value;
+   float val;
+};
+
 struct difficulty
 {
-   float hp;
-   float cs;
-   float od;
-   float ar;
+   struct diff hp;
+   struct diff cs;
+   struct diff od;
+   struct diff ar;
 };
 
 double scale_ar(double ar, double speed, int mode);

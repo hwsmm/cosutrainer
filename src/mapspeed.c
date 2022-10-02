@@ -89,8 +89,6 @@ int edit_beatmap(const char* beatmap, double speed, enum SPEED_MODE rate_mode, s
 
    bool arexists = false; // will be set as true once loop meets ApproachRate, some old maps don't have AR in the map (the client uses od as ar instead)
    bool tagexists = false; // will be set as true once loop meets Tag
-   bool fixar = diff.ar == -2 || diff.ar >= 0; // ar == -2 means fixed, and bigger than 0 means the value is set
-   bool fixod = diff.od == -2 || diff.od >= 0;
 
    bool emulate_dt = false; // when (scaled) od or ar is higher than 10. this variable is to indicate the program that it is emulating dt, since all the values are already adjusted
    double max_bpm = 0; // max bpm read in the map
@@ -355,28 +353,28 @@ int edit_beatmap(const char* beatmap, double speed, enum SPEED_MODE rate_mode, s
             }
             else if (sect == difficulty)
             {
-               if (!read_mode && diff.hp >= 0 && CMPSTR(line, "HPDrainRate"))
+               if (!read_mode && diff.hp.mode != fix && CMPSTR(line, "HPDrainRate"))
                {
                   edited = true;
-                  fprintf(dest, "HPDrainRate:%.1f\r\n", diff.hp);
+                  fprintf(dest, "HPDrainRate:%.1f\r\n", diff.hp.user_value);
                }
-               else if (!read_mode && diff.cs >= 0 && CMPSTR(line, "CircleSize"))
+               else if (!read_mode && diff.cs.mode != fix && CMPSTR(line, "CircleSize"))
                {
                   edited = true;
-                  fprintf(dest, "CircleSize:%.1f\r\n", diff.cs);
+                  fprintf(dest, "CircleSize:%.1f\r\n", diff.cs.user_value);
                }
                else if (CMPSTR(line, "OverallDifficulty"))
                {
                   if (read_mode)
                   {
-                     if (!fixod) diff.od = atof(CUTFIRST(line, "OverallDifficulty:"));
+                     diff.od.val = atof(CUTFIRST(line, "OverallDifficulty:"));
                   }
                   else
                   {
-                     if (diff.od != -2)
+                     if (diff.od.mode != fix)
                      {
                         edited = true;
-                        fprintf(dest, "OverallDifficulty:%.1f\r\n", diff.od);
+                        fprintf(dest, "OverallDifficulty:%.1f\r\n", diff.od.val);
                      }
                   }
                }
@@ -385,14 +383,11 @@ int edit_beatmap(const char* beatmap, double speed, enum SPEED_MODE rate_mode, s
                   if (read_mode)
                   {
                      arexists = true;
-                     if (!fixar)
-                     {
-                        diff.ar = atof(CUTFIRST(line, "ApproachRate:"));
-                     }
+                     diff.ar.val = atof(CUTFIRST(line, "ApproachRate:"));
                   }
                   else
                   {
-                     if (diff.ar != -2)
+                     if (diff.ar.mode != fix)
                      {
                         edited = true;
                         if (!arexists)
@@ -400,7 +395,7 @@ int edit_beatmap(const char* beatmap, double speed, enum SPEED_MODE rate_mode, s
                            arexists = true;
                            loop_again = true;
                         }
-                        fprintf(dest, "ApproachRate:%.1f\r\n", diff.ar);
+                        fprintf(dest, "ApproachRate:%.1f\r\n", diff.ar.val);
                      }
                   }
                }
@@ -415,13 +410,13 @@ int edit_beatmap(const char* beatmap, double speed, enum SPEED_MODE rate_mode, s
                   if (!emulate_dt) fprintf(dest, "%s %.2fx", line, speed);
                   else             fprintf(dest, "%s %.2fx(DT)", line, speed * 1.5);
 
-                  if (diff.hp != -2) fprintf(dest, " HP%.1f", diff.hp);
+                  if (diff.hp.mode != fix) fprintf(dest, " HP%.1f", diff.hp.val);
 
-                  if (diff.cs != -2) fprintf(dest, " CS%.1f", diff.cs);
+                  if (diff.cs.mode != fix) fprintf(dest, " CS%.1f", diff.cs.val);
 
-                  if (diff.od != -2) fprintf(dest, " OD%.1f", !emulate_dt ? diff.od : scale_od(diff.od, 1.5, mode));
+                  if (diff.od.mode != fix) fprintf(dest, " OD%.1f", !emulate_dt ? diff.od.val : scale_od(diff.od.val, 1.5, mode));
 
-                  if (diff.ar != -2) fprintf(dest, " AR%.1f", !emulate_dt ? diff.ar : scale_ar(diff.ar, 1.5, mode));
+                  if (diff.ar.mode != fix) fprintf(dest, " AR%.1f", !emulate_dt ? diff.ar.val : scale_ar(diff.ar.val, 1.5, mode));
 
                   switch (flip)
                   {
@@ -503,26 +498,32 @@ int edit_beatmap(const char* beatmap, double speed, enum SPEED_MODE rate_mode, s
             }
          }
 
-         if (!arexists) diff.ar = diff.od; // old maps may not have ar, but we need to scale if needed, so set the value here.
-         if (!fixod) diff.od = scale_od(diff.od, speed, mode);
-         if (!fixar) diff.ar = scale_ar(diff.ar, speed, mode);
+         if (!arexists) diff.ar.val = diff.ar.val; // old maps may not have ar, but we need to scale if needed, so set the value here.
+         if (diff.od.mode == specify) diff.od.val = diff.od.user_value;
+         else if (diff.od.mode != fix) diff.od.val = scale_od(diff.od.val, speed, mode);
 
-         if (diff.ar > 10 || diff.od > 10)
+         if (diff.ar.mode == specify) diff.ar.val = diff.ar.user_value;
+         else if (diff.ar.mode != fix) diff.ar.val = scale_ar(diff.ar.val, speed, mode);
+
+         if (diff.od.mode == cap && diff.od.val > diff.od.user_value) diff.od.val = diff.od.user_value;
+         if (diff.ar.mode == cap && diff.ar.val > diff.ar.user_value) diff.ar.val = diff.ar.user_value;
+
+         if (diff.ar.val > 10 || diff.od.val > 10)
          {
             printf("AR/OD is higher than 10. Emulating DT...\n");
             emulate_dt = true;
             speed /= 1.5;
 
-            diff.od = scale_od(diff.od, 1/1.5, mode);
-            diff.ar = scale_ar(diff.ar, 1/1.5, mode);
+            diff.od.val = scale_od(diff.od.val, 1/1.5, mode);
+            diff.ar.val = scale_ar(diff.ar.val, 1/1.5, mode);
          }
 
          // clamp ar and od here
-         if (mode == 2) diff.od = -2;
-         else diff.od = diff.od > 10 ? 10 : diff.od < 0 ? 0 : diff.od;
+         if (mode == 2) diff.od.val = -2;
+         else diff.od.val = diff.od.val > 10 ? 10 : diff.od.val < 0 ? 0 : diff.od.val;
 
-         if (mode == 1 || mode == 3) diff.ar = -2;
-         else diff.ar = diff.ar > 10 ? 10 : diff.ar < 0 ? 0 : diff.ar;
+         if (mode == 1 || mode == 3) diff.ar.val = -2;
+         else diff.ar.val = diff.ar.val > 10 ? 10 : diff.ar.val < 0 ? 0 : diff.ar.val;
 
          bool name_conflict = true;
          char prefix[8] = {0};

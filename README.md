@@ -46,10 +46,11 @@ It's very destructive and experimental, so don't use unless you desperately need
              the program will try to guess if x or bpm is not specified
 [a/o/h/c] : ar/od/hp/cs respectively. a9.9 to set ar as 9.9.
             cosu-trainer scales ar/od by default. use af/of to fix them
+            you can add 'c' at the end to cap the value, it still scales, but won't scale over the value you put
 [p] : if you want daycore/nightcore
 [x/y/t] : xflip, yflip and transpose respectively.
 
-example: ./cosu-trainer auto 220bpm a7.2 c7.2 h7 p
+example: ./cosu-trainer auto 220bpm a7.2c c7.2 h7 p
 ```
 
 ## Thanks a lot to
