@@ -9,6 +9,7 @@
 
 #include "mapspeed.h"
 #include "emptyzip.h"
+#include "tools.h"
 
 int main(int argc, char *argv[])
 {
@@ -113,7 +114,18 @@ int main(int argc, char *argv[])
 
    char *identifier = NULL;
    double speed = strtof(argv[2], &identifier);
-   bool bpm = identifier != NULL && strncmp(identifier, "bpm", 3) == 0;
+   enum SPEED_MODE rate_mode = guess;
+   if (identifier != NULL)
+   {
+      if (*identifier == 'x')
+      {
+         rate_mode = rate;
+      }
+      else if (CMPSTR(identifier, "bpm"))
+      {
+         rate_mode = bpm;
+      }
+   }
 
    struct difficulty diff = { -2, -2, -1, -1 }; // -1 means scaling diffs to speed rate
    bool pitch = false;
@@ -164,7 +176,7 @@ int main(int argc, char *argv[])
       }
    }
 
-   int bterr = edit_beatmap(filename, speed, bpm, diff, pitch, flip);
+   int bterr = edit_beatmap(filename, speed, rate_mode, diff, pitch, flip);
    int ziperr = 0;
    if (bterr == 0 && dir_delimiter != NULL)
    {

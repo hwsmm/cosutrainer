@@ -32,7 +32,8 @@ It's very destructive and experimental, so don't use unless you desperately need
 ### How to use
 1. Grab `cosu-trainer` and `osumem`
 2. Run osu! and get into song select
-3. Run `./osumem` and set `OSU_SONG_FOLDER` variable
+3. Run `./osumem` (Most systems require root permission to run this)
+4. Set `OSU_SONG_FOLDER` variable (`export OSU_SONG_FOLDER=/put/osu/Songs/`, I recommend putting it into your .profile)
 5. Now you can use `./cosu-trainer` (read usage below)
 6. After converting a map with it, press f5 in the game to refresh
 
@@ -41,7 +42,8 @@ It's very destructive and experimental, so don't use unless you desperately need
 ./cosu-trainer <filename|auto> <rate|bpm> [a/o/h/c] [p] [x/y/t]
 <> are requirements, [] are optional
 <filename|auto> : specify file name like 'songfolder/diff.osu' or just put 'auto' if you are running `osumem`
-<rate|bpm> : '1.2' if you want to use rate, '220bpm' if you want to use bpm (it uses max bpm of map to calculate, so be careful)
+<rate|bpm> : '1.2x' if you want to use rate, '220bpm' if you want to use bpm (it uses max bpm of map to calculate, so be careful)
+             the program will try to guess if x or bpm is not specified
 [a/o/h/c] : ar/od/hp/cs respectively. a9.9 to set ar as 9.9.
             cosu-trainer scales ar/od by default. use af/of to fix them
 [p] : if you want daycore/nightcore

@@ -235,7 +235,7 @@ int get_mapid(void *base_address)
    return id;
 }
 
-char *get_mappath(void *base_address)
+char *get_mappath(void *base_address, int *length)
 {
    void *beatmap_ptr = get_beatmap_ptr(base_address);
    if (beatmap_ptr == NULL) return NULL;
@@ -276,10 +276,13 @@ char *get_mappath(void *base_address)
    for (i = 0; i < size; i++)
    {
       if (*(buf+i) > 127) goto readfail;
-      *(songpath+i) = *(buf+i);
+      
+      if (*(buf+i) == '\\') *(songpath+i) = '/'; // workaround: some installation put \ in song folder
+      else *(songpath+i) = *(buf+i);
    }
 
    free(buf);
+   *length = size;
    return songpath;
 
 readfail:
@@ -302,6 +305,7 @@ int main(int argc, char *argv[])
 
    char *songpath = NULL;
    char *oldpath = NULL;
+   int len = 0;
 
    struct sigaction act;
    act.sa_handler = gotquitsig;
@@ -355,7 +359,7 @@ int main(int argc, char *argv[])
             }
          }
 
-         songpath = get_mappath(base);
+         songpath = get_mappath(base, &len);
          if (songpath != NULL)
          {
             if (oldpath != NULL && strcmp(songpath, oldpath) == 0)
@@ -383,7 +387,7 @@ int main(int argc, char *argv[])
          }
          else
          {
-            ssize_t w = write(fd, songpath, strlen(songpath));
+            ssize_t w = write(fd, songpath, len);
             if (w == -1)
             {
                perror("/tmp/osu_path");

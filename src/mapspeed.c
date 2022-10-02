@@ -60,7 +60,7 @@ static void randomstr(char *string, int size)
    }
 }
 
-int edit_beatmap(const char* beatmap, double speed, const bool bpm, struct difficulty diff, const bool pitch, const enum FLIP flip)
+int edit_beatmap(const char* beatmap, double speed, enum SPEED_MODE rate_mode, struct difficulty diff, const bool pitch, enum FLIP flip)
 {
    FILE *source = fopen(beatmap, "r");
    if (!source)
@@ -184,7 +184,7 @@ int edit_beatmap(const char* beatmap, double speed, const bool bpm, struct diffi
                char *timestr = tkn(line);
                char *beatlengthstr = nexttkn();
 
-               if (bpm && read_mode)
+               if (read_mode && (rate_mode == bpm || rate_mode == guess))
                {
                   double curbpm = atof(beatlengthstr);
                   if (*beatlengthstr != '-')
@@ -481,10 +481,26 @@ int edit_beatmap(const char* beatmap, double speed, const bool bpm, struct diffi
          sect = root;
          rewind(source);
 
-         if (bpm)
+         if (rate_mode == bpm)
          {
             max_bpm = 1 / max_bpm * 1000 * 60;
             speed /= max_bpm; // speed=target bpm / max_bpm=map bpm
+         }
+         else if (rate_mode == guess)
+         {
+            max_bpm = 1 / max_bpm * 1000 * 60;
+            double estimate_bpm = max_bpm * speed;
+            if (estimate_bpm > 500)
+            {
+               printf("Using input value as BPM...\n");
+               rate_mode = bpm;
+               speed /= max_bpm;
+            }
+            else
+            {
+               printf("Using input value as RATE...\n");
+               rate_mode = rate;
+            }
          }
 
          if (!arexists) diff.ar = diff.od; // old maps may not have ar, but we need to scale if needed, so set the value here.
