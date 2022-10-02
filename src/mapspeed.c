@@ -43,21 +43,21 @@ double scale_od(double od, double speed, int mode)
 {
    if (mode == 0) // standard
    {
-      double od_ms = 79.5 - 6 * od;
+      double od_ms = 80 - 6 * od;
       od_ms /= speed;
-      return (79.5 - od_ms) / 6;
+      return (80 - od_ms) / 6;
    }
    else if (mode == 1) // taiko
    {
-      double od_ms = 49.5 - 3 * od;
+      double od_ms = 50 - 3 * od;
       od_ms /= speed;
-      return (49.5 - od_ms) / 3;
+      return (50 - od_ms) / 3;
    }
    else if (mode == 3) // mania
    {
-      double od_ms = 64.5 - 3 * od;
+      double od_ms = 64 - 3 * od;
       od_ms /= speed;
-      return (64.5 - od_ms) / 3;
+      return (64 - od_ms) / 3;
    }
    else // catch doesn't use od
    {
