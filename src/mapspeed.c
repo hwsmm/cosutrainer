@@ -11,6 +11,23 @@
 #define tkn(x) strtok(x, ",")
 #define nexttkn() strtok(NULL, ",")
 
+#define APPLYDIFF(x, y) \
+if (read_mode) \
+{ \
+   x.val = atof(CUTFIRST(line, y ":")); \
+   x.orig_value = x.val; \
+} \
+else \
+{ \
+   if (x.mode != fix) \
+   { \
+      edited = true; \
+      fprintf(dest, y ":%.1f\r\n", x.val); \
+   } \
+}
+
+#define CLAMP(x, min, max) x = x > max ? max : x < min ? min : x
+
 // #define DEBUG
 
 double scale_ar(double ar, double speed, int mode)
@@ -353,51 +370,27 @@ int edit_beatmap(const char* beatmap, double speed, enum SPEED_MODE rate_mode, s
             }
             else if (sect == difficulty)
             {
-               if (!read_mode && diff.hp.mode != fix && CMPSTR(line, "HPDrainRate"))
+               if (CMPSTR(line, "HPDrainRate"))
                {
-                  edited = true;
-                  fprintf(dest, "HPDrainRate:%.1f\r\n", diff.hp.user_value);
+                  APPLYDIFF(diff.hp, "HPDrainRate");
                }
-               else if (!read_mode && diff.cs.mode != fix && CMPSTR(line, "CircleSize"))
+               else if (CMPSTR(line, "CircleSize"))
                {
-                  edited = true;
-                  fprintf(dest, "CircleSize:%.1f\r\n", diff.cs.user_value);
+                  APPLYDIFF(diff.cs, "CircleSize");
                }
                else if (CMPSTR(line, "OverallDifficulty"))
                {
-                  if (read_mode)
-                  {
-                     diff.od.val = atof(CUTFIRST(line, "OverallDifficulty:"));
-                  }
-                  else
-                  {
-                     if (diff.od.mode != fix)
-                     {
-                        edited = true;
-                        fprintf(dest, "OverallDifficulty:%.1f\r\n", diff.od.val);
-                     }
-                  }
+                  APPLYDIFF(diff.od, "OverallDifficulty");
                }
                else if (!(read_mode || arexists) || CMPSTR(line, "ApproachRate"))
                {
-                  if (read_mode)
+                  if (read_mode) arexists = true;
+                  else if (!(read_mode || arexists))
                   {
                      arexists = true;
-                     diff.ar.val = atof(CUTFIRST(line, "ApproachRate:"));
+                     loop_again = true;
                   }
-                  else
-                  {
-                     if (diff.ar.mode != fix)
-                     {
-                        edited = true;
-                        if (!arexists)
-                        {
-                           arexists = true;
-                           loop_again = true;
-                        }
-                        fprintf(dest, "ApproachRate:%.1f\r\n", diff.ar.val);
-                     }
-                  }
+                  APPLYDIFF(diff.ar, "ApproachRate");
                }
             }
             else if (sect == metadata)
@@ -410,13 +403,13 @@ int edit_beatmap(const char* beatmap, double speed, enum SPEED_MODE rate_mode, s
                   if (!emulate_dt) fprintf(dest, "%s %.2fx", line, speed);
                   else             fprintf(dest, "%s %.2fx(DT)", line, speed * 1.5);
 
-                  if (diff.hp.mode != fix) fprintf(dest, " HP%.1f", diff.hp.val);
+                  if (diff.hp.mode != fix && diff.hp.orig_value != diff.hp.val) fprintf(dest, " HP%.1f", diff.hp.val);
 
-                  if (diff.cs.mode != fix) fprintf(dest, " CS%.1f", diff.cs.val);
+                  if (diff.cs.mode != fix && diff.cs.orig_value != diff.cs.val) fprintf(dest, " CS%.1f", diff.cs.val);
 
-                  if (diff.od.mode != fix) fprintf(dest, " OD%.1f", !emulate_dt ? diff.od.val : scale_od(diff.od.val, 1.5, mode));
+                  if (diff.od.mode != fix && diff.od.orig_value != diff.od.val) fprintf(dest, " OD%.1f", !emulate_dt ? diff.od.val : scale_od(diff.od.val, 1.5, mode));
 
-                  if (diff.ar.mode != fix) fprintf(dest, " AR%.1f", !emulate_dt ? diff.ar.val : scale_ar(diff.ar.val, 1.5, mode));
+                  if (diff.ar.mode != fix && diff.ar.orig_value != diff.ar.val) fprintf(dest, " AR%.1f", !emulate_dt ? diff.ar.val : scale_ar(diff.ar.val, 1.5, mode));
 
                   switch (flip)
                   {
@@ -498,15 +491,18 @@ int edit_beatmap(const char* beatmap, double speed, enum SPEED_MODE rate_mode, s
             }
          }
 
-         if (!arexists) diff.ar.val = diff.ar.val; // old maps may not have ar, but we need to scale if needed, so set the value here.
+         if (!arexists) diff.ar.val = diff.od.val; // old maps may not have ar, but we need to scale if needed, so set the value here.
+
          if (diff.od.mode == specify) diff.od.val = diff.od.user_value;
          else if (diff.od.mode != fix) diff.od.val = scale_od(diff.od.val, speed, mode);
 
          if (diff.ar.mode == specify) diff.ar.val = diff.ar.user_value;
          else if (diff.ar.mode != fix) diff.ar.val = scale_ar(diff.ar.val, speed, mode);
 
-         if (diff.od.mode == cap && diff.od.val > diff.od.user_value) diff.od.val = diff.od.user_value;
-         if (diff.ar.mode == cap && diff.ar.val > diff.ar.user_value) diff.ar.val = diff.ar.user_value;
+         if (diff.hp.mode == cap) CLAMP(diff.hp.val, 0, diff.hp.user_value);
+         if (diff.cs.mode == cap) CLAMP(diff.cs.val, 0, diff.cs.user_value);
+         if (diff.od.mode == cap) CLAMP(diff.od.val, 0, diff.od.user_value);
+         if (diff.ar.mode == cap) CLAMP(diff.ar.val, 0, diff.ar.user_value);
 
          if (diff.ar.val > 10 || diff.od.val > 10)
          {
@@ -520,10 +516,10 @@ int edit_beatmap(const char* beatmap, double speed, enum SPEED_MODE rate_mode, s
 
          // clamp ar and od here
          if (mode == 2) diff.od.val = -2;
-         else diff.od.val = diff.od.val > 10 ? 10 : diff.od.val < 0 ? 0 : diff.od.val;
+         else CLAMP(diff.od.val, 0, 10);
 
          if (mode == 1 || mode == 3) diff.ar.val = -2;
-         else diff.ar.val = diff.ar.val > 10 ? 10 : diff.ar.val < 0 ? 0 : diff.ar.val;
+         else CLAMP(diff.ar.val, 0, 10);
 
          bool name_conflict = true;
          char prefix[8] = {0};

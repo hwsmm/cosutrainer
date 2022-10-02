@@ -127,7 +127,7 @@ int main(int argc, char *argv[])
       }
    }
 
-   struct difficulty diff = { { fix, 0, 0 }, { fix, 0, 0 }, { scale, 0, 0 }, { scale, 0, 0 } };
+   struct difficulty diff = { { fix, 0, 0, 0 }, { fix, 0, 0, 0 }, { scale, 0, 0, 0 }, { scale, 0, 0, 0 } };
    bool pitch = false;
    enum FLIP flip = none;
 

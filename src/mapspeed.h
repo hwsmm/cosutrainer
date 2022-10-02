@@ -23,6 +23,7 @@ struct diff
 {
    enum DIFF_MODE mode;
    float user_value;
+   float orig_value;
    float val;
 };
 
