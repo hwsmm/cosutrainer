@@ -203,7 +203,7 @@ int main(int argc, char *argv[])
       }
    }
 
-   if (bterr == 0 && ziperr == 0)
+   if (bterr == 0 && ziperr == 0 && tempzippath != NULL)
    {
       char *open_cmd = getenv("OSZ_HANDLER");
       if (open_cmd != NULL)
