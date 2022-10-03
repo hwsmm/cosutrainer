@@ -53,6 +53,15 @@ It's very destructive and experimental, so don't use unless you desperately need
 example: ./cosu-trainer auto 220bpm a7.2c c7.2 h7 p
 ```
 
+### How to open a converted map automatically
+You can set `OSZ_HANDLER` variable (`export OSZ_HANDLER="xdg-open \"%s\""`) to make cosu-trainer open the map automatically just after the conversion. Unsetting the variable disables this feature.
+
+I recommend getting [osu-handler](https://aur.archlinux.org/packages/osu-handler) by openglfreak, and let it handle .osz files by setting file association.
+`xdg-open` will open osu-handler if a given file is identified as an osu! beatmap archive.
+You can also get DEB/RPM of osu-handler [here](https://software.opensuse.org//download.html?project=home%3Ahwsnemo%3Apackaged-wine-osu&package=osu-handler-wine).
+I package this one, so if there's any problem with it, let me know!
+
+
 ## Thanks a lot to
 - [josu-trainer](https://github.com/ngoduyanh/josu-trainer) for basic idea of speeding up the map
 - [gosumemory](https://github.com/l3lackShark/gosumemory) and [ProcessMemoryDataFinder](https://github.com/Piotrekol/ProcessMemoryDataFinder) for memory reading

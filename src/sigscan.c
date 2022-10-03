@@ -60,13 +60,13 @@ int find_and_set_osu()
                   commfd = open("comm", O_RDONLY);
                   if (commfd == -1)
                   {
-                     printf("Error while opening file\n");
+                     printerr("Error while opening file");
                      continue;
                   }
                   ssize_t readbytes = read(commfd, &pidbuf, 16);
                   if (close(commfd) < 0)
                   {
-                     printf("Error while closing file\n");
+                     printerr("Error while closing file");
                   }
 
                   if (readbytes != -1)
@@ -181,7 +181,7 @@ void* find_pattern(const char bytearray[], const int pattern_size)
       char *buffer = (char*) malloc(size);
       if (buffer == NULL)
       {
-         printf("Failed allocating memory\n");
+         printerr("Failed allocating memory");
          break;
       }
 
@@ -258,8 +258,8 @@ char *get_mappath(void *base_address, int *length)
       return NULL;
 
    int size = foldersize + 1 + pathsize + 1; // null and /
-   uint16_t *buf = (uint16_t*) calloc(size, 2);
-   char *songpath = (char*) calloc(size, 1);
+   uint16_t *buf = (uint16_t*) malloc(size * 2);
+   char *songpath = (char*) malloc(size);
 
    if (!buf || !songpath)
       goto readfail;
@@ -273,7 +273,7 @@ char *get_mappath(void *base_address, int *length)
       goto readfail;
 
    int i;
-   for (i = 0; i < size; i++)
+   for (i = 0; i < size - 1; i++)
    {
       if (*(buf+i) > 127) goto readfail;
 
@@ -281,6 +281,7 @@ char *get_mappath(void *base_address, int *length)
       else *(songpath+i) = *(buf+i);
    }
 
+   *(songpath+i) = '\0';
    free(buf);
    *length = size;
    return songpath;
@@ -339,21 +340,21 @@ int main(int argc, char *argv[])
       {
          if (find_osu == 2)
          {
-            printf("osu! is found. ");
+            fputs("osu! is found. ", stdout);
          }
 
          if (base == NULL)
          {
-            printf("starting to scan memory...\n");
+            puts("starting to scan memory...");
             base = match_pattern();
             if (base != NULL)
             {
-               printf("scan succeeded. you can now use 'auto' option\n");
+               puts("scan succeeded. you can now use 'auto' option");
             }
             else
             {
-               printf("failed scanning memory: it could be because it's too early\n");
-               printf("will retry in 3 seconds...\n");
+               printerr("failed scanning memory: it could be because it's too early");
+               printerr("will retry in 3 seconds...");
                sleep(3);
                continue;
             }
@@ -375,7 +376,7 @@ int main(int argc, char *argv[])
          }
          else
          {
-            printf("failed reading memory: scanning again...\n");
+            printerr("failed reading memory: scanning again...");
             base = NULL;
             goto contin;
          }
@@ -397,7 +398,8 @@ int main(int argc, char *argv[])
       }
       else
       {
-         printf("process lost! waiting for osu");
+         fputs("process lost! waiting for osu", stderr);
+         base = NULL;
       }
 contin:
       sleep(1);

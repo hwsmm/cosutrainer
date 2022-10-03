@@ -15,7 +15,7 @@ int main(int argc, char *argv[])
 {
    if (argc < 3)
    {
-      printf("Not enough arguments.\n");
+      printerr("Not enough arguments.");
       return 1;
    }
 
@@ -26,7 +26,7 @@ int main(int argc, char *argv[])
       char *song_folder = getenv("OSU_SONG_FOLDER");
       if (song_folder == NULL)
       {
-         printf("Set OSU_SONG_FOLDER variable to use 'auto' option.");
+         printerr("Set OSU_SONG_FOLDER variable to use 'auto' option.");
          return 2;
       }
 
@@ -41,7 +41,7 @@ int main(int argc, char *argv[])
       char *buf = (char*) malloc(cursize);
       if (buf == NULL)
       {
-         printf("Failed allocating buffer\n");
+         printerr("Failed allocating buffer");
          free(buf);
          return 3;
       }
@@ -63,7 +63,7 @@ int main(int argc, char *argv[])
          tmpbuf = (char*) realloc(buf, cursize + 1024);
          if (tmpbuf == NULL)
          {
-            printf("Failed reallocating buffer\n");
+            printerr("Failed reallocating buffer");
             close(path_fd);
             free(buf);
             return 3;
@@ -82,7 +82,7 @@ int main(int argc, char *argv[])
       path = (char*) malloc(pathsize);
       if (path == NULL)
       {
-         printf("Failed allocating\n");
+         printerr("Failed allocating memory");
          free(buf);
          return 3;
       }
@@ -184,25 +184,48 @@ int main(int argc, char *argv[])
 
    int bterr = edit_beatmap(filename, speed, rate_mode, diff, pitch, flip);
    int ziperr = 0;
+   char *tempzippath = NULL;
+   int tempzipstrlen = 0;
    if (bterr == 0 && dir_delimiter != NULL)
    {
       char *songfdname = strrchr(path, '/') + 1;
-
-      int tempzipstrlen = 3 + strlen(songfdname) + 4 + 1;
-      char *tempzippath = (char*) malloc(tempzipstrlen);
+      tempzipstrlen = 3 + strlen(songfdname) + 4 + 1;
+      tempzippath = (char*) malloc(tempzipstrlen);
       if (tempzippath != NULL)
       {
          snprintf(tempzippath, tempzipstrlen, "../%s.osz", songfdname);
          ziperr = create_empty_zip(tempzippath);
-         free(tempzippath);
       }
       else
       {
+         printerr("Failed allocating memory");
          ziperr = 3;
       }
    }
 
-   if (osumem) free(path);
+   if (bterr == 0 && ziperr == 0)
+   {
+      char *open_cmd = getenv("OSZ_HANDLER");
+      if (open_cmd != NULL)
+      {
+         int real_size = strlen(open_cmd) + tempzipstrlen - 2;
+         char *real_cmd = (char*) malloc(real_size);
+         if (real_cmd != NULL)
+         {
+            snprintf(real_cmd, real_size, open_cmd, tempzippath);
+            ziperr = system(real_cmd);
+            free(real_cmd);
+         }
+         else
+         {
+            printerr("Failed allocating memory");
+            ziperr = 3;
+         }
+      }
+   }
+
+   free(path);
+   free(tempzippath);
 
    return (ziperr != 0 || bterr != 0) ? 1 : 0;
 }

@@ -11,7 +11,7 @@ int main(int argc, char *argv[])
 {
    if (argc < 2)
    {
-      printf("Not enough arguments.\n");
+      printerr("Not enough arguments.");
       return 1;
    }
 
@@ -72,7 +72,7 @@ int main(int argc, char *argv[])
                      {
                         if (++index > 512 || strlen(filename) > 1024)
                         {
-                           printf("i didn't know this could be insufficient. report this\n");
+                           printerr("i didn't know this could be insufficient. report this");
                            return 2;
                         }
                         strcpy(mp3s[index], filename);

@@ -26,8 +26,6 @@ else \
    } \
 }
 
-#define CLAMP(x, min, max) x = x > max ? max : x < min ? min : x
-
 // #define DEBUG
 
 double scale_ar(double ar, double speed, int mode)
@@ -113,8 +111,9 @@ int edit_beatmap(const char* beatmap, double speed, enum SPEED_MODE rate_mode, s
 
    enum SECTION sect = root;
 
-   if (result_file == NULL)
+   if (result_file == NULL || line == NULL)
    {
+      printerr("Failed allocating memory");
       failure = true;
       goto cleanup;
    }
@@ -135,7 +134,7 @@ int edit_beatmap(const char* beatmap, double speed, enum SPEED_MODE rate_mode, s
             if (!tmpline)
             {
                failure = true;
-               printf("Failed reallocating buffer. Conversion failed\n");
+               printerr("Failed reallocating buffer. Conversion failed");
                goto cleanup;
             }
             line = tmpline;
@@ -286,11 +285,11 @@ int edit_beatmap(const char* beatmap, double speed, enum SPEED_MODE rate_mode, s
 
                      if (postok != NULL)
                      {
-                        fputs("|", dest);
+                        fputc('|', dest);
                      }
                      else
                      {
-                        fputs(",", dest);
+                        fputc(',', dest);
                         break;
                      }
                   }
@@ -343,6 +342,7 @@ int edit_beatmap(const char* beatmap, double speed, enum SPEED_MODE rate_mode, s
                      new_audio_file = (char*) malloc(7 + 1 + namelen + 1);
                      if (!audio_file || !new_audio_file)
                      {
+                        printerr("Failed allocating memory");
                         failure = true;
                         goto cleanup;
                      }
@@ -357,8 +357,8 @@ int edit_beatmap(const char* beatmap, double speed, enum SPEED_MODE rate_mode, s
                      }
                      else
                      {
+                        printerr("Failed converting audio");
                         failure = true;
-                        printf("Failed converting audio\n");
                         goto cleanup;
                      }
                   }
@@ -446,7 +446,7 @@ int edit_beatmap(const char* beatmap, double speed, enum SPEED_MODE rate_mode, s
                   edited = true;
                   tagexists = true;
                   loop_again = true;
-                  fprintf(dest, "Tags:osutrainer\r\n");
+                  fputs("Tags:osutrainer\r\n", dest);
                }
             }
          }
@@ -458,7 +458,7 @@ int edit_beatmap(const char* beatmap, double speed, enum SPEED_MODE rate_mode, s
 #ifdef DEBUG
          else if (!read_mode)
          {
-            printf("EDITED\n");
+            puts("EDITED");
          }
 #endif
       }
@@ -478,15 +478,15 @@ int edit_beatmap(const char* beatmap, double speed, enum SPEED_MODE rate_mode, s
          {
             max_bpm = 1 / max_bpm * 1000 * 60;
             double estimate_bpm = max_bpm * speed;
-            if (estimate_bpm > 500)
+            if (estimate_bpm > 10000)
             {
-               printf("Using input value as BPM...\n");
+               puts("Using input value as BPM...");
                rate_mode = bpm;
                speed /= max_bpm;
             }
             else
             {
-               printf("Using input value as RATE...\n");
+               puts("Using input value as RATE...");
                rate_mode = rate;
             }
          }
@@ -506,7 +506,7 @@ int edit_beatmap(const char* beatmap, double speed, enum SPEED_MODE rate_mode, s
 
          if (diff.ar.val > 10 || diff.od.val > 10)
          {
-            printf("AR/OD is higher than 10. Emulating DT...\n");
+            puts("AR/OD is higher than 10. Emulating DT...");
             emulate_dt = true;
             speed /= 1.5;
 
@@ -515,10 +515,10 @@ int edit_beatmap(const char* beatmap, double speed, enum SPEED_MODE rate_mode, s
          }
 
          // clamp ar and od here
-         if (mode == 2) diff.od.val = -2;
+         if (mode == 2) diff.od.mode = fix;
          else CLAMP(diff.od.val, 0, 10);
 
-         if (mode == 1 || mode == 3) diff.ar.val = -2;
+         if (mode == 1 || mode == 3) diff.ar.mode = fix;
          else CLAMP(diff.ar.val, 0, 10);
 
          bool name_conflict = true;
@@ -561,14 +561,14 @@ cleanup:
    if (dest && fclose(dest) == EOF)
    {
       perror(result_file);
-      printf("Error while saving a file, result map file may be corrupted.\n");
+      printerr("Error while saving a file, result map file may be corrupted.");
    }
 
    if (failure)
    {
       if (unlink(result_file) != 0)
       {
-         printf("Failed removing unfinished file\n");
+         printerr("Failed removing unfinished file");
       }
       unlink(new_audio_file);
    }
