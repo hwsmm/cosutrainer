@@ -39,26 +39,15 @@ double scale_ar(double ar, double speed, int mode)
 
 double scale_od(double od, double speed, int mode)
 {
-   if (mode == 0) // standard
+   switch (mode)
    {
-      double od_ms = 80 - 6 * od;
-      od_ms /= speed;
-      return (80 - od_ms) / 6;
-   }
-   else if (mode == 1) // taiko
-   {
-      double od_ms = 50 - 3 * od;
-      od_ms /= speed;
-      return (50 - od_ms) / 3;
-   }
-   else if (mode == 3) // mania
-   {
-      double od_ms = 64 - 3 * od;
-      od_ms /= speed;
-      return (64 - od_ms) / 3;
-   }
-   else // catch doesn't use od
-   {
+   case 0:
+      return (80 - (80 - 6 * od) / speed) / 6;
+   case 1:
+      return (50 - (50 - 3 * od) / speed) / 3;
+   case 3:
+      return (64 - (64 - 3 * od) / speed) / 3;
+   default:
       return od;
    }
 }
@@ -73,6 +62,23 @@ static void randomstr(char *string, int size)
       randomnum += 97;
       *(string + i) = randomnum;
    }
+}
+
+static int countchunks(char *line, char delim)
+{
+   int count = 0;
+   char *p;
+   for (p = line; *p != '\0'; p++)
+   {
+      if (*p == delim) count++;
+   }
+   return count + 1;
+}
+
+#define chktkn(l, num) \
+if (countchunks(l, ',') < num) \
+{ \
+   goto parsefail; \
 }
 
 int edit_beatmap(const char* beatmap, double speed, enum SPEED_MODE rate_mode, struct difficulty diff, const bool pitch, enum FLIP flip)
@@ -104,10 +110,12 @@ int edit_beatmap(const char* beatmap, double speed, enum SPEED_MODE rate_mode, s
 
    bool arexists = false; // will be set as true once loop meets ApproachRate, some old maps don't have AR in the map (the client uses od as ar instead)
    bool tagexists = false; // will be set as true once loop meets Tag
+   bool versionexists = false;
 
    bool emulate_dt = false; // when (scaled) od or ar is higher than 10. this variable is to indicate the program that it is emulating dt, since all the values are already adjusted
    double max_bpm = 0; // max bpm read in the map
    int mode = 0; // map mode
+   int linenum = 0;
 
    enum SECTION sect = root;
 
@@ -146,11 +154,12 @@ int edit_beatmap(const char* beatmap, double speed, enum SPEED_MODE rate_mode, s
             continue;
          }
 
+         linenum++;
 #ifdef DEBUG
          printf("(%ld) %s", strlen(line), line);
 #endif
          enum SECTION oldsect = sect;
-         if (line[0] == '[')
+         if (*line == '[')
          {
             if (CMPSTR(line, "[General]")) sect = general;
             else if (CMPSTR(line, "[Editor]")) sect = editor;
@@ -176,15 +185,20 @@ int edit_beatmap(const char* beatmap, double speed, enum SPEED_MODE rate_mode, s
             }
             else if (sect == events && !read_mode)
             {
-               if (line[0] == '2' || CMPSTR(line, "Break"))
+               if (*line == '2' || CMPSTR(line, "Break"))
                {
+                  chktkn(line, 3);
+
                   edited = true;
                   tkn(line);
-                  long start = atol(nexttkn()) / speed;
-                  long end = atol(nexttkn()) / speed;
+                  char *startstr = nexttkn();
+                  char *endstr = nexttkn();
+
+                  long start = atol(startstr) / speed;
+                  long end = atol(endstr) / speed;
                   fprintf(dest, "2,%ld,%ld\r\n", start, end);
                }
-               else if (line[0] == '0')
+               else if (*line == '0')
                {
                   // do nothing, it's background
                }
@@ -195,6 +209,8 @@ int edit_beatmap(const char* beatmap, double speed, enum SPEED_MODE rate_mode, s
             }
             else if (sect == timingpoints)
             {
+               if (read_mode) chktkn(line, 8);
+
                char *timestr = tkn(line);
                char *beatlengthstr = nexttkn();
 
@@ -227,6 +243,8 @@ int edit_beatmap(const char* beatmap, double speed, enum SPEED_MODE rate_mode, s
             }
             else if (sect == hitobjects && !read_mode)
             {
+               chktkn(line, 6);
+
                edited = true;
                char *xstr = tkn(line);
                char *ystr = nexttkn();
@@ -246,6 +264,7 @@ int edit_beatmap(const char* beatmap, double speed, enum SPEED_MODE rate_mode, s
                   char *spinnertoken = type & (1<<7) ? ":" : ","; // mania holds use : as separator for its length
                   char *hitsoundstr = nexttkn();
                   char *spinnerstr = strtok(NULL, spinnertoken);
+                  if (!(hitsoundstr && spinnerstr)) goto parsefail;
 
                   long spinnerlen = atol(spinnerstr) / speed;
 
@@ -267,16 +286,22 @@ int edit_beatmap(const char* beatmap, double speed, enum SPEED_MODE rate_mode, s
                   char *hitsoundstr = nexttkn();
                   char *curvestr = nexttkn();
                   char *slidestr = nexttkn();
+                  if (!(hitsoundstr && curvestr && slidestr)) goto parsefail;
 
                   *(slidestr + strlen(slidestr)) = ',';
                   char *curvetype = strtok(curvestr, "|");
+                  if (!curvestr) goto parsefail;
+
                   fprintf(dest, "%d,%d,%ld,%s,%s,%s|", x, y, time, typestr, hitsoundstr, curvetype);
 
                   char *postok = strtok(NULL, "|");
                   while (1)
                   {
+                     char *ysliderstr = strchr(postok, ':');
+                     if (!(ysliderstr && postok)) goto parsefail;
+
                      int xslider = atoi(postok);
-                     int yslider = atoi(strchr(postok, ':') + 1);
+                     int yslider = atoi(ysliderstr + 1);
                      postok = strtok(NULL, "|");
                      if (flip == xflip || flip == transpose) xslider = 512 - xslider;
                      if (flip == yflip || flip == transpose) yslider = 384 - yslider;
@@ -307,23 +332,30 @@ int edit_beatmap(const char* beatmap, double speed, enum SPEED_MODE rate_mode, s
             {
                if (CMPSTR(line, "Bookmarks"))
                {
-                  edited = true;
                   fputs("Bookmarks: ", dest);
                   char *p = CUTFIRST(line, "Bookmarks: ");
                   char *token;
                   token = tkn(p);
-                  while (1)
+                  if (token == NULL)
                   {
-                     long time = atol(token) / speed;
-                     token = nexttkn();
-                     if (token == NULL)
+                     edited = false;
+                  }
+                  else
+                  {
+                     edited = true;
+                     while (1)
                      {
-                        fprintf(dest, "%ld\r\n", time);
-                        break;
-                     }
-                     else
-                     {
-                        fprintf(dest, "%ld,", time);
+                        long time = atol(token) / speed;
+                        token = nexttkn();
+                        if (token == NULL)
+                        {
+                           fprintf(dest, "%ld\r\n", time);
+                           break;
+                        }
+                        else
+                        {
+                           fprintf(dest, "%ld,", time);
+                        }
                      }
                   }
                }
@@ -338,6 +370,8 @@ int edit_beatmap(const char* beatmap, double speed, enum SPEED_MODE rate_mode, s
                      remove_newline(filename);
 
                      int namelen = strlen(filename);
+                     if (namelen <= 0) goto parsefail;
+
                      audio_file = (char*) malloc(namelen + 1);
                      new_audio_file = (char*) malloc(7 + 1 + namelen + 1);
                      if (!audio_file || !new_audio_file)
@@ -395,38 +429,55 @@ int edit_beatmap(const char* beatmap, double speed, enum SPEED_MODE rate_mode, s
             }
             else if (sect == metadata)
             {
-               if (!read_mode && CMPSTR(line, "Version"))
+               if (!(read_mode || versionexists) || CMPSTR(line, "Version"))
                {
-                  edited = true;
-                  remove_newline(line);
-
-                  if (!emulate_dt) fprintf(dest, "%s %.2fx", line, speed);
-                  else             fprintf(dest, "%s %.2fx(DT)", line, speed * 1.5);
-
-                  if (diff.hp.mode != fix && diff.hp.orig_value != diff.hp.val) fprintf(dest, " HP%.1f", diff.hp.val);
-
-                  if (diff.cs.mode != fix && diff.cs.orig_value != diff.cs.val) fprintf(dest, " CS%.1f", diff.cs.val);
-
-                  if (diff.od.mode != fix && diff.od.orig_value != diff.od.val) fprintf(dest, " OD%.1f", !emulate_dt ? diff.od.val : scale_od(diff.od.val, 1.5, mode));
-
-                  if (diff.ar.mode != fix && diff.ar.orig_value != diff.ar.val) fprintf(dest, " AR%.1f", !emulate_dt ? diff.ar.val : scale_ar(diff.ar.val, 1.5, mode));
-
-                  switch (flip)
+                  if (read_mode)
                   {
-                  case xflip:
-                     fputs(" X(invert)", dest);
-                     break;
-                  case yflip:
-                     fputs(" Y(invert)", dest);
-                     break;
-                  case transpose:
-                     fputs(" TRANSPOSE", dest);
-                     break;
-                  default:
-                     break;
+                     versionexists = true;
                   }
+                  else
+                  {
+                     char *vline = line;
+                     if (!versionexists)
+                     {
+                        versionexists = true;
+                        loop_again = true;
+                        vline = "Version:";
+                     }
+                     else
+                     {
+                        remove_newline(vline);
+                     }
+                     edited = true;
 
-                  fputs("\r\n", dest);
+                     if (!emulate_dt) fprintf(dest, "%s %.2fx", vline, speed);
+                     else             fprintf(dest, "%s %.2fx(DT)", vline, speed * 1.5);
+
+                     if (diff.hp.mode != fix && diff.hp.orig_value != diff.hp.val) fprintf(dest, " HP%.1f", diff.hp.val);
+
+                     if (diff.cs.mode != fix && diff.cs.orig_value != diff.cs.val) fprintf(dest, " CS%.1f", diff.cs.val);
+
+                     if (diff.od.mode != fix && diff.od.orig_value != diff.od.val) fprintf(dest, " OD%.1f", !emulate_dt ? diff.od.val : scale_od(diff.od.val, 1.5, mode));
+
+                     if (diff.ar.mode != fix && diff.ar.orig_value != diff.ar.val) fprintf(dest, " AR%.1f", !emulate_dt ? diff.ar.val : scale_ar(diff.ar.val, 1.5, mode));
+
+                     switch (flip)
+                     {
+                     case xflip:
+                        fputs(" X(invert)", dest);
+                        break;
+                     case yflip:
+                        fputs(" Y(invert)", dest);
+                        break;
+                     case transpose:
+                        fputs(" TRANSPOSE", dest);
+                        break;
+                     default:
+                        break;
+                     }
+
+                     fputs("\r\n", dest);
+                  }
                }
                else if (CMPSTR(line, "Tags"))
                {
@@ -493,6 +544,9 @@ int edit_beatmap(const char* beatmap, double speed, enum SPEED_MODE rate_mode, s
 
          if (!arexists) diff.ar.val = diff.od.val; // old maps may not have ar, but we need to scale if needed, so set the value here.
 
+         if (diff.hp.mode == specify) diff.hp.val = diff.hp.user_value;
+         if (diff.cs.mode == specify) diff.cs.val = diff.cs.user_value;
+
          if (diff.od.mode == specify) diff.od.val = diff.od.user_value;
          else if (diff.od.mode != fix) diff.od.val = scale_od(diff.od.val, speed, mode);
 
@@ -541,8 +595,9 @@ int edit_beatmap(const char* beatmap, double speed, enum SPEED_MODE rate_mode, s
          dest = fopen(result_file, "w");
          if (!dest)
          {
+            failure = true;
             perror(result_file);
-            return 1;
+            goto cleanup;
          }
       }
       else
@@ -552,6 +607,13 @@ int edit_beatmap(const char* beatmap, double speed, enum SPEED_MODE rate_mode, s
    }
    while (read_mode == false);
 
+
+   if (false)
+   {
+parsefail:
+      failure = true;
+      fprintf(stderr, "Failed parsing a line at %d: %s\n", linenum, line);
+   }
 cleanup:
    if (source && fclose(source) == EOF)
    {

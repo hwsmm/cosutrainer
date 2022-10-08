@@ -175,7 +175,7 @@ int main(int argc, char *argv[])
             {
                char *iden = NULL;
                dest->user_value = strtof(curarg + 1, &iden);
-               if (*iden == 'c') dest->mode = cap;
+               if (iden != NULL && *iden == 'c') dest->mode = cap;
                else dest->mode = specify;
             }
          }
@@ -186,35 +186,18 @@ int main(int argc, char *argv[])
    int ziperr = 0;
    char *tempzippath = NULL;
    int tempzipstrlen = 0;
-   if (bterr == 0 && dir_delimiter != NULL)
+   if (osumem && bterr == 0 && dir_delimiter != NULL)
    {
-      char *songfdname = strrchr(path, '/') + 1;
-      tempzipstrlen = 3 + strlen(songfdname) + 4 + 1;
-      tempzippath = (char*) malloc(tempzipstrlen);
-      if (tempzippath != NULL)
+      char *songfdname = strrchr(path, '/');
+      if (songfdname != NULL)
       {
-         snprintf(tempzippath, tempzipstrlen, "../%s.osz", songfdname);
-         ziperr = create_empty_zip(tempzippath);
-      }
-      else
-      {
-         printerr("Failed allocating memory");
-         ziperr = 3;
-      }
-   }
-
-   if (bterr == 0 && ziperr == 0 && tempzippath != NULL)
-   {
-      char *open_cmd = getenv("OSZ_HANDLER");
-      if (open_cmd != NULL)
-      {
-         int real_size = strlen(open_cmd) + tempzipstrlen - 2;
-         char *real_cmd = (char*) malloc(real_size);
-         if (real_cmd != NULL)
+         songfdname++;
+         tempzipstrlen = 3 + strlen(songfdname) + 4 + 1;
+         tempzippath = (char*) malloc(tempzipstrlen);
+         if (tempzippath != NULL)
          {
-            snprintf(real_cmd, real_size, open_cmd, tempzippath);
-            ziperr = system(real_cmd);
-            free(real_cmd);
+            snprintf(tempzippath, tempzipstrlen, "../%s.osz", songfdname);
+            ziperr = create_empty_zip(tempzippath);
          }
          else
          {
@@ -224,7 +207,36 @@ int main(int argc, char *argv[])
       }
    }
 
-   free(path);
+   if (bterr == 0 && ziperr == 0 && tempzippath != NULL)
+   {
+      int forkret = fork();
+      if (forkret == 0)
+      {
+         char *open_cmd = getenv("OSZ_HANDLER");
+         if (open_cmd != NULL)
+         {
+            int real_size = strlen(open_cmd) + tempzipstrlen - 2;
+            char *real_cmd = (char*) malloc(real_size);
+            if (real_cmd != NULL)
+            {
+               snprintf(real_cmd, real_size, open_cmd, tempzippath);
+               ziperr = system(real_cmd);
+               free(real_cmd);
+            }
+            else
+            {
+               printerr("Failed allocating memory");
+               ziperr = 3;
+            }
+         }
+      }
+      else if (forkret == -1)
+      {
+         perror("fork");
+      }
+   }
+
+   if (osumem) free(path);
    free(tempzippath);
 
    return (ziperr != 0 || bterr != 0) ? 1 : 0;

@@ -158,11 +158,9 @@ void* find_pattern(const char bytearray[], const int pattern_size)
       return NULL;
    }
 
-   bool found = false;
-
    while (fgets(line, sizeof line, maps))
    {
-      if (found) break;
+      if (result != NULL) break;
 
       char *startstr = strtok(line, "-");
       char *endstr = strtok(NULL, " ");
@@ -197,7 +195,6 @@ void* find_pattern(const char bytearray[], const int pattern_size)
          if (memcmp(buffer + i, bytearray, pattern_size) == 0)
          {
             result = startptr + i;
-            found = true;
             break;
          }
       }
