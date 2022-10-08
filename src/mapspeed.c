@@ -628,11 +628,11 @@ cleanup:
 
    if (failure)
    {
-      if (unlink(result_file) != 0)
+      if (!read_mode && result_file != NULL && unlink(result_file))
       {
          printerr("Failed removing unfinished file");
       }
-      unlink(new_audio_file);
+      if (!read_mode && new_audio_file != NULL) unlink(new_audio_file);
    }
 
    free(line);
