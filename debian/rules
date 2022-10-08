@@ -1,0 +1,18 @@
+#!/usr/bin/make -f
+PREFIX=/usr
+INSTALLDIR=debian/tmp
+DESTDIR=$(INSTALLDIR)$(PREFIX)
+
+%:
+	dh $@
+
+override_dh_auto_configure:
+	meson . build
+
+override_dh_auto_build:
+	ninja -C build
+
+override_dh_auto_install:
+	install -D -m755 "./build/cosu-trainer" "$(DESTDIR)/bin/cosu-trainer"
+	install -D -m755 "./build/osumem" "$(DESTDIR)/bin/osumem"
+	install -D -m755 "./build/cleanup" "$(DESTDIR)/bin/cosu-cleanup"
