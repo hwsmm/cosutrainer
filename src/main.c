@@ -209,11 +209,11 @@ int main(int argc, char *argv[])
 
    if (bterr == 0 && ziperr == 0 && tempzippath != NULL)
    {
-      int forkret = fork();
-      if (forkret == 0)
+      char *open_cmd = getenv("OSZ_HANDLER");
+      if (open_cmd != NULL)
       {
-         char *open_cmd = getenv("OSZ_HANDLER");
-         if (open_cmd != NULL)
+         int forkret = fork();
+         if (forkret == 0)
          {
             int real_size = strlen(open_cmd) + tempzipstrlen - 2;
             char *real_cmd = (char*) malloc(real_size);
@@ -229,10 +229,10 @@ int main(int argc, char *argv[])
                ziperr = 3;
             }
          }
-      }
-      else if (forkret == -1)
-      {
-         perror("fork");
+         else if (forkret == -1)
+         {
+            perror("fork");
+         }
       }
    }
 
