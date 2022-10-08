@@ -1,0 +1,10 @@
+Source: cosu-trainer
+Priority: low
+Build-Depends: meson, debhelper, gcc
+Maintainer: hwsnemo <hwsnemo@gmail.com>
+Standards-Version: 4.6.0
+
+Package: cosu-trainer
+Depends: ${shlibs:Depends}, ffmpeg
+Architecture: amd64 i386
+Description: Change various parameters of an osu! map easily
