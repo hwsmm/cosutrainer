@@ -37,6 +37,9 @@ It's very destructive and experimental, so don't use unless you desperately need
 5. Now you can use `./cosu-trainer` (read usage below)
 6. After converting a map with it, press f5 in the game to refresh
 
+### DEB/RPM repository
+My [wine-osu repository](https://build.opensuse.org/project/show/home:hwsnemo:packaged-wine-osu) also provides cosu-trainer. You can get it [here](https://software.opensuse.org//download.html?project=home%3Ahwsnemo%3Apackaged-wine-osu&package=cosu-trainer)!
+
 ### `cosu-trainer` usage
 ```
 ./cosu-trainer <filename|auto> <rate|bpm> [a/o/h/c] [p] [x/y/t]
