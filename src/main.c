@@ -87,7 +87,7 @@ int main(int argc, char *argv[])
          return 3;
       }
       snprintf(path, pathsize, "%s/%s", song_folder, buf);
-
+      remove_newline(path);
       free(buf);
    }
    else
@@ -207,27 +207,40 @@ int main(int argc, char *argv[])
       }
    }
 
-   if (bterr == 0 && ziperr == 0 && tempzippath != NULL)
+   char *real_cmd = NULL;
+   if (ziperr == 0 && tempzippath != NULL)
    {
       char *open_cmd = getenv("OSZ_HANDLER");
       if (open_cmd != NULL)
       {
-         int forkret = fork();
-         if (forkret == 0)
+         const char replace[] = "{osz}";
+         int replace_occur = 0;
+         for (int i = 0; i < strlen(open_cmd) - sizeof replace + 2; i++)
          {
-            int real_size = strlen(open_cmd) + tempzipstrlen - 2;
-            char *real_cmd = (char*) malloc(real_size);
-            if (real_cmd != NULL)
+            if (memcmp(open_cmd + i, replace, sizeof replace - 1) == 0) replace_occur++;
+         }
+
+         int real_size = strlen(open_cmd) + (tempzipstrlen - sizeof replace) * replace_occur + 1;
+         real_cmd = (char*) malloc(real_size);
+         char *iteration = real_cmd;
+         for (int i = 0; i < strlen(open_cmd) + 1; i++)
+         {
+            if (memcmp(open_cmd + i, replace, sizeof replace - 1) == 0)
             {
-               snprintf(real_cmd, real_size, open_cmd, tempzippath);
-               ziperr = system(real_cmd);
-               free(real_cmd);
+               memcpy(iteration++, tempzippath, tempzipstrlen - 1);
+               iteration += tempzipstrlen - 2;
+               i += sizeof replace - 2;
             }
             else
             {
-               printerr("Failed allocating memory");
-               ziperr = 3;
+               *(iteration++) = *(open_cmd + i);
             }
+         }
+
+         int forkret = fork();
+         if (forkret == 0)
+         {
+            ziperr = system(real_cmd);
          }
          else if (forkret == -1)
          {
@@ -238,6 +251,7 @@ int main(int argc, char *argv[])
 
    if (osumem) free(path);
    free(tempzippath);
+   free(real_cmd);
 
    return (ziperr != 0 || bterr != 0) ? 1 : 0;
 }
