@@ -12,4 +12,4 @@ bool readmemory(void *address, void *buffer, size_t len);
 void *match_pattern();
 void *find_pattern(const char bytearray[], int pattern_size);
 int get_mapid(void *base_address);
-char *get_mappath(void *base_address, int *length);
+char *get_mappath(void *base_address, unsigned int *length);

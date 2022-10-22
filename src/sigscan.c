@@ -1,4 +1,4 @@
-#define _GNU_SOURCE
+// #define _GNU_SOURCE
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/uio.h>
@@ -18,6 +18,10 @@
 #include "tools.h"
 
 pid_t osu = -1;
+
+#ifndef _GNU_SOURCE
+int mem_fd = -1;
+#endif
 
 int find_and_set_osu()
 {
@@ -113,20 +117,18 @@ int find_and_set_osu()
    return 1;
 }
 
+#ifdef _GNU_SOURCE
 bool readmemory(void *address, void *buffer, size_t len)
 {
-   struct iovec local[1] = {};
-   struct iovec remote[1] = {};
+   struct iovec local;
+   local.iov_base = buffer;
+   local.iov_len = len;
 
-   local[0].iov_len = len;
-   local[0].iov_base = (void *)buffer;
+   struct iovec remote;
+   remote.iov_base = address;
+   remote.iov_len = len;
 
-   remote[0].iov_base = address;
-   remote[0].iov_len = local[0].iov_len;
-
-   ssize_t nread = process_vm_readv(osu, local, 2, remote, 1, 0);
-
-   if (nread != local[0].iov_len)
+   if (process_vm_readv(osu, &local, 1, &remote, 1, 0) != len)
    {
       perror(NULL);
       return false;
@@ -134,6 +136,45 @@ bool readmemory(void *address, void *buffer, size_t len)
 
    return true;
 }
+#else
+int open_mem_fd()
+{
+   char procmem[32];
+   int fd;
+   snprintf(procmem, sizeof procmem, "/proc/%d/mem", osu);
+   fd = open(procmem, O_RDONLY);
+
+   if (fd == -1)
+   {
+      perror(procmem);
+      return -3;
+   }
+
+   mem_fd = fd;
+   return fd;
+}
+
+bool close_mem_fd()
+{
+   if (mem_fd != -1 && close(mem_fd) == -1)
+   {
+      perror("proc_mem");
+      return false;
+   }
+   mem_fd = -1;
+   return true;
+}
+
+bool readmemory(void *address, void *buffer, size_t len)
+{
+   if (pread(mem_fd, buffer, len, (off_t) address) == -1)
+   {
+      perror(NULL);
+      return false;
+   }
+   return true;
+}
+#endif
 
 void* match_pattern()
 {
@@ -149,7 +190,7 @@ void* find_pattern(const char bytearray[], const int pattern_size)
    char line[1024];
    void *result = NULL;
 
-   snprintf(mapsfile, 32, "/proc/%d/maps", osu);
+   snprintf(mapsfile, sizeof mapsfile, "/proc/%d/maps", osu);
 
    maps = fopen(mapsfile, "r");
    if (!maps)
@@ -165,6 +206,8 @@ void* find_pattern(const char bytearray[], const int pattern_size)
       char *startstr = strtok(line, "-");
       char *endstr = strtok(NULL, " ");
       char *permstr = strtok(NULL, " ");
+
+      if (!startstr || !endstr || !permstr) continue;
 
       if (*permstr != 'r')
       {
@@ -232,7 +275,7 @@ int get_mapid(void *base_address)
    return id;
 }
 
-char *get_mappath(void *base_address, int *length)
+char *get_mappath(void *base_address, unsigned int *length)
 {
    void *beatmap_ptr = get_beatmap_ptr(base_address);
    if (beatmap_ptr == NULL) return NULL;
@@ -254,7 +297,7 @@ char *get_mappath(void *base_address, int *length)
    if (!readmemory(path_ptr + 4, &pathsize, 4))
       return NULL;
 
-   int size = foldersize + 1 + pathsize + 1; // null and /
+   int size = foldersize + 1 + pathsize + 1; // / , \0
    uint16_t *buf = (uint16_t*) malloc(size * 2);
    char *songpath = (char*) malloc(size);
 
@@ -295,7 +338,7 @@ void gotquitsig(int sig)
    run = 0;
 }
 
-int main(int argc, char *argv[])
+int main()
 {
    setbuf(stdout, NULL);
    int find_osu = -1;
@@ -303,9 +346,17 @@ int main(int argc, char *argv[])
 
    char *songpath = NULL;
    char *oldpath = NULL;
-   int len = 0;
+   unsigned int len = 0;
+
+   int fd = open("/tmp/osu_path", O_CREAT|O_WRONLY|O_TRUNC, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH);
+   if (fd == -1)
+   {
+      perror("/tmp/osu_path");
+      return -1;
+   }
 
    struct sigaction act;
+   memset(&act, 0, sizeof(act));
    act.sa_handler = gotquitsig;
    if (sigaction(SIGINT, &act, NULL) != 0 && sigaction(SIGTERM, &act, NULL) != 0)
    {
@@ -338,6 +389,14 @@ int main(int argc, char *argv[])
          if (find_osu == 2)
          {
             fputs("osu! is found. ", stdout);
+
+#ifndef _GNU_SOURCE
+            if (open_mem_fd() == -1)
+            {
+               puts("failed opening memory...");
+               continue;
+            }
+#endif
          }
 
          if (base == NULL)
@@ -378,33 +437,35 @@ int main(int argc, char *argv[])
             goto contin;
          }
 
-         int fd = open("/tmp/osu_path", O_CREAT|O_WRONLY|O_TRUNC, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH);
-         if (fd == -1)
+         if (lseek(fd, 0, SEEK_SET) == -1)
          {
             perror("/tmp/osu_path");
          }
          else
          {
             ssize_t w = write(fd, songpath, len);
-            if (w == -1)
+            if (w == -1 || ftruncate(fd, w) == -1)
             {
                perror("/tmp/osu_path");
             }
-            close(fd);
          }
       }
       else
       {
          fputs("process lost! waiting for osu", stderr);
          base = NULL;
+#ifndef _GNU_SOURCE
+         close_mem_fd();
+#endif
       }
 contin:
       sleep(1);
    }
-   if (unlink("/tmp/osu_path") != 0)
-   {
-      perror("/tmp/osu_path");
-   }
+   unlink("/tmp/osu_path");
    free(oldpath);
+#ifndef _GNU_SOURCE
+   close_mem_fd();
+#endif
+   close(fd);
    return 0;
 }
