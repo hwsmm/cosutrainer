@@ -332,7 +332,6 @@ int edit_beatmap(const char* beatmap, double speed, enum SPEED_MODE rate_mode, s
             {
                if (CMPSTR(line, "Bookmarks"))
                {
-                  fputs("Bookmarks: ", dest);
                   char *p = CUTFIRST(line, "Bookmarks: ");
                   char *token;
                   token = tkn(p);
@@ -343,6 +342,7 @@ int edit_beatmap(const char* beatmap, double speed, enum SPEED_MODE rate_mode, s
                   else
                   {
                      edited = true;
+                     fputs("Bookmarks: ", dest);
                      while (1)
                      {
                         long time = atol(token) / speed;
@@ -457,9 +457,11 @@ int edit_beatmap(const char* beatmap, double speed, enum SPEED_MODE rate_mode, s
 
                      if (diff.cs.mode != fix && diff.cs.orig_value != diff.cs.val) fprintf(dest, " CS%.1f", diff.cs.val);
 
-                     if (diff.od.mode != fix && diff.od.orig_value != diff.od.val) fprintf(dest, " OD%.1f", !emulate_dt ? diff.od.val : scale_od(diff.od.val, 1.5, mode));
+                     if (diff.od.mode != fix &&
+                           (emulate_dt || diff.od.orig_value != diff.od.val)) fprintf(dest, " OD%.1f", !emulate_dt ? diff.od.val : scale_od(diff.od.val, 1.5, mode));
 
-                     if (diff.ar.mode != fix && diff.ar.orig_value != diff.ar.val) fprintf(dest, " AR%.1f", !emulate_dt ? diff.ar.val : scale_ar(diff.ar.val, 1.5, mode));
+                     if (diff.ar.mode != fix &&
+                           (emulate_dt || diff.ar.orig_value != diff.ar.val)) fprintf(dest, " AR%.1f", !emulate_dt ? diff.ar.val : scale_ar(diff.ar.val, 1.5, mode));
 
                      switch (flip)
                      {
@@ -579,7 +581,7 @@ int edit_beatmap(const char* beatmap, double speed, enum SPEED_MODE rate_mode, s
          char prefix[8] = {0};
 
          snprintf(result_file + 7, 512 - 7, "_%s", beatmap);
-         snprintf(new_audio_file + 7, 512 - 7, "_%s", audio_file);
+         if (new_audio_file) snprintf(new_audio_file + 7, 512 - 7, "_%s", audio_file);
 
          srand(time(NULL));
 
@@ -587,8 +589,8 @@ int edit_beatmap(const char* beatmap, double speed, enum SPEED_MODE rate_mode, s
          {
             randomstr(prefix, 7);
             memcpy(result_file, prefix, 7);
-            memcpy(new_audio_file, prefix, 7);
-            if (access(result_file, F_OK) != 0 && access(new_audio_file, F_OK) != 0)
+            if (new_audio_file) memcpy(new_audio_file, prefix, 7);
+            if (access(result_file, F_OK) != 0 && (new_audio_file == NULL || access(new_audio_file, F_OK) != 0))
                name_conflict = false;
          }
 
