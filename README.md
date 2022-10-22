@@ -23,11 +23,12 @@ It's very destructive and experimental, so don't use unless you desperately need
 
 ### Requirements
 - osu! must run on WINE with dotnet 4.5+ for proper memory scanning
-- There is no build-time dependency for now, but FFmpeg is required to speed up/down audio at specific rate.
+- libmpg123, libmp3lame, libsndfile and libsoundtouch to adjust audio speed
 
 ### How to build
-1. Run `meson build && ninja -C build`
-2. Binaries should be in 'build' folder.
+1. Install header packages of dependencies
+2. Run `./build.sh`
+3. Binaries should be in 'bin' folder.
 
 ### How to use
 1. Grab `cosu-trainer` and `osumem`
@@ -37,8 +38,9 @@ It's very destructive and experimental, so don't use unless you desperately need
 5. Now you can use `./cosu-trainer` (read usage below)
 6. After converting a map with it, press f5 in the game to refresh
 
-### DEB/RPM repository
-My [wine-osu repository](https://build.opensuse.org/project/show/home:hwsnemo:packaged-wine-osu) also provides cosu-trainer. You can get it [here](https://software.opensuse.org//download.html?project=home%3Ahwsnemo%3Apackaged-wine-osu&package=cosu-trainer)!
+### DEB/RPM/Arch repository
+My [wine-osu repository](https://build.opensuse.org/project/show/home:hwsnemo:packaged-wine-osu) also provides cosu-trainer.
+You can get it [here](https://software.opensuse.org//download.html?project=home%3Ahwsnemo%3Apackaged-wine-osu&package=cosu-trainer)!
 
 ### `cosu-trainer` usage
 ```
@@ -57,7 +59,7 @@ example: ./cosu-trainer auto 220bpm a7.2c c7.2 h7 p
 ```
 
 ### How to open a converted map automatically
-You can set `OSZ_HANDLER` variable (`export OSZ_HANDLER="xdg-open \"%s\""`) to make cosu-trainer open the map automatically just after the conversion. Unsetting the variable disables this feature.
+You can set `OSZ_HANDLER` variable (`export OSZ_HANDLER="xdg-open \"{osz}\""`) to make cosu-trainer open the map automatically just after the conversion. Unsetting the variable disables this feature.
 
 I recommend getting [osu-handler](https://aur.archlinux.org/packages/osu-handler) by openglfreak, and let it handle .osz files by setting file association.
 `xdg-open` will open osu-handler if a given file is identified as an osu! beatmap archive.
