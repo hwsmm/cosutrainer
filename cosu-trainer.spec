@@ -1,5 +1,5 @@
 Name: cosu-trainer
-Version: 0.2.2
+Version: 0.3.0
 Release: 1
 Summary: Change various parameters of an osu! map easily
 BuildArch: x86_64 %{ix86}
@@ -8,8 +8,14 @@ URL: https://github.com/hwsmm/cosutrainer
 
 Source0: cosu-trainer_%version.tar.xz
 
-BuildRequires: meson gcc
-Requires: ffmpeg
+BuildRequires: meson gcc bash
+BuildRequires: pkgconfig(libmpg123) pkgconfig(sndfile) pkgconfig(soundtouch)
+
+%if 0%{?suse_version}
+BuildRequires: pkgconfig(lame)
+%else
+BuildRequires: lame-devel
+%endif
 
 %description
 cosu-trainer is a replacement for FunOrange's osu-trainer, but for Linux. Unlike the original osu-trainer, cosu-trainer doesn't have GUI.
@@ -17,15 +23,14 @@ You can use all of its features with commands, so you can even put the command i
 
 %prep
 %setup -q -n %{name}
-meson . build
 
 %build
-ninja -C build
+bash ./build.sh
 
 %install
-install -D -m755 "./build/cosu-trainer" "%buildroot/%_bindir/cosu-trainer"
-install -D -m755 "./build/osumem" "%buildroot/%_bindir/osumem"
-install -D -m755 "./build/cleanup" "%buildroot/%_bindir/cosu-cleanup"
+install -D -m755 "./bin/cosu-trainer" "%buildroot/%_bindir/cosu-trainer"
+install -D -m755 "./bin/osumem" "%buildroot/%_bindir/osumem"
+install -D -m755 "./bin/cleanup" "%buildroot/%_bindir/cosu-cleanup"
 
 %files
 %defattr(-,root,root,-)

@@ -6,13 +6,10 @@ DESTDIR=$(INSTALLDIR)$(PREFIX)
 %:
 	dh $@
 
-override_dh_auto_configure:
-	meson . build
-
 override_dh_auto_build:
-	ninja -C build
+	bash ./build.sh
 
 override_dh_auto_install:
-	install -D -m755 "./build/cosu-trainer" "$(DESTDIR)/bin/cosu-trainer"
-	install -D -m755 "./build/osumem" "$(DESTDIR)/bin/osumem"
-	install -D -m755 "./build/cleanup" "$(DESTDIR)/bin/cosu-cleanup"
+	install -D -m755 "./bin/cosu-trainer" "$(DESTDIR)/bin/cosu-trainer"
+	install -D -m755 "./bin/osumem" "$(DESTDIR)/bin/osumem"
+	install -D -m755 "./bin/cleanup" "$(DESTDIR)/bin/cosu-cleanup"
