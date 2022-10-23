@@ -15,5 +15,5 @@ gcc $CFLAGS tools.c sigscan.c -o $DESTDIR/osumem
 gcc $CFLAGS tools.c cleanup.c -o $DESTDIR/cosu-cleanup
 
 cd $DESTDIR
-strip -s cosu-trainer osumem cleanup
+strip -s cosu-trainer osumem cosu-cleanup
 cd $ORIGDIR
