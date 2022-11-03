@@ -24,11 +24,12 @@ It's very destructive and experimental, so don't use unless you desperately need
 ### Requirements
 - osu! must run on WINE with dotnet 4.5+ for proper memory scanning
 - libmpg123, libmp3lame, libsndfile and libsoundtouch to adjust audio speed
+- libminizip to make an osz file
 
 ### How to build
 1. Install header packages of dependencies
-2. Run `./build.sh`
-3. Binaries should be in 'bin' folder.
+2. Run `meson build && ninja -C build`
+3. Binaries should be in 'build' folder.
 
 ### How to use
 1. Grab `cosu-trainer` and `osumem`
@@ -65,7 +66,6 @@ I recommend getting [osu-handler](https://aur.archlinux.org/packages/osu-handler
 `xdg-open` will open osu-handler if a given file is identified as an osu! beatmap archive.
 You can also get DEB/RPM of osu-handler [here](https://software.opensuse.org//download.html?project=home%3Ahwsnemo%3Apackaged-wine-osu&package=osu-handler-wine).
 I package this one, so if there's any problem with it, let me know!
-
 
 ## Thanks a lot to
 - [josu-trainer](https://github.com/ngoduyanh/josu-trainer) for basic idea of speeding up the map
