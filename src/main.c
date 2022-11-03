@@ -1,4 +1,3 @@
-#include <sys/types.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -7,7 +6,9 @@
 #include <stdbool.h>
 #include <fcntl.h>
 
+#include "buffers.h"
 #include "mapspeed.h"
+#include "actualzip.h"
 #include "emptyzip.h"
 #include "tools.h"
 
@@ -182,7 +183,34 @@ int main(int argc, char *argv[])
       }
    }
 
-   int bterr = edit_beatmap(filename, speed, rate_mode, diff, pitch, flip);
+   struct buffers bufs;
+   int bterr = 1;
+   if (buffers_init(&bufs) == 0)
+   {
+      bterr = edit_beatmap(filename, speed, rate_mode, diff, pitch, flip, &bufs);
+   }
+
+   bool actual_zip = (getenv("COSU_EMPTY_ZIP") == NULL);
+   if (!actual_zip && bterr == 0)
+   {
+      int fd = open(bufs.mapname, O_CREAT|O_WRONLY|O_TRUNC, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH);
+      if (write(fd, bufs.mapbuf, bufs.maplast) == -1)
+      {
+         printerr("Error writing a map");
+         bterr = 10;
+      }
+
+      if (bufs.audname)
+      {
+         int fdm = open(bufs.audname, O_CREAT|O_WRONLY|O_TRUNC, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH);
+         if (write(fdm, bufs.audbuf, bufs.audlast) == -1)
+         {
+            printerr("Error writing an audio file");
+            bterr = 10;
+         }
+      }
+   }
+
    int ziperr = 0;
    char *tempzippath = NULL;
    int tempzipstrlen = 0;
@@ -197,7 +225,7 @@ int main(int argc, char *argv[])
          if (tempzippath != NULL)
          {
             snprintf(tempzippath, tempzipstrlen, "../%s.osz", songfdname);
-            ziperr = create_empty_zip(tempzippath);
+            ziperr = actual_zip ? create_actual_zip(tempzippath, &bufs) : create_empty_zip(tempzippath);
          }
          else
          {
@@ -250,8 +278,10 @@ int main(int argc, char *argv[])
    }
 
    if (osumem) free(path);
+   buffers_free(&bufs);
    free(tempzippath);
    free(real_cmd);
+   free(real_path);
 
-   return (ziperr != 0 || bterr != 0) ? 1 : 0;
+   return ziperr != 0 ? ziperr : bterr != 0 ? 1 : 0;
 }

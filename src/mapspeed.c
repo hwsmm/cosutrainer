@@ -3,28 +3,14 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdbool.h>
-#include <time.h>
+
 #include "mapspeed.h"
 #include "audiospeed.h"
 #include "tools.h"
+#include "buffers.h"
 
 #define tkn(x) strtok(x, ",")
 #define nexttkn() strtok(NULL, ",")
-
-#define APPLYDIFF(x, y) \
-if (read_mode) \
-{ \
-   x.val = atof(CUTFIRST(line, y ":")); \
-   x.orig_value = x.val; \
-} \
-else \
-{ \
-   if (x.mode != fix) \
-   { \
-      edited = true; \
-      fprintf(dest, y ":%.1f\r\n", x.val); \
-   } \
-}
 
 // #define DEBUG
 
@@ -52,18 +38,6 @@ double scale_od(double od, double speed, int mode)
    }
 }
 
-// generate random string with alphabets and save it to 'string'
-static void randomstr(char *string, int size)
-{
-   int i;
-   for (i = 0; i < size; i++)
-   {
-      int randomnum = rand() % 26;
-      randomnum += 97;
-      *(string + i) = randomnum;
-   }
-}
-
 static int countchunks(char *line, char delim)
 {
    int count = 0;
@@ -81,7 +55,64 @@ if (countchunks(l, ',') < num) \
    goto parsefail; \
 }
 
-int edit_beatmap(const char* beatmap, double speed, enum SPEED_MODE rate_mode, struct difficulty diff, const bool pitch, enum FLIP flip)
+#define resize(x) \
+if (x > editsize) \
+{ \
+   char *resi = (char*) realloc(editline, x); \
+   if (resi == NULL) \
+   { \
+      printerr("Failed reallocating"); \
+      failure = true; \
+      goto cleanup; \
+   } \
+   editline = resi; \
+   editsize = x; \
+}
+
+#define putstr(x, len) \
+do \
+{ \
+   if (editsize - ecur - 1 < len) \
+   { \
+      resize(editsize + len + 1024); \
+   } \
+   strcpy(editline + ecur, x); \
+   ecur += len; \
+} \
+while (0);
+
+#define putsstr(x) putstr(x, sizeof x - 1);
+#define putdstr(x) putstr(x, strlen(x));
+#define snpedit(...) \
+do \
+{ \
+   unsigned int written = 0; \
+   size_t writable = editsize - ecur - 1; \
+   while ((written = snprintf(editline + ecur, writable, ##__VA_ARGS__)) >= writable) \
+   { \
+      resize(editsize + 1024); \
+      writable = editsize - ecur - 1; \
+   } \
+   ecur += written; \
+} \
+while (0);
+
+#define APPLYDIFF(x, y) \
+if (read_mode) \
+{ \
+   x.val = atof(CUTFIRST(line, y ":")); \
+   x.orig_value = x.val; \
+} \
+else \
+{ \
+   if (x.mode != fix) \
+   { \
+      edited = true; \
+      snpedit(y ":%.1f\r\n", x.val); \
+   } \
+}
+
+int edit_beatmap(const char* beatmap, double speed, enum SPEED_MODE rate_mode, struct difficulty diff, const bool pitch, enum FLIP flip, struct buffers *bufs)
 {
    FILE *source = fopen(beatmap, "r");
    if (!source)
@@ -90,16 +121,16 @@ int edit_beatmap(const char* beatmap, double speed, enum SPEED_MODE rate_mode, s
       return 1;
    }
 
-   FILE *dest = NULL; // we didn't open this file yet since file name is not decided yet
+   char *audiofile = NULL;
 
-   char *result_file = (char*) malloc(7 + 1 + strlen(beatmap) + 1); // result map file name
-   char *audio_file = NULL; // original audio file name
-   char *new_audio_file = NULL; // result audio file name
-
-   int current_size = 1024; // it's initial size of line for now, may increase as we edit map
-   int realloc_step = 1024; // program will increase size of line once it meets very long line
+   unsigned int current_size = 1024; // it's initial size of line for now, may increase as we edit map
+   unsigned int realloc_step = 1024; // program will increase size of line once it meets very long line
    char *line = (char*) malloc(current_size);
    char *tmpline = NULL;
+
+   unsigned int editsize = current_size;
+   char *editline = (char*) malloc(editsize);
+   unsigned int ecur = 0;
 
    bool read_mode = true; // program will read the entire file first (read_mode==true), and read again to write the new map file (read_mode==false)
    // it is used to read AR/OD and etc and preprocess before writing the actual result map file
@@ -119,7 +150,7 @@ int edit_beatmap(const char* beatmap, double speed, enum SPEED_MODE rate_mode, s
 
    enum SECTION sect = root;
 
-   if (result_file == NULL || line == NULL)
+   if (line == NULL)
    {
       printerr("Failed allocating memory");
       failure = true;
@@ -131,11 +162,13 @@ int edit_beatmap(const char* beatmap, double speed, enum SPEED_MODE rate_mode, s
       while (loop_again || fgets(line, current_size, source))
       {
          edited = false;
+         ecur = 0;
          loop_again = false;
 
          // dealing with very long lines, most of time, we don't need to edit rest of such lines, but we need it for inverting slider points
          // so dynamically allocate memory if the line doesn't have \n
-         if (strchr(line, '\n') == NULL)
+         // we don't decrease buffer size after making it bigger, so there's no point in doing this in write mode since buffer size is already big enough
+         if (read_mode && strchr(line, '\n') == NULL)
          {
             loop_again = true;
             tmpline = (char*) realloc(line, current_size + realloc_step);
@@ -173,14 +206,15 @@ int edit_beatmap(const char* beatmap, double speed, enum SPEED_MODE rate_mode, s
 
          // oldsect being different to sect means the section has just changed. which means line is [section] right now.
          // but we need to write [section] to modified map, so we don't use continue here.
-         if (oldsect == sect && !(line[0] == '\r' || line[0] == '\n' || line[0] == '\0' || line[0] == '/'))
+         if (oldsect == sect && !(*line == '\r' || *line == '\n' || *line == '\0' || *line == '/'))
          {
             if (sect == root && !read_mode)
             {
                if (CMPSTR(line, "osu file format"))
                {
                   edited = true;
-                  fputs("osu file format v14\r\n", dest); // old maps don't allow decimal ar/od, and v14 is just more compatible with this program
+                  putsstr("osu file format v14\r\n");
+                  // old maps don't allow decimal ar/od, and v14 is just more compatible with this program
                }
             }
             else if (sect == events && !read_mode)
@@ -196,7 +230,7 @@ int edit_beatmap(const char* beatmap, double speed, enum SPEED_MODE rate_mode, s
 
                   long start = atol(startstr) / speed;
                   long end = atol(endstr) / speed;
-                  fprintf(dest, "2,%ld,%ld\r\n", start, end);
+                  snpedit("2,%ld,%ld\r\n", start, end);
                }
                else if (*line == '0')
                {
@@ -229,16 +263,16 @@ int edit_beatmap(const char* beatmap, double speed, enum SPEED_MODE rate_mode, s
                   long time = atol(timestr) / speed;
                   if (*beatlengthstr != '-') // bpm
                   {
-                     fprintf(dest, "%ld,%.12lf,", time, atof(beatlengthstr) / speed);
+                     snpedit("%ld,%.12lf,", time, atof(beatlengthstr) / speed);
                   }
                   else // slider velocity
                   {
-                     fprintf(dest, "%ld,%s,", time, beatlengthstr);
+                     snpedit("%ld,%s,", time, beatlengthstr);
                   }
 
                   *(beatlengthstr + 1) = ',';
                   char* linestart = beatlengthstr + strlen(beatlengthstr) + 1;
-                  fputs(linestart, dest);
+                  putdstr(linestart);
                }
             }
             else if (sect == hitobjects && !read_mode)
@@ -268,7 +302,7 @@ int edit_beatmap(const char* beatmap, double speed, enum SPEED_MODE rate_mode, s
 
                   long spinnerlen = atol(spinnerstr) / speed;
 
-                  fprintf(dest, "%d,%d,%ld,%s,%s,%ld", x, y, time, typestr, hitsoundstr, spinnerlen);
+                  snpedit("%d,%d,%ld,%s,%s,%ld", x, y, time, typestr, hitsoundstr, spinnerlen);
 
                   if (nexttkn() == NULL)
                   {
@@ -276,7 +310,7 @@ int edit_beatmap(const char* beatmap, double speed, enum SPEED_MODE rate_mode, s
                   }
                   else
                   {
-                     fputs(spinnertoken, dest);
+                     putdstr(spinnertoken);
                      linestart = spinnerstr + strlen(spinnerstr) + 1;
                      *(spinnerstr + 1) = *spinnertoken;
                   }
@@ -292,7 +326,7 @@ int edit_beatmap(const char* beatmap, double speed, enum SPEED_MODE rate_mode, s
                   char *curvetype = strtok(curvestr, "|");
                   if (!curvestr) goto parsefail;
 
-                  fprintf(dest, "%d,%d,%ld,%s,%s,%s|", x, y, time, typestr, hitsoundstr, curvetype);
+                  snpedit("%d,%d,%ld,%s,%s,%s|", x, y, time, typestr, hitsoundstr, curvetype);
 
                   char *postok = strtok(NULL, "|");
                   while (1)
@@ -306,15 +340,15 @@ int edit_beatmap(const char* beatmap, double speed, enum SPEED_MODE rate_mode, s
                      if (flip == xflip || flip == transpose) xslider = 512 - xslider;
                      if (flip == yflip || flip == transpose) yslider = 384 - yslider;
 
-                     fprintf(dest, "%d:%d", xslider, yslider);
+                     snpedit("%d:%d", xslider, yslider);
 
                      if (postok != NULL)
                      {
-                        fputc('|', dest);
+                        putsstr("|");
                      }
                      else
                      {
-                        fputc(',', dest);
+                        putsstr(",");
                         break;
                      }
                   }
@@ -323,10 +357,10 @@ int edit_beatmap(const char* beatmap, double speed, enum SPEED_MODE rate_mode, s
                else
                {
                   linestart = typestr + strlen(typestr) + 1;
-                  fprintf(dest, "%d,%d,%ld,%s,", x, y, time, typestr);
+                  snpedit("%d,%d,%ld,%s,", x, y, time, typestr);
                   *(typestr + 1) = ',';
                }
-               fputs(linestart, dest);
+               putdstr(linestart);
             }
             else if (sect == editor && !read_mode)
             {
@@ -342,19 +376,19 @@ int edit_beatmap(const char* beatmap, double speed, enum SPEED_MODE rate_mode, s
                   else
                   {
                      edited = true;
-                     fputs("Bookmarks: ", dest);
+                     putsstr("Bookmarks: ");
                      while (1)
                      {
                         long time = atol(token) / speed;
                         token = nexttkn();
                         if (token == NULL)
                         {
-                           fprintf(dest, "%ld\r\n", time);
+                           snpedit("%ld\r\n", time);
                            break;
                         }
                         else
                         {
-                           fprintf(dest, "%ld,", time);
+                           snpedit("%ld,", time);
                         }
                      }
                   }
@@ -372,22 +406,21 @@ int edit_beatmap(const char* beatmap, double speed, enum SPEED_MODE rate_mode, s
                      int namelen = strlen(filename);
                      if (namelen <= 0) goto parsefail;
 
-                     audio_file = (char*) malloc(namelen + 1);
-                     new_audio_file = (char*) malloc(7 + 1 + namelen + 1);
-                     if (!audio_file || !new_audio_file)
+                     audiofile = (char*) malloc(namelen + 1);
+                     if (!audiofile)
                      {
                         printerr("Failed allocating memory");
                         failure = true;
                         goto cleanup;
                      }
-                     strcpy(audio_file, filename);
+                     strcpy(audiofile, filename);
                   }
                   else if (!read_mode && speed != 1) // we don't actually convert audio if speed is 1.0
                   {
                      edited = true;
-                     if (change_audio_speed(audio_file, new_audio_file, speed, pitch) == 0)
+                     if (change_audio_speed(audiofile, bufs, speed, pitch) == 0)
                      {
-                        fprintf(dest, "AudioFilename: %s\r\n", new_audio_file);
+                        snpedit("AudioFilename: %s\r\n", bufs->audname);
                      }
                      else
                      {
@@ -450,35 +483,41 @@ int edit_beatmap(const char* beatmap, double speed, enum SPEED_MODE rate_mode, s
                      }
                      edited = true;
 
-                     if (!emulate_dt) fprintf(dest, "%s %.2fx", vline, speed);
-                     else             fprintf(dest, "%s %.2fx(DT)", vline, speed * 1.5);
+                     if (!emulate_dt)
+                     {
+                        snpedit("%s %.2fx", vline, speed);
+                     }
+                     else
+                     {
+                        snpedit("%s %.2fx(DT)", vline, speed * 1.5);
+                     }
 
-                     if (diff.hp.mode != fix && diff.hp.orig_value != diff.hp.val) fprintf(dest, " HP%.1f", diff.hp.val);
+                     if (diff.hp.mode != fix && diff.hp.orig_value != diff.hp.val) snpedit(" HP%.1f", diff.hp.val);
 
-                     if (diff.cs.mode != fix && diff.cs.orig_value != diff.cs.val) fprintf(dest, " CS%.1f", diff.cs.val);
+                     if (diff.cs.mode != fix && diff.cs.orig_value != diff.cs.val) snpedit(" CS%.1f", diff.cs.val);
 
                      if (diff.od.mode != fix &&
-                           (emulate_dt || diff.od.orig_value != diff.od.val)) fprintf(dest, " OD%.1f", !emulate_dt ? diff.od.val : scale_od(diff.od.val, 1.5, mode));
+                           (emulate_dt || diff.od.orig_value != diff.od.val)) snpedit(" OD%.1f", !emulate_dt ? diff.od.val : scale_od(diff.od.val, 1.5, mode));
 
                      if (diff.ar.mode != fix &&
-                           (emulate_dt || diff.ar.orig_value != diff.ar.val)) fprintf(dest, " AR%.1f", !emulate_dt ? diff.ar.val : scale_ar(diff.ar.val, 1.5, mode));
+                           (emulate_dt || diff.ar.orig_value != diff.ar.val)) snpedit(" AR%.1f", !emulate_dt ? diff.ar.val : scale_ar(diff.ar.val, 1.5, mode));
 
                      switch (flip)
                      {
                      case xflip:
-                        fputs(" X(invert)", dest);
+                        putsstr(" X(invert)");
                         break;
                      case yflip:
-                        fputs(" Y(invert)", dest);
+                        putsstr(" Y(invert)");
                         break;
                      case transpose:
-                        fputs(" TRANSPOSE", dest);
+                        putsstr(" TRANSPOSE");
                         break;
                      default:
                         break;
                      }
 
-                     fputs("\r\n", dest);
+                     putsstr("\r\n");
                   }
                }
                else if (CMPSTR(line, "Tags"))
@@ -491,7 +530,7 @@ int edit_beatmap(const char* beatmap, double speed, enum SPEED_MODE rate_mode, s
                   {
                      edited = true;
                      remove_newline(line);
-                     fprintf(dest, "%s osutrainer\r\n", line);
+                     snpedit("%s osutrainer\r\n", line);
                   }
                }
                else if (!(tagexists || read_mode))
@@ -499,25 +538,28 @@ int edit_beatmap(const char* beatmap, double speed, enum SPEED_MODE rate_mode, s
                   edited = true;
                   tagexists = true;
                   loop_again = true;
-                  fputs("Tags:osutrainer\r\n", dest);
+                  putsstr("Tags:osutrainer\r\n");
                }
             }
          }
 
-         if (!(read_mode || edited))
+         if (!read_mode)
          {
-            fputs(line, dest);
+            if (edited && ecur == 0)
+            {
+               continue;
+            }
+            if (buffers_map_put(bufs, edited ? editline : line, edited ? ecur : strlen(line)) != 0)
+            {
+               failure = true;
+               goto cleanup;
+            }
          }
-#ifdef DEBUG
-         else if (!read_mode)
-         {
-            puts("EDITED");
-         }
-#endif
       }
 
       if (read_mode)
       {
+         linenum = 0;
          read_mode = false;
          sect = root;
          rewind(source);
@@ -542,6 +584,13 @@ int edit_beatmap(const char* beatmap, double speed, enum SPEED_MODE rate_mode, s
                puts("Using input value as RATE...");
                rate_mode = rate;
             }
+         }
+
+         if (speed <= 0)
+         {
+            printerr("Speed value is wrong!");
+            failure = true;
+            goto cleanup;
          }
 
          if (!arexists) diff.ar.val = diff.od.val; // old maps may not have ar, but we need to scale if needed, so set the value here.
@@ -580,26 +629,28 @@ int edit_beatmap(const char* beatmap, double speed, enum SPEED_MODE rate_mode, s
          bool name_conflict = true;
          char prefix[8] = {0};
 
-         snprintf(result_file + 7, 512 - 7, "_%s", beatmap);
-         if (new_audio_file) snprintf(new_audio_file + 7, 512 - 7, "_%s", audio_file);
+         bufs->mapname = (char*) malloc(7 + 1 + strlen(beatmap) + 1);
+         if (audiofile && speed != 1) bufs->audname = (char*) malloc(7 + 1 + strlen(audiofile) + 1);
 
-         srand(time(NULL));
+         if (bufs->mapname == NULL || (audiofile && speed != 1 && bufs->audname == NULL))
+         {
+            printerr("Failed allocating memory");
+            failure = true;
+            goto cleanup;
+         }
+
+         snprintf(bufs->mapname + 7, 1 + strlen(beatmap) + 1, "_%s", beatmap);
+         if (bufs->audname) snprintf(bufs->audname + 7, 1 + strlen(audiofile) + 1, "_%s", audiofile);
+
+         randominit();
 
          while (name_conflict == true)
          {
             randomstr(prefix, 7);
-            memcpy(result_file, prefix, 7);
-            if (new_audio_file) memcpy(new_audio_file, prefix, 7);
-            if (access(result_file, F_OK) != 0 && (new_audio_file == NULL || access(new_audio_file, F_OK) != 0))
+            memcpy(bufs->mapname, prefix, 7);
+            if (bufs->audname) memcpy(bufs->audname, prefix, 7);
+            if (access(bufs->mapname, F_OK) != 0 && (bufs->audname == NULL || access(bufs->audname, F_OK) != 0))
                name_conflict = false;
-         }
-
-         dest = fopen(result_file, "w");
-         if (!dest)
-         {
-            failure = true;
-            perror(result_file);
-            goto cleanup;
          }
       }
       else
@@ -622,25 +673,7 @@ cleanup:
       perror(beatmap);
    }
 
-   if (dest && fclose(dest) == EOF)
-   {
-      perror(result_file);
-      printerr("Error while saving a file, result map file may be corrupted.");
-   }
-
-   if (failure)
-   {
-      if (!read_mode && result_file != NULL && unlink(result_file))
-      {
-         printerr("Failed removing unfinished file");
-      }
-      if (!read_mode && new_audio_file != NULL) unlink(new_audio_file);
-   }
-
    free(line);
-   free(result_file);
-   free(audio_file);
-   free(new_audio_file);
 
    return failure ? 1 : 0;
 }

@@ -1,4 +1,5 @@
 #pragma once
+#include "buffers.h"
 enum SECTION
 {
    root, general, editor, metadata, difficulty, events, timingpoints, colours, hitobjects
@@ -37,5 +38,4 @@ struct difficulty
 
 double scale_ar(double ar, double speed, int mode);
 double scale_od(double od, double speed, int mode);
-int edit_beatmap(const char* beatmap, double speed, enum SPEED_MODE rate_mode, struct difficulty diff, const bool pitch, enum FLIP flip);
-
+int edit_beatmap(const char* beatmap, double speed, enum SPEED_MODE rate_mode, struct difficulty diff, const bool pitch, enum FLIP flip, struct buffers *bufs);
