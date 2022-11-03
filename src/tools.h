@@ -12,6 +12,10 @@
 
 #define printerr(s) fputs(s "\n", stderr)
 
+void randominit();
+void randomstr(char *string, int size);
 void remove_newline(char* line);
 int endswith(const char *str, const char *suffix);
-int count_digits(int n);
+int count_digits(unsigned long n);
+char *replace_string(char *source, char *match, char *replace);
+char *read_file(char *file, int *size);

@@ -31,65 +31,24 @@ int main(int argc, char *argv[])
          return 2;
       }
 
-      int path_fd = open("/tmp/osu_path", O_RDONLY);
-      if (path_fd == -1)
+      int readbytes = 0;
+      char *song_path = read_file("/tmp/osu_path", &readbytes);
+      if (song_path == NULL)
       {
-         perror("/tmp/osu_path");
          return 2;
       }
-
-      int cursize = 2048;
-      char *buf = (char*) malloc(cursize);
-      if (buf == NULL)
-      {
-         printerr("Failed allocating buffer");
-         free(buf);
-         return 3;
-      }
-      char *tmpbuf = NULL;
-
-      ssize_t readbytes = read(path_fd, buf, cursize - 1);
-      ssize_t rb = 0;
-      do
-      {
-         if (readbytes == -1 || rb == -1)
-         {
-            perror("/tmp/osu_path");
-            close(path_fd);
-            free(buf);
-            return 2;
-         }
-         if (!(readbytes >= cursize - 1)) break;
-
-         tmpbuf = (char*) realloc(buf, cursize + 1024);
-         if (tmpbuf == NULL)
-         {
-            printerr("Failed reallocating buffer");
-            close(path_fd);
-            free(buf);
-            return 3;
-         }
-         cursize += 1024;
-         buf = tmpbuf;
-         rb = read(path_fd, buf + readbytes, 1024 - 1);
-         readbytes += rb;
-      }
-      while (1);
-
-      close(path_fd);
-      *(buf + readbytes) = '\0';
 
       int pathsize = strlen(song_folder) + 1 + readbytes + 1;
       path = (char*) malloc(pathsize);
       if (path == NULL)
       {
          printerr("Failed allocating memory");
-         free(buf);
+         free(song_path);
          return 3;
       }
-      snprintf(path, pathsize, "%s/%s", song_folder, buf);
+      snprintf(path, pathsize, "%s/%s", song_folder, song_path);
       remove_newline(path);
-      free(buf);
+      free(song_path);
    }
    else
    {
@@ -236,34 +195,14 @@ int main(int argc, char *argv[])
    }
 
    char *real_cmd = NULL;
+   char *real_path = NULL;
    if (ziperr == 0 && tempzippath != NULL)
    {
       char *open_cmd = getenv("OSZ_HANDLER");
       if (open_cmd != NULL)
       {
-         const char replace[] = "{osz}";
-         int replace_occur = 0;
-         for (int i = 0; i < strlen(open_cmd) - sizeof replace + 2; i++)
-         {
-            if (memcmp(open_cmd + i, replace, sizeof replace - 1) == 0) replace_occur++;
-         }
-
-         int real_size = strlen(open_cmd) + (tempzipstrlen - sizeof replace) * replace_occur + 1;
-         real_cmd = (char*) malloc(real_size);
-         char *iteration = real_cmd;
-         for (int i = 0; i < strlen(open_cmd) + 1; i++)
-         {
-            if (memcmp(open_cmd + i, replace, sizeof replace - 1) == 0)
-            {
-               memcpy(iteration++, tempzippath, tempzipstrlen - 1);
-               iteration += tempzipstrlen - 2;
-               i += sizeof replace - 2;
-            }
-            else
-            {
-               *(iteration++) = *(open_cmd + i);
-            }
-         }
+         real_path = realpath(tempzippath, NULL);
+         real_cmd = replace_string(open_cmd, "{osz}", real_path);
 
          int forkret = fork();
          if (forkret == 0)
