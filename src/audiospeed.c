@@ -163,14 +163,15 @@ int change_mp3_speed(const char* source, struct buffers *bufs, double speed, boo
       }
    }
 
-   lamerr = lame_encode_flush_nogap(gfp, mp3buf, mp3buf_size);
+   /*lamerr = lame_encode_flush_nogap(gfp, mp3buf, mp3buf_size);
    if (lamerr > 0)
    {
       if (buffers_aud_put(bufs, mp3buf, lamerr) != 0)
       {
          goto cleanup;
       }
-   }
+   }*/
+   // seems to be useless
 
    lamerr = lame_get_lametag_frame(gfp, mp3buf, mp3buf_size);
    if (lamerr < mp3buf_size)

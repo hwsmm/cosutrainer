@@ -150,7 +150,7 @@ int main(int argc, char *argv[])
    }
 
    bool actual_zip = (getenv("COSU_EMPTY_ZIP") == NULL);
-   if (!actual_zip && bterr == 0)
+   if (!(actual_zip && osumem) && bterr == 0)
    {
       int fd = open(bufs.mapname, O_CREAT|O_WRONLY|O_TRUNC, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH);
       if (write(fd, bufs.mapbuf, bufs.maplast) == -1)
@@ -158,6 +158,7 @@ int main(int argc, char *argv[])
          printerr("Error writing a map");
          bterr = 10;
       }
+      close(fd);
 
       if (bufs.audname)
       {
@@ -167,6 +168,7 @@ int main(int argc, char *argv[])
             printerr("Error writing an audio file");
             bterr = 10;
          }
+         close(fdm);
       }
    }
 
