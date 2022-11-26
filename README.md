@@ -48,6 +48,7 @@ You can get it [here](https://software.opensuse.org//download.html?project=home%
 
 ### `cosu-trainer` GUI screenshot
 ![Screenshot](docs/cosu.png)
+
 Run `cosu-trainer` with no arguments to launch GUI. You can use below arguments if you don't want GUI.
 
 ### `cosu-trainer` command usage
