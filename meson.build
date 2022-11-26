@@ -1,6 +1,7 @@
 project('cosu-trainer', 'c', 'cpp')
 
-mainfiles=['src/soundtouch-c.cpp', 'src/tools.c', 'src/audiospeed.c', 'src/mapspeed.c', 'src/actualzip.c', 'src/emptyzip.c', 'src/buffers.c', 'src/main.c']
+mainfiles=['src/cosuui.cpp', 'src/cosuwindow.cpp', 'src/freader.cpp', 'src/cuimain.c', 'src/main.cpp',
+           'src/tools.c', 'src/mapeditor.c', 'src/actualzip.c', 'src/audiospeed.cpp', 'src/buffers.c']
 memfiles=['src/tools.c', 'src/sigscan.c']
 cleanfiles=['src/tools.c', 'src/cleanup.c']
 
@@ -11,9 +12,13 @@ deps = [
   dependency('minizip'),
   dependency('soundtouch'),
   dependency('sndfile'),
-  meson.get_compiler('c').find_library('mp3lame')
+  dependency('threads'),
+  dependency('x11'),
+  meson.get_compiler('c').find_library('mp3lame'),
+  meson.get_compiler('cpp').find_library('fltk_images'),
+  meson.get_compiler('cpp').find_library('fltk')
 ]
 
-executable('cosu-trainer', mainfiles, dependencies : deps, include_directories: inc_dir)
-executable('osumem', memfiles, include_directories: inc_dir)
-executable('cosu-cleanup', cleanfiles, include_directories: inc_dir)
+executable('cosu-trainer', mainfiles, dependencies : deps, include_directories : inc_dir)
+executable('osumem', memfiles, include_directories : inc_dir)
+executable('cosu-cleanup', cleanfiles, include_directories : inc_dir)
