@@ -42,6 +42,7 @@ int create_actual_zip(char *zipfile, struct buffers *bufs)
    audf.tmz_date.tm_year = mapf.tmz_date.tm_year = lt->tm_year;
 
    if (bufs->audname)
+   {
       if (!(zipOpenNewFileInZip(zf, bufs->audname, &audf, NULL, 0, NULL, 0, NULL, 0, 0) == ZIP_OK
             && zipWriteInFileInZip(zf, bufs->audbuf, bufs->audlast) == ZIP_OK
             && zipCloseFileInZip(zf) == ZIP_OK))
@@ -49,6 +50,7 @@ int create_actual_zip(char *zipfile, struct buffers *bufs)
          printerr("Error writing an audio file in zip");
          return 2;
       }
+   }
 
    if (!(zipOpenNewFileInZip(zf, bufs->mapname, &mapf, NULL, 0, NULL, 0, NULL, 0, 0) == ZIP_OK
          && zipWriteInFileInZip(zf, bufs->mapbuf, bufs->maplast) == ZIP_OK
