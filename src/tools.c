@@ -53,7 +53,7 @@ int count_digits(unsigned long n)
    return count;
 }
 
-char *replace_string(char *source, char *match, char *replace)
+char *replace_string(const char *source, const char *match, const char *replace)
 {
    char *result = NULL;
    int i, s, e;
@@ -98,7 +98,7 @@ char *replace_string(char *source, char *match, char *replace)
    return result;
 }
 
-char *read_file(char *file, int *size)
+char *read_file(const char *file, int *size)
 {
    int fd = open(file, O_RDONLY);
    if (fd == -1)
@@ -140,4 +140,14 @@ char *read_file(char *file, int *size)
    if (size != NULL) *size = curpoint;
    close(fd);
    return buf;
+}
+
+int fork_launch(char* cmd)
+{
+   int ret = fork();
+   if (ret == 0)
+   {
+      exit(system(cmd));
+   }
+   return ret;
 }

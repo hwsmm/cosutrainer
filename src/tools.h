@@ -12,10 +12,20 @@
 
 #define printerr(s) fputs(s "\n", stderr)
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 void randominit();
 void randomstr(char *string, int size);
 void remove_newline(char* line);
 int endswith(const char *str, const char *suffix);
 int count_digits(unsigned long n);
-char *replace_string(char *source, char *match, char *replace);
-char *read_file(char *file, int *size);
+char *replace_string(const char *source, const char *match, const char *replace);
+char *read_file(const char *file, int *size);
+int fork_launch(char* cmd);
+
+#ifdef __cplusplus
+}
+#endif

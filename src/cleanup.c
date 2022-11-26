@@ -9,15 +9,25 @@
 
 int main(int argc, char *argv[])
 {
-   if (argc < 2)
+   char *mainfd = NULL;
+   if (argc > 2)
+   {
+      mainfd = argv[1];
+   }
+   else
+   {
+      mainfd = getenv("OSU_SONG_FOLDER");
+   }
+
+   if (mainfd == NULL)
    {
       printerr("Not enough arguments.");
       return 1;
    }
 
-   if (chdir(argv[1]))
+   if (chdir(mainfd))
    {
-      perror(argv[1]);
+      perror(mainfd);
       return 1;
    }
 
@@ -41,7 +51,7 @@ int main(int argc, char *argv[])
          perror(ent->d_name);
          continue;
       }
-      unlink("cosu");
+      // unlink("cosu");
 
       DIR *songd;
       struct dirent *sent;
@@ -68,9 +78,9 @@ int main(int argc, char *argv[])
                   {
                      remove_newline(line);
                      char* filename = line + 15;
-                     if (endswith(filename, ".mp3"))
+                     if (endswith(filename, ".mp3") || endswith(filename, ".ogg"))
                      {
-                        if (++index > 512 || strlen(filename) > 1024)
+                        if (++index > 512 || strlen(filename) + 1 > 1024)
                         {
                            printerr("i didn't know this could be insufficient. report this");
                            return 2;
@@ -94,7 +104,7 @@ int main(int argc, char *argv[])
 
       while ((sent = readdir(songd)))
       {
-         if (endswith(sent->d_name, ".mp3"))
+         if (endswith(sent->d_name, ".mp3") || endswith(sent->d_name, ".ogg"))
          {
             int i;
             bool found = false;
@@ -134,14 +144,14 @@ int main(int argc, char *argv[])
 
       if (chdir(".."))
       {
-         perror(argv[1]);
+         perror(mainfd);
          continue;
       }
    }
 
    if (closedir(songrtd))
    {
-      perror(argv[1]);
+      perror(mainfd);
       return 1;
    }
    return 0;

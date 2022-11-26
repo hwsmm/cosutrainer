@@ -1,10 +1,16 @@
 #pragma once
+#include <sys/types.h>
 
 #define MAPFILE_INITSIZE 8192
 #define AUDFILE_INITSIZE 3145728
 
 #define map_reallstep 8192
 #define aud_reallstep 524288
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
 
 struct buffers
 {
@@ -36,3 +42,7 @@ ssize_t buffers_##BUF##_seek(struct buffers *bufs, ssize_t offset, int whence);
 BUFFERS_METHODS(map)
 
 BUFFERS_METHODS(aud)
+
+#ifdef __cplusplus
+}
+#endif
