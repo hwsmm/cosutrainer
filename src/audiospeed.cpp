@@ -5,15 +5,20 @@
 #include <mpg123.h>
 #include <lame/lame.h>
 #include <sndfile.h>
-#include "soundtouch-c.h"
+#include <SoundTouch.h>
+#include <stdexcept>
 #include "tools.h"
 #include "buffers.h"
+#include "audiospeed.h"
 
-int change_mp3_speed(const char* source, struct buffers *bufs, double speed, bool pitch)
+using namespace soundtouch;
+
+int change_mp3_speed(const char* source, struct buffers *bufs, double speed, bool pitch, float *progress)
 {
+   *progress = 0;
    mpg123_handle *mh = NULL;
    struct mpg123_frameinfo fi;
-   SoundTouchState state = NULL;
+   SoundTouch st;
    lame_global_flags *gfp = NULL;
 
    float *buffer = NULL;
@@ -64,11 +69,10 @@ int change_mp3_speed(const char* source, struct buffers *bufs, double speed, boo
    convbuf = (float*) malloc((convbuf_size = buffer_size));
    if (buffer == NULL || convbuf == NULL) goto cleanup;
 
-   state = soundtouch_new();
-   soundtouch_set_sample_rate(state, rate);
-   soundtouch_set_channels(state, channels);
-   if (!pitch) soundtouch_set_tempo_change(state, (speed - 1.0) * 100.0);
-   else soundtouch_set_rate_change(state, (speed - 1.0) * 100.0);
+   st.setSampleRate(rate);
+   st.setChannels(channels);
+   if (!pitch) st.setTempoChange((speed - 1.0) * 100.0);
+   else st.setRateChange((speed - 1.0) * 100.0);
 
    gfp = lame_init();
    lame_set_num_channels(gfp, channels);
@@ -106,11 +110,11 @@ int change_mp3_speed(const char* source, struct buffers *bufs, double speed, boo
       {
          err = mpg123_read(mh, (unsigned char*) buffer, buffer_size, &done);
          processedsamples += (samplecount = (done/sizeof(float))/channels);
-         printf("\r%d%%", processedsamples * 100 / fulllength);
+         *progress = (float) processedsamples / (float) fulllength;
 
          if (err == MPG123_OK || err == MPG123_DONE)
          {
-            soundtouch_put_samples(state, buffer, samplecount);
+            st.putSamples(buffer, samplecount);
          }
          else
          {
@@ -119,13 +123,12 @@ int change_mp3_speed(const char* source, struct buffers *bufs, double speed, boo
       }
       else
       {
-         puts("\r100%");
-         soundtouch_flush(state);
+         st.flush();
       }
 
       do
       {
-         samplecount = soundtouch_receive_samples(state, convbuf, bufsizesample);
+         samplecount = st.receiveSamples(convbuf, bufsizesample);
          if (samplecount == 0) continue;
          wanted = 1.25 * samplecount + 7200;
          if (mp3buf_size < wanted)
@@ -174,7 +177,7 @@ int change_mp3_speed(const char* source, struct buffers *bufs, double speed, boo
    // seems to be useless
 
    lamerr = lame_get_lametag_frame(gfp, mp3buf, mp3buf_size);
-   if (lamerr < mp3buf_size)
+   if ((unsigned long) lamerr < mp3buf_size)
    {
       memcpy(bufs->audbuf, mp3buf, lamerr);
    }
@@ -188,7 +191,6 @@ cleanup:
    free(buffer);
    free(convbuf);
    free(mp3buf);
-   if (state) soundtouch_remove(state);
    if (gfp) lame_close(gfp);
    if (mh)
    {
@@ -230,11 +232,12 @@ sf_count_t sfvio_tell(void *vbufs)
    return bufs->audcur;
 }
 
-int change_audio_speed_libsndfile(const char* source, struct buffers *bufs, double speed, bool pitch)
+int change_audio_speed_libsndfile(const char* source, struct buffers *bufs, double speed, bool pitch, float *progress)
 {
+   *progress = 0;
    int success = 1;
-   SNDFILE *in, *out;
-   SF_INFO info = { 0 };
+   SNDFILE *in = NULL, *out = NULL;
+   SF_INFO info = { 0, 0, 0, 0, 0, 0 };
    SF_VIRTUAL_IO sfvio = { &sfvio_get_filelen, &sfvio_seek, &sfvio_read, &sfvio_write, &sfvio_tell };
 
    float buffer[1024] = { 0.0 };
@@ -244,7 +247,7 @@ int change_audio_speed_libsndfile(const char* source, struct buffers *bufs, doub
    sf_count_t readcount = 0;
    unsigned int convcount = 0;
 
-   SoundTouchState state = NULL;
+   SoundTouch st;
    bool flush = false;
 
    if ((in = sf_open(source, SFM_READ, &info)) == NULL || (out = sf_open_virtual(&sfvio, SFM_WRITE, &info, bufs)) == NULL)
@@ -254,47 +257,54 @@ int change_audio_speed_libsndfile(const char* source, struct buffers *bufs, doub
 
    bufsamples = 1024 / info.channels;
 
-   state = soundtouch_new();
-   soundtouch_set_sample_rate(state, info.samplerate);
-   soundtouch_set_channels(state, info.channels);
-   if (!pitch) soundtouch_set_tempo_change(state, (speed - 1.0) * 100.0);
-   else soundtouch_set_rate_change(state, (speed - 1.0) * 100.0);
+   st.setSampleRate(info.samplerate);
+   st.setChannels(info.channels);
+   if (!pitch) st.setTempoChange((speed - 1.0) * 100.0);
+   else st.setRateChange((speed - 1.0) * 100.0);
 
    while (!flush)
    {
       readcount = sf_read_float(in, buffer, 1024);
 
-      if (readcount != 0) soundtouch_put_samples(state, buffer, readcount / info.channels);
+      if (readcount != 0) st.putSamples(buffer, readcount / info.channels);
       else
       {
-         soundtouch_flush(state);
+         st.flush();
          flush = true;
       }
 
       do
       {
-         convcount = soundtouch_receive_samples(state, convbuf, bufsamples);
+         convcount = st.receiveSamples(convbuf, bufsamples);
          sf_writef_float(out, convbuf, convcount);
       }
       while (convcount != 0);
    }
 
+   *progress = 1;
    success = 0;
 sndfclose:
-   if (in) sf_close(in);
-   if (out) sf_close(out);
-   if (state) soundtouch_remove(state);
+   if (in != NULL)  sf_close(in);
+   if (out != NULL) sf_close(out);
    return success;
 }
 
-int change_audio_speed(const char* source, struct buffers *bufs, double speed, bool pitch)
+int change_audio_speed(const char* source, struct buffers *bufs, double speed, bool pitch, float *progress)
 {
-   if (endswith(source, ".mp3"))
+   try
    {
-      return change_mp3_speed(source, bufs, speed, pitch);
-      // using mpg123/lame backend exclusively to make bug fixing easier
-      // and there are some distros that has libsndfile without mp3 support since it's only released recently
-      // libsndfile also uses mpg123/lame anyway
+      if (endswith(source, ".mp3"))
+      {
+         return change_mp3_speed(source, bufs, speed, pitch, progress);
+         // using mpg123/lame backend exclusively to make bug fixing easier
+         // and there are some distros that has libsndfile without mp3 support since it's only released recently
+         // libsndfile also uses mpg123/lame anyway
+      }
+      else return change_audio_speed_libsndfile(source, bufs, speed, pitch, progress);
    }
-   else return change_audio_speed_libsndfile(source, bufs, speed, pitch);
+   catch (const std::runtime_error &e)
+   {
+      fprintf(stderr, "%s\n", e.what());
+      return -1;
+   }
 }
