@@ -1,0 +1,135 @@
+# data file for the Fltk User Interface Designer (fluid)
+version 1.0305
+header_name {.h}
+code_name {.cpp}
+class CosuUI {open
+} {
+  Function {make_window()} {open
+  } {
+    Fl_Window window {
+      label {cosu-trainer} open
+      xywh {488 136 390 530} type Single resizable size_range {390 530 390 530} visible
+    } {
+      Fl_Group mainbox {open
+        xywh {10 10 370 510}
+      } {
+        Fl_Box infobox {
+          xywh {10 10 370 130} align 64
+        }
+        Fl_Choice flipbox {open selected
+          xywh {210 220 170 25} down_box BORDER_BOX
+        } {
+          MenuItem no_flip {
+            label {No flip}
+            xywh {0 0 36 21}
+          }
+          MenuItem x_flip {
+            label {X(flip)}
+            xywh {0 0 100 20}
+          }
+          MenuItem y_flip {
+            label {Y(flip)}
+            xywh {0 0 100 20}
+          }
+          MenuItem transpose {
+            label Transpose
+            xywh {0 0 100 20}
+          }
+        }
+        Fl_Check_Button scale_ar {
+          label {Scale AR}
+          xywh {210 260 170 15} down_box DOWN_BOX
+        }
+        Fl_Check_Button scale_od {
+          label {Scale OD}
+          xywh {210 290 170 15} down_box DOWN_BOX
+        }
+        Fl_Check_Button pitch {
+          label {Adjust Pitch}
+          xywh {210 320 170 15} down_box DOWN_BOX
+        }
+        Fl_Round_Button rate {
+          label Rate
+          xywh {210 375 85 25} down_box ROUND_DOWN_BOX value 1
+        }
+        Fl_Round_Button bpm {
+          label BPM
+          xywh {295 375 85 25} down_box ROUND_DOWN_BOX
+        }
+        Fl_Spinner speedval {
+          xywh {210 405 100 25} type Float minimum 0.1 maximum 99999 step 0.1
+        }
+        Fl_Check_Button lock {
+          label Lock
+          xywh {315 405 65 25} down_box DOWN_BOX deactivate
+        }
+        Fl_Check_Button hplock {
+          xywh {20 415 15 15} down_box DOWN_BOX
+        }
+        Fl_Check_Button cslock {
+          xywh {70 415 15 15} down_box DOWN_BOX
+        }
+        Fl_Check_Button arlock {
+          xywh {120 415 15 15} down_box DOWN_BOX
+        }
+        Fl_Check_Button odlock {
+          xywh {170 415 15 15} down_box DOWN_BOX
+        }
+        Fl_Button reset {
+          label Reset
+          xywh {10 455 100 65}
+        }
+        Fl_Button convert {
+          label {Convert now}
+          xywh {120 455 260 65}
+        }
+        Fl_Box songtitlelabel {
+          label {Song Title}
+          xywh {10 155 370 25} labelsize 25 align 20
+        }
+        Fl_Box difflabel {
+          label Difficulty
+          xywh {10 185 370 25} align 20
+        }
+        Fl_Group diffgroup {open
+          xywh {10 220 190 190}
+        } {
+          Fl_Slider hpslider {
+            label HP
+            xywh {10 245 40 165} align 16 maximum 10 step 0.1 value 5
+          }
+          Fl_Slider csslider {
+            label CS
+            xywh {60 245 40 165} align 16 maximum 10 step 0.1 value 5
+          }
+          Fl_Slider arslider {
+            label AR
+            xywh {110 245 40 165} align 16 maximum 11 step 0.1 value 5
+          }
+          Fl_Slider odslider {
+            label OD
+            xywh {160 245 40 165} align 16 maximum 11 step 0.1 value 5
+          }
+          Fl_Value_Input hpinput {
+            xywh {10 220 40 25} box THIN_DOWN_BOX color 23 maximum 10 step 0.1 value 5
+          }
+          Fl_Value_Input csinput {
+            xywh {60 220 40 25} box THIN_DOWN_BOX color 23 maximum 10 step 0.1 value 5
+          }
+          Fl_Value_Input arinput {
+            xywh {110 220 40 25} box THIN_DOWN_BOX color 23 maximum 11 step 0.1 value 5
+          }
+          Fl_Value_Input odinput {
+            xywh {160 220 40 25} box THIN_DOWN_BOX color 23 maximum 11 step 0.1 value 5
+          }
+        }
+      }
+      Fl_Progress progress {
+        xywh {10 440 370 10} selection_color 181
+        code0 {progress->maximum(1);}
+        code1 {progress->minimum(0);}
+        code2 {progress->value(0);}
+      }
+    }
+  }
+}
