@@ -1,8 +1,7 @@
 # cosu-trainer
 cosu-trainer is a replacement for [FunOrange's osu-trainer](https://github.com/FunOrange/osu-trainer), but for Linux.
-Unlike the original osu-trainer, cosu-trainer doesn't have GUI (No plan to write one).
 
-You can use all of its features with commands, so you can even put the command in your DE/WM key shortcuts for easy conversion on the fly.
+You can use all of its features with commands, so you can even put the command in your DE/WM key shortcuts for easy conversion on the fly. GUI is also provided within a single executable.
 
 ## Description
 `cosu-trainer` is an actual program, which can speed up/down audio/map, and edit difficulty.
@@ -17,14 +16,22 @@ It's very destructive and experimental, so don't use unless you desperately need
 - Can speed up/down audio/map
 - Supports all modes, but not tested enough tho
 - Emulates DT if either (scaled) AR or OD is over 10
-- Scales AR/OD
+- Scales AR/OD, but you can cap so that it won't scale over the value you put
 - Adds osutrainer tag like osu-trainer
 - Can flip/transpose a map
+- Generates an osz file for easier import
+- An user-defined osz handler can be set for seamless integration with osu!
+- Supports MP3 and [all formats that libsndfile supports](https://libsndfile.github.io/libsndfile/formats.html). (though osu! only accepts ogg and mp3 as rankable formats)
 
 ### Requirements
 - osu! must run on WINE with dotnet 4.5+ for proper memory scanning
 - libmpg123, libmp3lame, libsndfile and libsoundtouch to adjust audio speed
 - libminizip to make an osz file
+- libfltk1.3 for GUI
+
+### DEB/RPM/Arch repository
+My [wine-osu repository](https://build.opensuse.org/project/show/home:hwsnemo:packaged-wine-osu) also provides cosu-trainer.
+You can get it [here](https://software.opensuse.org//download.html?project=home%3Ahwsnemo%3Apackaged-wine-osu&package=cosu-trainer)!
 
 ### How to build
 1. Install header packages of dependencies
@@ -39,11 +46,11 @@ It's very destructive and experimental, so don't use unless you desperately need
 5. Now you can use `./cosu-trainer` (read usage below)
 6. After converting a map with it, press f5 in the game to refresh
 
-### DEB/RPM/Arch repository
-My [wine-osu repository](https://build.opensuse.org/project/show/home:hwsnemo:packaged-wine-osu) also provides cosu-trainer.
-You can get it [here](https://software.opensuse.org//download.html?project=home%3Ahwsnemo%3Apackaged-wine-osu&package=cosu-trainer)!
+### `cosu-trainer` GUI screenshot
+![Screenshot](docs/cosu.png)
+Run `cosu-trainer` with no arguments to launch GUI. You can use below arguments if you don't want GUI.
 
-### `cosu-trainer` usage
+### `cosu-trainer` command usage
 ```
 ./cosu-trainer <filename|auto> <rate|bpm> [a/o/h/c] [p] [x/y/t]
 <> are requirements, [] are optional
@@ -68,5 +75,6 @@ You can also get DEB/RPM of osu-handler [here](https://software.opensuse.org//do
 I package this one, so if there's any problem with it, let me know!
 
 ## Thanks a lot to
+- Thanks a lot to developers of libraries I used in this program!!!
 - [josu-trainer](https://github.com/ngoduyanh/josu-trainer) for basic idea of speeding up the map
 - [gosumemory](https://github.com/l3lackShark/gosumemory) and [ProcessMemoryDataFinder](https://github.com/Piotrekol/ProcessMemoryDataFinder) for memory reading
