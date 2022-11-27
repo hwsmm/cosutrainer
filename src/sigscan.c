@@ -333,10 +333,14 @@ readfail:
 } // may change it to wchar_t since path may contain unicode characters, but i will just use char here for now to keep things simple
 
 volatile int run = 1;
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
 void gotquitsig(int sig)
 {
    run = 0;
 }
+#pragma GCC diagnostic pop
 
 int main()
 {
