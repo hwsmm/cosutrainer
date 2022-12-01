@@ -174,14 +174,20 @@ void CosuWindow::start()
          fr.consumed = true;
          Fl_Image *tempimg = NULL;
          char *bgpath = NULL;
+         bool bgchanged = false;
          if (info->bgname != NULL && (fr.oldinfo == NULL || fr.oldinfo->bgname != NULL))
          {
             unsigned long oldfdlen = fr.oldinfo != NULL ? strrchr(fr.oldinfo->fullpath, '/') - fr.oldinfo->fullpath : 0;
             unsigned long fdlen = strrchr(info->fullpath, '/') - info->fullpath;
 
-            if (fr.oldinfo == NULL || oldfdlen != fdlen || strncmp(fr.oldinfo->fullpath, info->fullpath, oldfdlen > fdlen ? fdlen : oldfdlen) != 0
+            if (fr.oldinfo != NULL && fr.oldinfo->bgname == NULL)
+            {
+               bgchanged = true;
+            }
+            else if (fr.oldinfo == NULL || oldfdlen != fdlen || strncmp(fr.oldinfo->fullpath, info->fullpath, oldfdlen > fdlen ? fdlen : oldfdlen) != 0
                   || strcmp(fr.oldinfo->bgname, info->bgname) != 0)
             {
+               bgchanged = true;
                char *sepa = strrchr(info->fullpath, '/');
                unsigned long newlen = sepa - info->fullpath + 1 + strlen(info->bgname) + 1;
                bgpath = (char*) malloc(newlen);
@@ -196,6 +202,10 @@ void CosuWindow::start()
                   memcpy(bgpath + (sepa - info->fullpath + 1), info->bgname, strlen(info->bgname) + 1);
                }
             }
+         }
+         if (info->bgname == NULL && (fr.oldinfo != NULL && fr.oldinfo->bgname != NULL))
+         {
+            bgchanged = true;
          }
          if (bgpath != NULL)
          {
@@ -250,7 +260,7 @@ void CosuWindow::start()
             img = tempimg;
          }
 
-         if ((bgpath != NULL && tempimg == NULL) || info->bgname == NULL)
+         if ((bgchanged && tempimg == NULL) || info->bgname == NULL)
          {
             cosuui.infobox->image(emptyimg);
             delete img;
