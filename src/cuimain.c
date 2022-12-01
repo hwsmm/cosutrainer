@@ -21,7 +21,11 @@ static void *showprog(void *arg)
    return 0;
 }
 
+#ifdef DISABLE_GUI
+int main(int argc, char *argv[])
+#else
 int cuimain(int argc, char *argv[])
+#endif
 {
    int ret = 0;
    if (argc < 3)
@@ -66,7 +70,12 @@ int cuimain(int argc, char *argv[])
    }
 
    struct mapinfo *mi = read_beatmap(path);
-   if (osumem) free(path);
+   if (osumem) free(path); // no longer needed since mi has fullpath
+   if (mi == NULL)
+   {
+      printerr("Failed reading a map!");
+      return 1;
+   }
    struct editdata edit;
 
    edit.mi = mi;

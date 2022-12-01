@@ -172,26 +172,32 @@ void CosuWindow::start()
       {
          struct mapinfo *info = fr.info;
          fr.consumed = true;
-         bool bgchanged = info->bgname != NULL && (fr.oldinfo == NULL || strcmp(fr.oldinfo->bgname, info->bgname) != 0);
          Fl_Image *tempimg = NULL;
          char *bgpath = NULL;
-         if (bgchanged)
+         if (info->bgname != NULL && (fr.oldinfo == NULL || fr.oldinfo->bgname != NULL))
          {
-            char *sepa = strrchr(info->fullpath, '/');
-            unsigned long newlen = sepa - info->fullpath + 1 + strlen(info->bgname) + 1;
-            bgpath = (char*) malloc(newlen);
-            if (bgpath == NULL)
+            unsigned long oldfdlen = fr.oldinfo != NULL ? strrchr(fr.oldinfo->fullpath, '/') - fr.oldinfo->fullpath : 0;
+            unsigned long fdlen = strrchr(info->fullpath, '/') - info->fullpath;
+
+            if (fr.oldinfo == NULL || oldfdlen != fdlen || strncmp(fr.oldinfo->fullpath, info->fullpath, oldfdlen > fdlen ? fdlen : oldfdlen) != 0
+                  || strcmp(fr.oldinfo->bgname, info->bgname) != 0)
             {
-               printerr("Error while allocating!");
-            }
-            else
-            {
-               memcpy(bgpath, info->fullpath, sepa - info->fullpath);
-               *(bgpath + (sepa - info->fullpath)) = '/';
-               memcpy(bgpath + (sepa - info->fullpath + 1), info->bgname, strlen(info->bgname) + 1);
+               char *sepa = strrchr(info->fullpath, '/');
+               unsigned long newlen = sepa - info->fullpath + 1 + strlen(info->bgname) + 1;
+               bgpath = (char*) malloc(newlen);
+               if (bgpath == NULL)
+               {
+                  printerr("Error while allocating!");
+               }
+               else
+               {
+                  memcpy(bgpath, info->fullpath, sepa - info->fullpath);
+                  *(bgpath + (sepa - info->fullpath)) = '/';
+                  memcpy(bgpath + (sepa - info->fullpath + 1), info->bgname, strlen(info->bgname) + 1);
+               }
             }
          }
-         if (bgchanged && bgpath != NULL)
+         if (bgpath != NULL)
          {
             if (endswith(bgpath, ".png"))
             {
@@ -237,14 +243,14 @@ void CosuWindow::start()
          }
          cosuui.songtitlelabel->label(info->songname);
          cosuui.difflabel->label(info->diffname);
-         if (bgchanged && tempimg != NULL)
+         if (bgpath != NULL && tempimg != NULL)
          {
             cosuui.infobox->image(tempimg);
             delete img;
             img = tempimg;
          }
 
-         if ((bgchanged && tempimg == NULL) || info->bgname == NULL)
+         if ((bgpath != NULL && tempimg == NULL) || info->bgname == NULL)
          {
             cosuui.infobox->image(emptyimg);
             delete img;
