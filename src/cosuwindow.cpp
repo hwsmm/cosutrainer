@@ -180,11 +180,7 @@ void CosuWindow::start()
             unsigned long oldfdlen = fr.oldinfo != NULL ? strrchr(fr.oldinfo->fullpath, '/') - fr.oldinfo->fullpath : 0;
             unsigned long fdlen = strrchr(info->fullpath, '/') - info->fullpath;
 
-            if (fr.oldinfo != NULL && fr.oldinfo->bgname == NULL)
-            {
-               bgchanged = true;
-            }
-            else if (fr.oldinfo == NULL || oldfdlen != fdlen || strncmp(fr.oldinfo->fullpath, info->fullpath, oldfdlen > fdlen ? fdlen : oldfdlen) != 0
+            if (fr.oldinfo == NULL || oldfdlen != fdlen || strncmp(fr.oldinfo->fullpath, info->fullpath, fdlen) != 0
                   || strcmp(fr.oldinfo->bgname, info->bgname) != 0)
             {
                bgchanged = true;
@@ -203,7 +199,8 @@ void CosuWindow::start()
                }
             }
          }
-         if (info->bgname == NULL && (fr.oldinfo != NULL && fr.oldinfo->bgname != NULL))
+         if ((info->bgname == NULL && (fr.oldinfo != NULL && fr.oldinfo->bgname != NULL))
+            || (info->bgname != NULL && (fr.oldinfo != NULL && fr.oldinfo->bgname == NULL)))
          {
             bgchanged = true;
          }
