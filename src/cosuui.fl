@@ -38,11 +38,11 @@ class CosuUI {open
         }
         Fl_Check_Button scale_ar {
           label {Scale AR}
-          xywh {210 260 170 15} down_box DOWN_BOX
+          xywh {210 260 170 15} down_box DOWN_BOX value 1
         }
         Fl_Check_Button scale_od {
           label {Scale OD}
-          xywh {210 290 170 15} down_box DOWN_BOX
+          xywh {210 290 170 15} down_box DOWN_BOX value 1
         }
         Fl_Check_Button pitch {
           label {Adjust Pitch}

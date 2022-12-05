@@ -309,7 +309,9 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
       {
          edited = true;
          tkn(line);
-         snpedit("2,%ld,%ld\r\n", (long) (atol(nexttkn()) / speed), (long) (atol(nexttkn()) / speed));
+         char *start = nexttkn();
+         char *end = nexttkn();
+         snpedit("2,%ld,%ld\r\n", (long) (atol(start) / speed), (long) (atol(end) / speed));
       }
       else if (*line == '0')
       {
@@ -355,7 +357,7 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
 
          snpedit("%d,%d,%ld,%s,%s,%ld", x, y, time, typestr, hitsoundstr, spinnerlen);
 
-         if (*afnul == '\r' || *afnul == '\n')
+         if (*(afnul - 2) == '\r' || *(afnul - 2) == '\n')
          {
             putsstr("\r\n");
          }
@@ -438,10 +440,24 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
    }
    else if (sect == general)
    {
-      if (CMPSTR(line, "AudioFilename") && speed != 1)
+      if (CMPSTR(line, "AudioFilename: ") && speed != 1)
       {
          edited = true;
          snpedit("AudioFilename: %s\r\n", ep->bufs->audname);
+      }
+      else if (CMPSTR(line, "AudioLeadIn: "))
+      {
+         edited = true;
+         char *p = CUTFIRST(line, "AudioLeadIn: ");
+         long time = atol(p) / speed;
+         snpedit("AudioLeadIn: %ld\r\n", time);
+      }
+      else if (CMPSTR(line, "PreviewTime: "))
+      {
+         edited = true;
+         char *p = CUTFIRST(line, "PreviewTime: ");
+         long time = atol(p) / speed;
+         snpedit("PreviewTime: %ld\r\n", time);
       }
    }
    else if (sect == difficulty)
