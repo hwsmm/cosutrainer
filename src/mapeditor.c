@@ -164,7 +164,11 @@ static int loop_map(char *mapfile, int (*func)(char*, void*, enum SECTION), void
       if (sect != unknown)
       {
          ret = (*func)(line, pass, sect);
-         if (ret != 0)
+         if (ret == -20)
+         {
+            // loop again
+         }
+         else if (ret != 0)
          {
             break;
          }
