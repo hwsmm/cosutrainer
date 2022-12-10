@@ -51,8 +51,8 @@ void CosuWindow::resetbtn_callb(Fl_Widget *w, void *data)
    win->cosuui.arlock->clear();
    win->cosuui.odlock->clear();
    win->cosuui.lock->clear();
-   win->cosuui.scale_ar->clear();
-   win->cosuui.scale_od->clear();
+   win->cosuui.scale_ar->set();
+   win->cosuui.scale_od->set();
    win->cosuui.pitch->clear();
    win->cosuui.flipbox->value(0);
    win->fr.consumed = false;
