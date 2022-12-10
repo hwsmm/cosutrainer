@@ -11,6 +11,13 @@
 #define tkn(x) strtok(x, ",")
 #define nexttkn() strtok(NULL, ",")
 
+#define fail_nulltkn(x) \
+if ((x = nexttkn()) == NULL) \
+{ \
+   printerr("Failed parsing!"); \
+   return 1; \
+}
+
 #define allocput(dest, src) \
 do { \
    if (dest != NULL) free(dest); \
@@ -116,7 +123,7 @@ static int loop_map(char *mapfile, int (*func)(char*, void*, enum SECTION), void
    enum SECTION sect = root;
    enum SECTION newsect = root;
    bool file_end = false;
-   while (ret == -20 || fgets(line, current_size, source))
+   while (ret == -20 /*loop again*/ || fgets(line, current_size, source))
    {
       sect = newsect;
       if (!file_end && strchr(line, '\n') == NULL)
@@ -157,11 +164,7 @@ static int loop_map(char *mapfile, int (*func)(char*, void*, enum SECTION), void
       if (sect != unknown)
       {
          ret = (*func)(line, pass, sect);
-         if (ret == -20)
-         {
-            // loop again
-         }
-         else if (ret != 0)
+         if (ret != 0)
          {
             break;
          }
@@ -180,7 +183,8 @@ static int write_mapinfo(char *line, void *vinfo, enum SECTION sect)
    {
       // char *timestr =
       tkn(line);
-      char *beatlengthstr = nexttkn();
+      char *beatlengthstr;
+      fail_nulltkn(beatlengthstr);
       if (*beatlengthstr != '-')
       {
          double bpm = atof(beatlengthstr);
@@ -233,14 +237,24 @@ static int write_mapinfo(char *line, void *vinfo, enum SECTION sect)
       if (CMPSTR(line, "0,0,"))
       {
          char *bgname = CUTFIRST(line, "0,0,");
+         char *endhere = NULL;
          if (*bgname == '\"')
          {
             bgname++;
-            *(strchr(bgname, '\"')) = '\0'; // using " in filename is illegal in NTFS so
+            endhere = strchr(bgname, '\"'); // using " in filename is illegal in NTFS so
          }
          else
          {
-            *(strchr(bgname, ',')) = '\0'; // what if , is escaped? how does osu handle it?
+            endhere = strchr(bgname, ','); // what if , is escaped? how does osu handle it?
+         }
+         if (endhere != NULL)
+         {
+            *endhere = '\0';
+         }
+         else
+         {
+            printerr("Failed parsing background line!");
+            return 1;
          }
          allocput(info->bgname, bgname);
       }
@@ -309,8 +323,10 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
       {
          edited = true;
          tkn(line);
-         char *start = nexttkn();
-         char *end = nexttkn();
+         char *start;
+         fail_nulltkn(start);
+         char *end;
+         fail_nulltkn(end);
          snpedit("2,%ld,%ld\r\n", (long) (atol(start) / speed), (long) (atol(end) / speed));
       }
       else if (*line == '0')
@@ -322,7 +338,7 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
    {
       edited = true;
       long time = atol(tkn(line)) / speed;
-      char *btlenstr = nexttkn();
+      char *btlenstr = nexttkn(); // most likely it won't fail if reading succeeded
       if (*btlenstr != '-')
       {
          snpedit("%ld,%.12lf,", time, atof(btlenstr) / speed);
@@ -336,11 +352,18 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
    else if (sect == hitobjects)
    {
       edited = true;
-      int x = atoi(tkn(line));
-      int y = atoi(nexttkn());
-      long time = atol(nexttkn()) / speed;
+      char *xstr = tkn(line);
+      char *ystr;
+      fail_nulltkn(ystr);
+      char *timestr;
+      fail_nulltkn(timestr);
 
-      char *typestr = nexttkn();
+      int x = atoi(xstr);
+      int y = atoi(ystr);
+      long time = atol(timestr) / speed;
+
+      char *typestr;
+      fail_nulltkn(typestr);
       int type = atoi(typestr);
 
       if (ep->ed->flip == xflip || ep->ed->flip == transpose) x = 512 - x;
@@ -349,8 +372,14 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
       if (type & (1<<3) || type & (1<<7))
       {
          const char spinnertoken[] = { (type & (1<<7)) ? ':' : ',', '\0' };
-         char *hitsoundstr = nexttkn();
+         char *hitsoundstr;
+         fail_nulltkn(hitsoundstr);
          char *spinnerstr = strtok(NULL, spinnertoken);
+         if (spinnerstr == NULL)
+         {
+            printerr("Failed parsing spinner!");
+            return 1;
+         }
          char *afnul = find_null(spinnerstr);
 
          long spinnerlen = atol(spinnerstr) / speed;
@@ -369,8 +398,14 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
       }
       else if (type & (1<<1) && ep->ed->flip != none)
       {
-         char *hitsoundstr = nexttkn();
+         char *hitsoundstr;
+         fail_nulltkn(hitsoundstr);
          char *curvetype = strtok(NULL, "|");
+         if (curvetype == NULL)
+         {
+            printerr("Failed parsing slider!");
+            return 1;
+         }
          char *afnul = find_null(curvetype);
 
          snpedit("%d,%d,%ld,%s,%s,%s|", x, y, time, typestr, hitsoundstr, curvetype);
@@ -562,21 +597,20 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
       }
    }
 
-   if (ret != 0) return ret;
    if (edited && ecur == 0) return 0;
    if (ret == -20)
    {
-      ret = buffers_map_put(ep->bufs, edited ? ep->editline : line, edited ? ecur : strlen(line));
-      if (ret != 0) return ret;
-      else return -20;
+      ret = buffers_map_put(ep->bufs, ep->editline, ecur);
+      if (ret == 0) return -20;
    }
+   if (ret != 0) return ret;
    ret = buffers_map_put(ep->bufs, edited ? ep->editline : line, edited ? ecur : strlen(line));
    return ret;
 }
 
 int edit_beatmap(struct editdata *edit, float *progress)
 {
-   int ret;
+   int ret = 0;
    struct buffers bufs;
    struct editpass ep;
    ep.editsize = 1024;
