@@ -41,6 +41,7 @@ struct editdata // data needed to edit a map
    double speed;
    enum SPEED_MODE bpmmode;
    bool pitch;
+   bool nospinner;
    enum FLIP flip;
 };
 

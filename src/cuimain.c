@@ -139,6 +139,9 @@ int cuimain(int argc, char *argv[])
          case 'a':
             diffv = &(edit.ar);
             break;
+         case 's':
+            edit.nospinner = true;
+            continue;
          default:
             continue;
          }

@@ -54,6 +54,7 @@ void CosuWindow::resetbtn_callb(Fl_Widget *w, void *data)
    win->cosuui.scale_ar->set();
    win->cosuui.scale_od->set();
    win->cosuui.pitch->clear();
+   win->cosuui.nospinner->clear();
    win->cosuui.flipbox->value(0);
    win->fr.consumed = false;
    Fl::awake();
@@ -74,6 +75,7 @@ void CosuWindow::thr_convmap(CosuWindow *win)
    edit.speed = win->cosuui.speedval->value();
    edit.bpmmode = win->cosuui.bpm->value() >= 1 ? bpm : rate;
    edit.pitch = win->cosuui.pitch->value() >= 1;
+   edit.nospinner = win->cosuui.nospinner->value() >= 1;
 
    switch (win->cosuui.flipbox->value())
    {

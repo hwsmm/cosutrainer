@@ -46,6 +46,10 @@ Fl_Window* CosuUI::make_window()
             pitch->down_box(FL_DOWN_BOX);
          } // Fl_Check_Button* pitch
          {
+            nospinner = new Fl_Check_Button(210, 350, 170, 15, "No Spinner");
+            nospinner->down_box(FL_DOWN_BOX);
+         } // Fl_Check_Button* nospinner
+         {
             rate = new Fl_Round_Button(210, 375, 85, 25, "Rate");
             rate->down_box(FL_ROUND_DOWN_BOX);
             rate->value(1);

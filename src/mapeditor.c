@@ -373,7 +373,11 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
       if (ep->ed->flip == xflip || ep->ed->flip == transpose) x = 512 - x;
       if (ep->ed->flip == yflip || ep->ed->flip == transpose) y = 384 - y;
 
-      if (type & (1<<3) || type & (1<<7))
+      if (type & (1<<3) && ep->ed->nospinner)
+      {
+         // do nothing to remove spinner lines
+      }
+      else if (type & (1<<3) || type & (1<<7))
       {
          const char spinnertoken[] = { (type & (1<<7)) ? ':' : ',', '\0' };
          char *hitsoundstr;

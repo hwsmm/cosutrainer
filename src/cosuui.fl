@@ -48,6 +48,10 @@ class CosuUI {open
           label {Adjust Pitch}
           xywh {210 320 170 15} down_box DOWN_BOX
         }
+        Fl_Check_Button nospinner {
+          label {No Spinner}
+          xywh {210 350 170 15} down_box DOWN_BOX
+        }
         Fl_Round_Button rate {
           label Rate
           xywh {210 375 85 25} down_box ROUND_DOWN_BOX value 1
