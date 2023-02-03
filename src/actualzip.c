@@ -5,7 +5,7 @@
 
 int create_actual_zip(char *zipfile, struct buffers *bufs)
 {
-   zipFile zf = zipOpen(zipfile, 0);
+   zipFile zf = zipOpen(zipfile, APPEND_STATUS_ADDINZIP);
    if (zf == NULL)
    {
       printerr("Failed creating a zip file");

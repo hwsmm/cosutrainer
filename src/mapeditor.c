@@ -5,7 +5,6 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <limits.h>
-#include <stdlib.h>
 #include <unistd.h>
 
 #define tkn(x) strtok(x, ",")
@@ -625,6 +624,12 @@ int edit_beatmap(struct editdata *edit, float *progress)
    ep.editline = (char*) malloc(ep.editsize);
    ep.ed = edit;
    ep.bufs = &bufs;
+   
+   if (ep.editline == NULL)
+   {
+      printerr("Failed allocating memory");
+      return -99;
+   }
 
    ep.arexists = edit->mi->arexists;
    ep.tagexists = edit->mi->tagexists;
