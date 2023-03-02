@@ -205,7 +205,7 @@ bool readmemory(struct sigscan_status *st, ptr_type address, void *buffer, size_
 }
 #endif
 
-ptr_type find_pattern(struct sigscan_status *st, const uint8_t bytearray[], const int pattern_size, const bool mask[])
+ptr_type find_pattern(struct sigscan_status *st, const uint8_t bytearray[], const unsigned int pattern_size, const bool mask[])
 {
     char mapsfile[32];
     FILE *maps;
@@ -239,7 +239,12 @@ ptr_type find_pattern(struct sigscan_status *st, const uint8_t bytearray[], cons
         ptr_type startptr = (ptr_type) strtol(startstr, NULL, 16);
         ptr_type endptr = (ptr_type) strtol(endstr, NULL, 16);
 
-        unsigned long size = (unsigned long) endptr - (unsigned long) startptr;
+        unsigned long size = (unsigned long) endptr - (unsigned long) startptr + 1L;
+        
+        if (size < pattern_size)
+        {
+            continue;
+        }
 
         uint8_t *buffer = (uint8_t*) malloc(size);
         if (buffer == NULL)
@@ -255,9 +260,9 @@ ptr_type find_pattern(struct sigscan_status *st, const uint8_t bytearray[], cons
         }
 
         unsigned long i;
-        for (i = 0; i < size - pattern_size; i++)
+        for (i = 0; i < size - pattern_size + 1L; i++)
         {
-            int e;
+            unsigned int e;
             bool match = false;
             for (e = 0; e < pattern_size; e++)
             {

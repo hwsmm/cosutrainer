@@ -1,11 +1,12 @@
 #include <zip.h>
+#include <unistd.h>
 #include <time.h>
 #include "actualzip.h"
 #include "tools.h"
 
 int create_actual_zip(char *zipfile, struct buffers *bufs)
 {
-   zipFile zf = zipOpen(zipfile, APPEND_STATUS_ADDINZIP);
+   zipFile zf = zipOpen(zipfile, access(zipfile, F_OK) == 0 ? APPEND_STATUS_ADDINZIP : 0);
    if (zf == NULL)
    {
       printerr("Failed creating a zip file");
