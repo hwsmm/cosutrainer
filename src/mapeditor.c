@@ -1,11 +1,11 @@
 #include "mapeditor.h"
 #include "tools.h"
+#include "cosuplatform.h"
 #include "audiospeed.h"
 #include "actualzip.h"
 #include <stdlib.h>
-#include <fcntl.h>
 #include <limits.h>
-#include <unistd.h>
+#include <math.h>
 
 #define tkn(x) strtok(x, ",")
 #define nexttkn() strtok(NULL, ",")
@@ -21,7 +21,6 @@ if ((x = nexttkn()) == NULL) \
 do { \
    if (dest != NULL) free(dest); \
    int namelen = strlen(src); \
-   if (namelen <= 0) return -1; \
    dest = (char*) malloc(namelen + 1); \
    if (!dest) return -99; \
    strcpy(dest, src); \
@@ -83,6 +82,7 @@ static double scale_ar(double ar, double speed, int mode)
    return ar_ms >= 1200 ? 15 - ar_ms / 120 : (1200 / 150) - (ar_ms / 150) + 5;
 }
 
+// fix mania od
 static double scale_od(double od, double speed, int mode)
 {
    switch (mode)
@@ -624,15 +624,15 @@ int edit_beatmap(struct editdata *edit, float *progress)
    ep.editline = (char*) malloc(ep.editsize);
    ep.ed = edit;
    ep.bufs = &bufs;
-   
+
    if (ep.editline == NULL)
    {
       printerr("Failed allocating memory");
       return -99;
    }
 
-   ep.arexists = edit->mi->arexists;
-   ep.tagexists = edit->mi->tagexists;
+   ep.arexists   = edit->mi->arexists;
+   ep.tagexists  = edit->mi->tagexists;
    ep.diffexists = edit->mi->diffexists;
 
    buffers_init(&bufs);
@@ -659,9 +659,9 @@ int edit_beatmap(struct editdata *edit, float *progress)
 
    if (edit->scale_ar)
    {
-      float origar = edit->ar < 0 ? edit->ar * (-1) : edit->ar;
+      float origar = fabs(edit->ar);
       float tempar = scale_ar(origar, edit->speed, edit->mi->mode);
-      if (edit->ar < 0)
+      if (edit->ar < 0) // capping
       {
          edit->ar = tempar > origar ? origar : tempar;
       }
@@ -673,9 +673,9 @@ int edit_beatmap(struct editdata *edit, float *progress)
 
    if (edit->scale_od)
    {
-      float origod = edit->od < 0 ? edit->od * (-1) : edit->od;
+      float origod = fabs(edit->od);
       float tempod = scale_ar(origod, edit->speed, edit->mi->mode);
-      if (edit->od < 0)
+      if (edit->od < 0) // capping
       {
          edit->od = tempod > origod ? origod : tempod;
       }
@@ -707,8 +707,8 @@ int edit_beatmap(struct editdata *edit, float *progress)
    bool name_conflict = true;
    char prefix[8] = {0};
 
-   char *fname = strrchr(edit->mi->fullpath, '/');
-   if (fname == NULL) fname = edit->mi->fullpath;
+   char *fname = strrchr(edit->mi->fullpath, PATHSEP);
+   if (fname == NULL) fname = edit->mi->fullpath; // there is no separator, so fullpath itself is a file name
    else fname++;
 
    long mapnlen = 7 + 1 + strlen(fname) + 1;
@@ -743,7 +743,7 @@ int edit_beatmap(struct editdata *edit, float *progress)
 
    long folderlen = 0;
    char *folderpath = NULL;
-   if (fname != edit->mi->fullpath)
+   if (fname != edit->mi->fullpath) // when fullpath has path separators
    {
       folderlen = (long) (fname - edit->mi->fullpath);
       folderpath = (char*) malloc(folderlen);
@@ -769,7 +769,7 @@ int edit_beatmap(struct editdata *edit, float *progress)
          audp = (char*) malloc(audplen);
          if (audp)
          {
-            snprintf(audp, audplen, "%s/%s", folderpath, edit->mi->audioname);
+            snprintf(audp, audplen, "%s" STR_PATHSEP "%s", folderpath, edit->mi->audioname);
          }
          else
          {
@@ -843,7 +843,7 @@ int edit_beatmap(struct editdata *edit, float *progress)
             printerr("Failed allocating!");
             return -99;
          }
-         snprintf(mappath, mapflen, "%s/%s", folderpath, bufs.mapname);
+         snprintf(mappath, mapflen, "%s" STR_PATHSEP "%s", folderpath, bufs.mapname);
 
          if (bufs.audname)
          {
@@ -857,12 +857,12 @@ int edit_beatmap(struct editdata *edit, float *progress)
                printerr("Failed allocating!");
                return -99;
             }
-            snprintf(audpath, audflen, "%s/%s", folderpath, bufs.audname);
+            snprintf(audpath, audflen, "%s" STR_PATHSEP "%s", folderpath, bufs.audname);
          }
       }
 
-      int fd = open(mappath, O_CREAT|O_WRONLY|O_TRUNC, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH);
-      if ((ret = write(fd, bufs.mapbuf, bufs.maplast)) == -1)
+      FILE *mapfd = fopen(mappath, "w");
+      if (mapfd == NULL || fwrite(bufs.mapbuf, 1, bufs.maplast, mapfd) < bufs.maplast)
       {
          printerr("Error writing a map");
       }
@@ -870,15 +870,15 @@ int edit_beatmap(struct editdata *edit, float *progress)
       {
          if (audpath)
          {
-            int fdm = open(audpath, O_CREAT|O_WRONLY|O_TRUNC, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH);
-            if ((ret = write(fdm, bufs.audbuf, bufs.audlast)) == -1)
+            FILE *audfd = fopen(audpath, "w");
+            if (audfd == NULL || fwrite(bufs.audbuf, 1, bufs.audlast, mapfd) < bufs.audlast)
             {
                printerr("Error writing an audio file");
             }
-            close(fdm);
+            fclose(audfd);
          }
       }
-      close(fd);
+      fclose(mapfd);
 
       if (fname != edit->mi->fullpath)
       {
