@@ -1,4 +1,4 @@
-#define OSUMEM_PREAD
+//#define OSUMEM_PREAD
 
 #ifndef OSUMEM_PREAD
 #ifndef _GNU_SOURCE
@@ -7,17 +7,12 @@
 #include <sys/uio.h>
 #endif
 
-#include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <stdlib.h>
-#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 #include <dirent.h>
-#include <errno.h>
-#include <stdbool.h>
-#include <pwd.h>
 #include <signal.h>
 
 #define CMPSTR(x, y) (strncmp(x, y, sizeof((y)) - 1) == 0)
@@ -157,7 +152,7 @@ bool readmemory(struct sigscan_status *st, ptr_type address, void *buffer, size_
     remote.iov_base = (void*) address;
     remote.iov_len = len;
 
-    if (process_vm_readv(st->osu, &local, 1, &remote, 1, 0) != len)
+    if (process_vm_readv(st->osu, &local, 1, &remote, 1, 0) == -1)
     {
         perror(NULL);
         return false;
@@ -176,6 +171,8 @@ int init_memread(struct sigscan_status *st)
     if (fd == -1)
     {
         perror(procmem);
+        st->status = -1;
+        st->osu = -1;
         return -3;
     }
 
@@ -240,7 +237,7 @@ ptr_type find_pattern(struct sigscan_status *st, const uint8_t bytearray[], cons
         ptr_type endptr = (ptr_type) strtol(endstr, NULL, 16);
 
         unsigned long size = (unsigned long) endptr - (unsigned long) startptr + 1L;
-        
+
         if (size < pattern_size)
         {
             continue;
@@ -263,24 +260,13 @@ ptr_type find_pattern(struct sigscan_status *st, const uint8_t bytearray[], cons
         for (i = 0; i < size - pattern_size + 1L; i++)
         {
             unsigned int e;
-            bool match = false;
+            bool match = true;
             for (e = 0; e < pattern_size; e++)
             {
-                if (*(buffer + i + e) != bytearray[e])
+                if (*(buffer + i + e) != bytearray[e] && (mask == NULL || mask[e] != true))
                 {
-                    if (mask != NULL && mask[e] == true)
-                    {
-                        match = true;
-                    }
-                    else
-                    {
-                        match = false;
-                        break;
-                    }
-                }
-                else
-                {
-                    match = true;
+                    match = false;
+                    break;
                 }
             }
             if (match)
