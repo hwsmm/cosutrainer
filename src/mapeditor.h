@@ -45,7 +45,7 @@ struct editdata // data needed to edit a map
    enum FLIP flip;
 };
 
-struct editpass // temporary data that's only needed in editing
+struct editpass // temporary data that's only needed in editing (only passed within edit_beatmap)
 {
    unsigned int editsize;
    char *editline;

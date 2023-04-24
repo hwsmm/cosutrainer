@@ -45,4 +45,4 @@ bool stop_memread(struct sigscan_status *st);
 void find_and_set_osu(struct sigscan_status *st);
 bool is_osu_alive(struct sigscan_status *st);
 bool readmemory(struct sigscan_status *st, ptr_type address, void *buffer, unsigned long len);
-ptr_type find_pattern(struct sigscan_status *st, const uint8_t bytearray[], const unsigned int pattern_size, const bool mask[]);
+ptr_type find_pattern(struct sigscan_status *st, const uint8_t bytearray[], unsigned int pattern_size, const bool mask[]);
