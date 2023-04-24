@@ -1,5 +1,6 @@
 #include "freader.h"
 #include "tools.h"
+#include "cosuplatform.h"
 #include <unistd.h>
 #include <FL/Fl.H>
 

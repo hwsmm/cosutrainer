@@ -7,6 +7,7 @@
 #include "mapeditor.h"
 #include "tools.h"
 #include "cuimain.h"
+#include "cosuplatform.h"
 
 static void *showprog(void *arg)
 {

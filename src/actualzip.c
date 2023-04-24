@@ -1,8 +1,8 @@
 #include <zip.h>
-#include <unistd.h>
 #include <time.h>
 #include "actualzip.h"
 #include "tools.h"
+#include "cosuplatform.h"
 
 int create_actual_zip(char *zipfile, struct buffers *bufs)
 {
