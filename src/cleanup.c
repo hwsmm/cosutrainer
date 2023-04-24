@@ -10,7 +10,7 @@
 int main(int argc, char *argv[])
 {
    char *mainfd = NULL;
-   if (argc > 2)
+   if (argc >= 2)
    {
       mainfd = argv[1];
    }
