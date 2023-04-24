@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include "tools.h"
+#include "cosuplatform.h"
 
 int fork_launch(char* cmd)
 {
