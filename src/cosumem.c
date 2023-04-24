@@ -5,6 +5,7 @@
 #include <fcntl.h>
 #include <string.h>
 #include <signal.h>
+#include <ctype.h>
 #include "cosumem.h"
 #include "tools.h"
 
@@ -14,7 +15,25 @@ struct sigscan_status st = { -1, -1, -1 };
 struct sigscan_status st = { -1, -1 };
 #endif
 
-void* match_pattern()
+static uint16_t *trim(uint16_t *str, int *res_size)
+{
+    uint16_t *end = str + *res_size;
+    while (isspace(*str) && *str != '\0')
+    {
+        str++;
+        (*res_size)--;
+    }
+
+    while (isspace(*(--end)) && end >= str)
+    {
+        (*res_size)--;
+    }
+    *(end + 1) = '\0';
+
+    return str;
+}
+
+ptr_type match_pattern()
 {
     // "F8 01 74 04 83 65"
     const uint8_t basepattern[] = { 0xf8, 0x01, 0x74, 0x04, 0x83, 0x65 };
@@ -66,38 +85,52 @@ char *get_mappath(ptr_type base_address, unsigned int *length)
     if (!readmemory(&st, ptr_add(path_ptr, 4), &pathsize, 4))
         return NULL;
 
+    uint16_t *folderstrbuf = (uint16_t*) malloc((foldersize + 1) * 2);
+    uint16_t *pathstrbuf = (uint16_t*) malloc((pathsize + 1) * 2);
+
+    if (!folderstrbuf || !pathstrbuf)
+        goto readfail;
+
+    if (!readmemory(&st, ptr_add(folder_ptr, 8), folderstrbuf, foldersize * 2))
+        goto readfail;
+
+    *(folderstrbuf+foldersize) = '\0';
+    uint16_t *trim_fdstr = trim(folderstrbuf, &foldersize);
+
+    if (!readmemory(&st, ptr_add(path_ptr, 8), pathstrbuf, pathsize * 2))
+        goto readfail;
+
+    *(pathstrbuf+pathsize) = '\0';
+    uint16_t *trim_pstr = trim(pathstrbuf, &pathsize);
+
     int size = foldersize + 1 + pathsize + 1; // / , \0
-    uint16_t *buf = (uint16_t*) malloc(size * 2);
     char *songpath = (char*) malloc(size);
 
-    if (!buf || !songpath)
-        goto readfail;
-
-    if (!readmemory(&st, ptr_add(folder_ptr, 8), buf, foldersize * 2))
-        goto readfail;
-
-    buf[foldersize] = '/';
-
-    if (!readmemory(&st, ptr_add(path_ptr, 8), buf + foldersize + 1, pathsize * 2))
-        goto readfail;
+    if (!songpath) goto readfail;
 
     int i;
     for (i = 0; i < size - 1; i++)
     {
-        if (*(buf+i) > 127) goto readfail;
+        uint16_t put;
+        if (i < foldersize) put = *(trim_fdstr + i);
+        else if (i == foldersize) put = '/';
+        else put = *(trim_pstr + (i - foldersize - 1));
 
-        if (*(buf+i) == '\\') *(songpath+i) = '/'; // workaround: some installation put \ in song folder
-        else *(songpath+i) = *(buf+i);
+        if (put > 127) goto readfail;
+
+        if (put == '\\') *(songpath+i) = '/'; // workaround: some installation put \ in song folder
+        else *(songpath+i) = put;
     }
 
     *(songpath+i) = '\0';
-    free(buf);
+    free(folderstrbuf);
+    free(pathstrbuf);
     *length = size;
     return songpath;
 
 readfail:
-    free(songpath);
-    free(buf);
+    free(folderstrbuf);
+    free(pathstrbuf);
     return NULL;
 } // may change it to wchar_t since path may contain unicode characters, but i will just use char here for now to keep things simple
 
