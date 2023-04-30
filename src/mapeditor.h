@@ -4,58 +4,58 @@
 
 enum SECTION
 {
-   root, header, empty, general, editor, metadata, difficulty, events, timingpoints, colours, hitobjects, unknown
+    root, header, empty, general, editor, metadata, difficulty, events, timingpoints, colours, hitobjects, unknown
 };
 
 enum FLIP
 {
-   none, xflip, yflip, transpose
+    none, xflip, yflip, transpose
 };
 
 enum SPEED_MODE
 {
-   bpm, rate, guess
+    bpm, rate, guess
 };
 
 struct mapinfo
 {
-   char *fullpath; // should be absolute path if it's returned from read_beatmap
-   char *audioname, *songname, *diffname, *bgname;
+    char *fullpath; // should be absolute path if it's returned from read_beatmap
+    char *audioname, *songname, *diffname, *bgname;
 
-   double maxbpm, minbpm;
-   float hp, cs, ar, od;
+    double maxbpm, minbpm;
+    float hp, cs, ar, od;
 
-   int mode;
-   bool arexists;
-   bool tagexists;
-   bool diffexists;
+    int mode;
+    bool arexists;
+    bool tagexists;
+    bool diffexists;
 };
 
 struct editdata // data needed to edit a map
 {
-   const struct mapinfo *mi;
-   float hp, cs, ar, od;
-   bool scale_ar, scale_od;
-   bool makezip;
+    const struct mapinfo *mi;
+    float hp, cs, ar, od;
+    bool scale_ar, scale_od;
+    bool makezip;
 
-   double speed;
-   enum SPEED_MODE bpmmode;
-   bool pitch;
-   bool nospinner;
-   enum FLIP flip;
+    double speed;
+    enum SPEED_MODE bpmmode;
+    bool pitch;
+    bool nospinner;
+    enum FLIP flip;
 };
 
 struct editpass // temporary data that's only needed in editing (only passed within edit_beatmap)
 {
-   unsigned int editsize;
-   char *editline;
-   bool emuldt;
-   bool arexists;
-   bool tagexists;
-   bool diffexists;
+    unsigned int editsize;
+    char *editline;
+    bool emuldt;
+    bool arexists;
+    bool tagexists;
+    bool diffexists;
 
-   struct buffers *bufs;
-   struct editdata *ed;
+    struct buffers *bufs;
+    struct editdata *ed;
 };
 
 #ifdef __cplusplus

@@ -14,20 +14,20 @@ extern "C"
 
 struct buffers
 {
-   char *mapbuf;
-   char *audbuf;
+    char *mapbuf;
+    char *audbuf;
 
-   size_t mapsize;
-   size_t audsize;
+    size_t mapsize;
+    size_t audsize;
 
-   unsigned long mapcur;
-   unsigned long audcur;
+    unsigned long mapcur;
+    unsigned long audcur;
 
-   unsigned long maplast;
-   unsigned long audlast;
+    unsigned long maplast;
+    unsigned long audlast;
 
-   char *mapname;
-   char *audname;
+    char *mapname;
+    char *audname;
 };
 
 int buffers_init(struct buffers *bufs);
