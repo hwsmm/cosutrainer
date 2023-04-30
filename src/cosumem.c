@@ -6,14 +6,10 @@
 #include <string.h>
 #include <signal.h>
 #include <ctype.h>
+#include <sys/stat.h>
 #include "cosumem.h"
 #include "tools.h"
-
-#ifdef OSUMEM_PREAD
-struct sigscan_status st = { -1, -1, -1 };
-#else
-struct sigscan_status st = { -1, -1 };
-#endif
+#include "cosuplatform.h"
 
 static uint16_t *trim(uint16_t *str, int *res_size)
 {
@@ -33,39 +29,72 @@ static uint16_t *trim(uint16_t *str, int *res_size)
     return str;
 }
 
-ptr_type match_pattern()
+char *get_songsfolder(struct sigscan_status *st)
+{
+    // const uint8_t settingspattern[] = { 0x83, 0xE0, 0x20, 0x85, 0xC0, 0x7E, 0x2F };
+
+    char *expath = get_rootpath(st);
+
+    int pathsize = strlen(expath) + 1 + 5 + 1;
+    char *songspath = (char*) malloc(pathsize); // "/Songs"
+    // i could simply realloc expath and strcat at the end of it
+    snprintf(songspath, pathsize, "%s" STR_PATHSEP "Songs", expath);
+    free(expath);
+
+    printf("SF: %s\n", songspath);
+    struct stat stt;
+    if (stat(songspath, &stt) != 0)
+    {
+        perror("Song folder");
+        free(songspath);
+        return NULL;
+    }
+
+    if (stt.st_mode & S_IFDIR)
+    {
+        return songspath;
+    }
+    else
+    {
+        printerr("Couldn't find the song folder! Set OSU_SONG_FOLDER");
+        free(songspath);
+        return NULL;
+    }
+}
+
+ptr_type match_pattern(struct sigscan_status *st)
 {
     // "F8 01 74 04 83 65"
     const uint8_t basepattern[] = { 0xf8, 0x01, 0x74, 0x04, 0x83, 0x65 };
-    return find_pattern(&st, basepattern, 6, NULL);
+    return find_pattern(st, basepattern, 6, NULL);
 }
 
-ptr_type get_beatmap_ptr(ptr_type base_address)
+ptr_type get_beatmap_ptr(struct sigscan_status *st, ptr_type base_address)
 {
     ptr_type beatmap_2ptr = PTR_NULL;
     ptr_type beatmap_ptr = PTR_NULL;
 
-    if (!readmemory(&st, ptr_add(base_address, -0xC), &beatmap_2ptr, PTR_SIZE))
+    if (!readmemory(st, ptr_add(base_address, -0xC), &beatmap_2ptr, PTR_SIZE))
         return PTR_NULL;
 
-    if (!readmemory(&st, beatmap_2ptr, &beatmap_ptr, PTR_SIZE))
+    if (!readmemory(st, beatmap_2ptr, &beatmap_ptr, PTR_SIZE))
         return PTR_NULL;
 
     return beatmap_ptr;
 }
 
-int get_mapid(ptr_type base_address)
+int get_mapid(struct sigscan_status *st, ptr_type base_address)
 {
     int id = 0;
-    if (!readmemory(&st, ptr_add(get_beatmap_ptr(base_address), 0xCC), &id, 4))
+    if (!readmemory(st, ptr_add(get_beatmap_ptr(st, base_address), 0xCC), &id, 4))
         return -1;
 
     return id;
 }
 
-char *get_mappath(ptr_type base_address, unsigned int *length)
+char *get_mappath(struct sigscan_status *st, ptr_type base_address, unsigned int *length)
 {
-    ptr_type beatmap_ptr = get_beatmap_ptr(base_address);
+    ptr_type beatmap_ptr = get_beatmap_ptr(st, base_address);
     if (beatmap_ptr == PTR_NULL) return PTR_NULL;
 
     ptr_type folder_ptr = PTR_NULL;
@@ -73,16 +102,16 @@ char *get_mappath(ptr_type base_address, unsigned int *length)
     int foldersize = 0;
     int pathsize = 0;
 
-    if (!readmemory(&st, ptr_add(beatmap_ptr, 0x78), &folder_ptr, PTR_SIZE))
+    if (!readmemory(st, ptr_add(beatmap_ptr, 0x78), &folder_ptr, PTR_SIZE))
         return NULL;
 
-    if (!readmemory(&st, ptr_add(folder_ptr, 4), &foldersize, 4))
+    if (!readmemory(st, ptr_add(folder_ptr, 4), &foldersize, 4))
         return NULL;
 
-    if (!readmemory(&st, ptr_add(beatmap_ptr, 0x94), &path_ptr, PTR_SIZE))
+    if (!readmemory(st, ptr_add(beatmap_ptr, 0x94), &path_ptr, PTR_SIZE))
         return NULL;
 
-    if (!readmemory(&st, ptr_add(path_ptr, 4), &pathsize, 4))
+    if (!readmemory(st, ptr_add(path_ptr, 4), &pathsize, 4))
         return NULL;
 
     uint16_t *folderstrbuf = (uint16_t*) malloc((foldersize + 1) * 2);
@@ -91,20 +120,24 @@ char *get_mappath(ptr_type base_address, unsigned int *length)
     if (!folderstrbuf || !pathstrbuf)
         goto readfail;
 
-    if (!readmemory(&st, ptr_add(folder_ptr, 8), folderstrbuf, foldersize * 2))
+    if (!readmemory(st, ptr_add(folder_ptr, 8), folderstrbuf, foldersize * 2))
         goto readfail;
 
     *(folderstrbuf+foldersize) = '\0';
-    uint16_t *trim_fdstr = trim(folderstrbuf, &foldersize);
+    uint16_t *trim_fdstr;
+    trim_fdstr = trim(folderstrbuf, &foldersize);
 
-    if (!readmemory(&st, ptr_add(path_ptr, 8), pathstrbuf, pathsize * 2))
+    if (!readmemory(st, ptr_add(path_ptr, 8), pathstrbuf, pathsize * 2))
         goto readfail;
 
     *(pathstrbuf+pathsize) = '\0';
-    uint16_t *trim_pstr = trim(pathstrbuf, &pathsize);
+    uint16_t *trim_pstr;
+    trim_pstr = trim(pathstrbuf, &pathsize);
 
-    int size = foldersize + 1 + pathsize + 1; // / , \0
-    char *songpath = (char*) malloc(size);
+    int size;
+    size = foldersize + 1 + pathsize + 1; // / , \0
+    char *songpath;
+    songpath = (char*) malloc(size);
 
     if (!songpath) goto readfail;
 
@@ -144,8 +177,11 @@ void gotquitsig(int sig)
 }
 #pragma GCC diagnostic pop
 
+#ifndef WIN32
 int main()
 {
+    struct sigscan_status st;
+    init_sigstatus(&st);
     setbuf(stdout, NULL);
     ptr_type base = NULL;
 
@@ -204,7 +240,7 @@ int main()
             if (base == NULL)
             {
                 puts("starting to scan memory...");
-                base = match_pattern();
+                base = match_pattern(&st);
                 if (base != NULL)
                 {
                     puts("scan succeeded. you can now use 'auto' option");
@@ -218,7 +254,7 @@ int main()
                 }
             }
 
-            songpath = get_mappath(base, &len);
+            songpath = get_mappath(&st, base, &len);
             if (songpath != NULL)
             {
                 if (oldpath != NULL && strcmp(songpath, oldpath) == 0)
@@ -263,7 +299,9 @@ contin:
     }
     unlink("/tmp/osu_path");
     free(oldpath);
+    free(songpath);
     stop_memread(&st);
     close(fd);
     return 0;
 }
+#endif

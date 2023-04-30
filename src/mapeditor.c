@@ -271,7 +271,7 @@ struct mapinfo *read_beatmap(char *mapfile)
    int ret = loop_map(mapfile, &write_mapinfo, info);
    if (ret == 0)
    {
-      info->fullpath = realpath(mapfile, NULL);
+      info->fullpath = get_realpath(mapfile);
       if (info->fullpath == NULL)
       {
          perror(mapfile);
@@ -871,7 +871,7 @@ int edit_beatmap(struct editdata *edit, float *progress)
          if (audpath)
          {
             FILE *audfd = fopen(audpath, "w");
-            if (audfd == NULL || fwrite(bufs.audbuf, 1, bufs.audlast, mapfd) < bufs.audlast)
+            if (audfd == NULL || fwrite(bufs.audbuf, 1, bufs.audlast, audfd) < bufs.audlast)
             {
                printerr("Error writing an audio file");
             }

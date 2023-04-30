@@ -1,6 +1,10 @@
 #pragma once
 #include "cosuui.h"
+#ifdef WIN32
+#include "freader_win.h"
+#else
 #include "freader.h"
+#endif
 
 class CosuWindow
 {

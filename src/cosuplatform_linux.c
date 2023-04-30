@@ -1,8 +1,8 @@
+#include "tools.h"
+#include "cosuplatform.h"
 #include <unistd.h>
 #include <stdlib.h>
 #include <fcntl.h>
-#include "tools.h"
-#include "cosuplatform.h"
 
 int fork_launch(char* cmd)
 {
@@ -56,4 +56,9 @@ char *read_file(const char *file, int *size)
    if (size != NULL) *size = curpoint;
    close(fd);
    return buf;
+}
+
+char *get_realpath(const char *path)
+{
+   return realpath(path, NULL);
 }

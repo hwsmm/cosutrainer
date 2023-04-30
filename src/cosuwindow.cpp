@@ -1,6 +1,7 @@
 #include "cosuwindow.h"
 #include "tools.h"
 #include "mapeditor.h"
+#include "cosuplatform.h"
 #include <stdio.h>
 #include <unistd.h>
 #include <thread>
@@ -179,14 +180,14 @@ void CosuWindow::start()
          bool bgchanged = false;
          if (info->bgname != NULL && (fr.oldinfo == NULL || fr.oldinfo->bgname != NULL))
          {
-            unsigned long oldfdlen = fr.oldinfo != NULL ? strrchr(fr.oldinfo->fullpath, '/') - fr.oldinfo->fullpath : 0;
-            unsigned long fdlen = strrchr(info->fullpath, '/') - info->fullpath;
+            unsigned long oldfdlen = fr.oldinfo != NULL ? strrchr(fr.oldinfo->fullpath, PATHSEP) - fr.oldinfo->fullpath : 0;
+            unsigned long fdlen = strrchr(info->fullpath, PATHSEP) - info->fullpath;
 
             if (fr.oldinfo == NULL || oldfdlen != fdlen || strncmp(fr.oldinfo->fullpath, info->fullpath, fdlen) != 0
                   || strcmp(fr.oldinfo->bgname, info->bgname) != 0)
             {
                bgchanged = true;
-               char *sepa = strrchr(info->fullpath, '/');
+               char *sepa = strrchr(info->fullpath, PATHSEP);
                unsigned long newlen = sepa - info->fullpath + 1 + strlen(info->bgname) + 1;
                bgpath = (char*) malloc(newlen);
                if (bgpath == NULL)
@@ -196,7 +197,7 @@ void CosuWindow::start()
                else
                {
                   memcpy(bgpath, info->fullpath, sepa - info->fullpath);
-                  *(bgpath + (sepa - info->fullpath)) = '/';
+                  *(bgpath + (sepa - info->fullpath)) = PATHSEP;
                   memcpy(bgpath + (sepa - info->fullpath + 1), info->bgname, strlen(info->bgname) + 1);
                }
             }
