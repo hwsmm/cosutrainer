@@ -19,6 +19,6 @@ deps = [
   meson.get_compiler('cpp').find_library('fltk')
 ]
 
-executable('cosu-trainer', mainfiles, dependencies : deps, include_directories : inc_dir)
-executable('osumem', memfiles, include_directories : inc_dir)
-executable('cosu-cleanup', cleanfiles, include_directories : inc_dir)
+executable('cosu-trainer', mainfiles, dependencies : deps, include_directories : inc_dir, install : true)
+executable('osumem', memfiles, include_directories : inc_dir, install : true)
+executable('cosu-cleanup', cleanfiles, include_directories : inc_dir, install : true)
