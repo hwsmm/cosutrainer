@@ -12,5 +12,15 @@
 #define STR_PATHSEP "/"
 #endif
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 int fork_launch(char* cmd);
 char *read_file(const char *file, int *size);
+char *get_realpath(const char *path);
+
+#ifdef __cplusplus
+}
+#endif
