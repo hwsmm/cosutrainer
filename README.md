@@ -1,5 +1,5 @@
 # cosu-trainer
-cosu-trainer is a replacement for [FunOrange's osu-trainer](https://github.com/FunOrange/osu-trainer), but for Linux.
+cosu-trainer is a replacement for [FunOrange's osu-trainer](https://github.com/FunOrange/osu-trainer), but for Linux (and experimental support for Windows)
 
 You can use all of its features with commands, so you can even put the command in your DE/WM key shortcuts for easy conversion on the fly. GUI is also provided within a single executable.
 
@@ -79,3 +79,20 @@ I package this one, so if there's any problem with it, let me know!
 - Thanks a lot to developers of libraries I used in this program!!!
 - [josu-trainer](https://github.com/ngoduyanh/josu-trainer) for basic idea of speeding up the map
 - [gosumemory](https://github.com/l3lackShark/gosumemory) and [ProcessMemoryDataFinder](https://github.com/Piotrekol/ProcessMemoryDataFinder) for memory reading
+
+### Experimental Windows support
+Things mostly work as long as you don't have any non-ANSI characters (include CJK characters) in your osu! Songs path. You can use [MSYS2](https://msys2.org).
+Install MinGW GCC and all dependencies through their package manager and use a following command in `src` to compile cosu-trainer.
+```
+x86_64-w64-mingw32-g++ `fltk-config --use-images --cxxflags` \
+cosuui.cpp cosuwindow.cpp  cuimain.c main.cpp tools.c mapeditor.c actualzip.c audiospeed.cpp buffers.c cosumem.c \
+freader_win.cpp wsigscan.c cosuplatform_win.c \
+-o ../cosu-trainer `fltk-config --use-images --ldflags` \
+-lpthread -lmpg123 -lmp3lame -lminizip -lSoundTouch -lsndfile -lwtsapi32 -DWIN32
+```
+
+**Some limitations**
+- non-ANSI characters in path don't work at all
+- Its implementation and code is not really good. I need to work on it, but got no motivation...
+- cosu-trainer will stuck if it was already on before osu!, so turn on osu! before cosu-trainer, and get into song select, else you will need to kill cosu-trainer through Task Manager.
+- cosu-trainer may become unresponsive while converting a map, just wait for a bit, and you will have a converted map.

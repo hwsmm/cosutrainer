@@ -51,7 +51,7 @@ int change_mp3_speed(const char* source, struct buffers *bufs, double speed, boo
         goto cleanup;
     }
 
-    mpg123_param(mh, MPG123_ADD_FLAGS, /*MPG123_FORCE_FLOAT|*/MPG123_GAPLESS, 0.);
+    mpg123_param(mh, MPG123_ADD_FLAGS, MPG123_FORCE_FLOAT|MPG123_GAPLESS, 0.);
 
     if (mpg123_open(mh, source) != MPG123_OK || mpg123_getformat(mh, &rate, &channels, &encoding) != MPG123_OK)
     {
