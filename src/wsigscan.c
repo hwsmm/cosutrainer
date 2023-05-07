@@ -104,6 +104,8 @@ ptr_type find_pattern(struct sigscan_status *st, const uint8_t bytearray[], unsi
     MEMORY_BASIC_INFORMATION info;
     LPVOID curaddr = NULL;
     LPVOID result = NULL;
+    uint8_t *buffer = NULL;
+    SIZE_T cursize = 0;
 
     // check first if we can get memory map from the process
     if (VirtualQueryEx(st->osuproc, curaddr, &info, sizeof(info)) == 0)
@@ -111,20 +113,33 @@ ptr_type find_pattern(struct sigscan_status *st, const uint8_t bytearray[], unsi
         fprintf(stderr, "Failed getting virtual memory map: %lu\n", GetLastError());
         return PTR_NULL;
     }
+    buffer = (uint8_t*) malloc(info.RegionSize);
+    if (buffer == NULL)
+    {
+        fputs("Failed allocating memory while initializing buffer while looking for a pattern\n", stderr);
+        return PTR_NULL;
+    }
+    cursize = info.RegionSize;
 
     do
     {
         if (result != NULL) break;
 
-        // if ((info.State & 0x1000) == 0 || (info.Protect & 0x100) != 0) continue;
+        curaddr = ptr_add(info.BaseAddress, info.RegionSize);
+        if ((info.State & 0x1000) == 0 || (info.Protect & 0x100) != 0) continue;
 
         if (info.RegionSize < pattern_size) continue;
-
-        uint8_t *buffer = (uint8_t*) malloc(info.RegionSize);
-        if (buffer == NULL)
+        if (info.RegionSize > cursize)
         {
-            fputs("Failed allocating memory while looking for a pattern\n", stderr);
-            continue;
+            // didn't use realloc since i don't need to retain data from old buffer
+            free(buffer);
+            buffer = (uint8_t*) malloc(info.RegionSize);
+            if (buffer == NULL)
+            {
+                fputs("Failed allocating a new buffer\n", stderr);
+                return PTR_NULL;
+            }
+            cursize = info.RegionSize;
         }
         if (ReadProcessMemory(st->osuproc, info.BaseAddress, buffer, info.RegionSize, NULL))
         {
@@ -141,30 +156,28 @@ ptr_type find_pattern(struct sigscan_status *st, const uint8_t bytearray[], unsi
                 }
                 if (match)
                 {
-                    fputs("Found\n", stderr);
                     result = ptr_add(info.BaseAddress, i);
                     break;
                 }
             }
         }
-        curaddr = ptr_add(info.BaseAddress, info.RegionSize);
-        free(buffer);
     }
     while (VirtualQueryEx(st->osuproc, curaddr, &info, sizeof(info)) == sizeof(info));
+    free(buffer);
 
     return (ptr_type) result;
 }
 
-char *get_rootpath(struct sigscan_status *st)
+wchar_t *get_rootpath(struct sigscan_status *st)
 {
-    LPTSTR pathbuf = (LPTSTR) calloc(MAX_PATH, sizeof(TCHAR));
+    LPWSTR pathbuf = (LPWSTR) calloc(MAX_PATH, sizeof(WCHAR));
     if (pathbuf == NULL)
     {
         fputs("Failed allocating memory for process path!\n", stderr);
         return NULL;
     }
 
-    DWORD err = GetModuleFileNameEx(st->osuproc, NULL, pathbuf, MAX_PATH);
+    DWORD err = GetModuleFileNameExW(st->osuproc, NULL, pathbuf, MAX_PATH);
     if (err >= MAX_PATH)
     {
         fputs("Windows may have truncated file path!\n", stderr);
@@ -175,7 +188,7 @@ char *get_rootpath(struct sigscan_status *st)
         return NULL;
     }
 
-    LPTSTR findslash = pathbuf + _tcslen(pathbuf);
+    LPWSTR findslash = pathbuf + wcslen(pathbuf);
     while (*--findslash)
     {
         if (*findslash == '\\')
@@ -186,29 +199,7 @@ char *get_rootpath(struct sigscan_status *st)
         err--;
     }
 
-#ifdef _UNICODE // just convert them into char
-    char *apath = (char*) malloc(err);
-    if (apath == NULL)
-    {
-        fputs("Failed allocating memory!\n", stderr);
-        return NULL;
-    }
-    for (DWORD i = 0; i < err; i++)
-    {
-        if (*(pathbuf + i) > 127)
-        {
-            fputs("There is an unsupported character in the process path!\n", stderr);
-            free(apath);
-            apath = NULL;
-            break;
-        }
-        *(apath + i) = *(pathbuf + i);
-    } // check if err includes null-terminator
-    free(pathbuf);
-    return apath;
-#else
-    LPTSTR real = (LPTSTR) realloc(pathbuf, sizeof(TCHAR) * err);
-    if (real == NULL) return (char*) pathbuf;
-    else return (char*) real;
-#endif
+    LPWSTR real = (LPWSTR) realloc(pathbuf, sizeof(WCHAR) * (wcslen(pathbuf) + 1));
+    if (real == NULL) return pathbuf;
+    else return real;
 }

@@ -12,16 +12,38 @@ char *read_file(const char *file, int *size)
     return NULL; // stub;
 }
 
-char *get_realpath(const char *path) // mostly duplicate of get_rootpath in wsigscan
+wchar_t *get_realpath(const char *path)
 {
-    LPTSTR pathbuf = (LPTSTR) calloc(MAX_PATH, sizeof(TCHAR));
+    LPWSTR pathbuf = (LPWSTR) calloc(MAX_PATH, sizeof(WCHAR));
     if (pathbuf == NULL)
     {
         fputs("Failed allocating memory for path!\n", stderr);
         return NULL;
     }
 
-    DWORD err = GetFullPathName(path, MAX_PATH, pathbuf, NULL);
+    int wcnum = MultiByteToWideChar(CP_UTF8, 0, path, -1, NULL, 0);
+    if (wcnum == 0)
+    {
+        fputs("Failed converting!\n", stderr);
+        free(pathbuf);
+        return NULL;
+    }
+    LPWSTR wcbuf = (LPWSTR) calloc(wcnum, sizeof(WCHAR));
+    if (wcbuf == NULL)
+    {
+        fputs("Failed allocating memory for path!\n", stderr);
+        free(pathbuf);
+        return NULL;
+    }
+
+    if (MultiByteToWideChar(CP_UTF8, 0, path, -1, wcbuf, wcnum) == 0)
+    {
+        fputs("Failed converting!\n", stderr);
+        free(pathbuf);
+        return NULL;
+    }
+
+    DWORD err = GetFullPathNameW(wcbuf, MAX_PATH, pathbuf, NULL);
     if (err >= MAX_PATH)
     {
         fputs("Windows may have truncated file path!\n", stderr);
@@ -29,34 +51,15 @@ char *get_realpath(const char *path) // mostly duplicate of get_rootpath in wsig
     else if (err == 0)
     {
         fprintf(stderr, "Failed getting process path: %lu\n", GetLastError());
+        free(wcbuf);
+        free(pathbuf);
         return NULL;
     }
+    free(wcbuf);
 
-    err++; // add a null terminator
+    *(pathbuf + err) = '\0';
 
-#ifdef _UNICODE // just convert them into char
-    char *apath = (char*) malloc(err);
-    if (apath == NULL)
-    {
-        fputs("Failed allocating memory!\n", stderr);
-        return NULL;
-    }
-    for (DWORD i = 0; i < err; i++)
-    {
-        if (*(pathbuf + i) > 127)
-        {
-            fputs("There is an unsupported character in the path!\n", stderr);
-            free(apath);
-            apath = NULL;
-            break;
-        }
-        *(apath + i) = *(pathbuf + i);
-    } // check if err includes null-terminator
-    free(pathbuf);
-    return apath;
-#else
-    LPTSTR real = (LPTSTR) realloc(pathbuf, sizeof(TCHAR) * err);
-    if (real == NULL) return (char*) pathbuf;
-    else return (char*) real;
-#endif
+    LPWSTR real = (LPWSTR) realloc(pathbuf, sizeof(WCHAR) * (err + 1));
+    if (real == NULL) return pathbuf;
+    else return real;
 }

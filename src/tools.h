@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
+#include <wchar.h>
 
 #define CMPSTR(x, y) (strncmp(x, y, sizeof((y)) - 1) == 0)
 // compare the first part of string with a fixed string
@@ -23,6 +24,8 @@ void remove_newline(char* line);
 int endswith(const char *str, const char *suffix);
 int count_digits(unsigned long n);
 char *replace_string(const char *source, const char *match, const char *replace);
+unsigned long get_mbstowcs_bytes(const char *str);
+unsigned long get_wcstombs_bytes(const wchar_t *str);
 
 #ifdef __cplusplus
 }

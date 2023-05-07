@@ -26,7 +26,7 @@ It's very destructive and experimental, so don't use unless you desperately need
 ### Requirements
 - osu! must run on WINE with dotnet 4.5+ for proper memory scanning
 - libmpg123, libmp3lame, libsndfile and libsoundtouch to adjust audio speed
-- libminizip to make an osz file
+- libzip to make an osz file
 - libfltk1.3 for GUI
 
 ### DEB/RPM/Arch repository
@@ -75,24 +75,20 @@ I recommend getting [osu-handler](https://aur.archlinux.org/packages/osu-handler
 You can also get DEB/RPM of osu-handler [here](https://software.opensuse.org//download.html?project=home%3Ahwsnemo%3Apackaged-wine-osu&package=osu-handler-wine).
 I package this one, so if there's any problem with it, let me know!
 
+### Experimental Windows support
+Things mostly work but it's kinda flaky. You can use [MSYS2](https://msys2.org) (Note that cosu-trainer only supports UCRT).
+Install MinGW GCC and all dependencies through their package manager and use a following command in `src` to compile cosu-trainer.
+```
+x86_64-w64-mingw32-g++ -DWIN32 `fltk-config --use-images --cxxflags` \
+cosuui.cpp cosuwindow.cpp  cuimain.c main.cpp tools.c mapeditor.c actualzip.c audiospeed.cpp buffers.c cosumem.c freader_win.cpp wsigscan.c cosuplatform_win.c \
+-o ../cosu-trainer `fltk-config --use-images --ldflags` -lwinpthread -lmpg123 -lmp3lame -lzip -lSoundTouch -lsndfile -lwtsapi32
+```
+
+**Some limitations**
+- cosu-trainer may become unresponsive while converting a map, just wait for a bit, and you will have a converted map.
+- CUI works, but 'auto' doesn't work
+
 ## Thanks a lot to
 - Thanks a lot to developers of libraries I used in this program!!!
 - [josu-trainer](https://github.com/ngoduyanh/josu-trainer) for basic idea of speeding up the map
 - [gosumemory](https://github.com/l3lackShark/gosumemory) and [ProcessMemoryDataFinder](https://github.com/Piotrekol/ProcessMemoryDataFinder) for memory reading
-
-### Experimental Windows support
-Things mostly work as long as you don't have any non-ANSI characters (include CJK characters) in your osu! Songs path. You can use [MSYS2](https://msys2.org).
-Install MinGW GCC and all dependencies through their package manager and use a following command in `src` to compile cosu-trainer.
-```
-x86_64-w64-mingw32-g++ `fltk-config --use-images --cxxflags` \
-cosuui.cpp cosuwindow.cpp  cuimain.c main.cpp tools.c mapeditor.c actualzip.c audiospeed.cpp buffers.c cosumem.c \
-freader_win.cpp wsigscan.c cosuplatform_win.c \
--o ../cosu-trainer `fltk-config --use-images --ldflags` \
--lpthread -lmpg123 -lmp3lame -lminizip -lSoundTouch -lsndfile -lwtsapi32 -DWIN32
-```
-
-**Some limitations**
-- non-ANSI characters in path don't work at all
-- Its implementation and code is not really good. I need to work on it, but got no motivation...
-- cosu-trainer will stuck if it was already on before osu!, so turn on osu! before cosu-trainer, and get into song select, else you will need to kill cosu-trainer through Task Manager.
-- cosu-trainer may become unresponsive while converting a map, just wait for a bit, and you will have a converted map.

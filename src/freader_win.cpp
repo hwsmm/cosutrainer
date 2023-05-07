@@ -8,12 +8,10 @@ Freader::Freader() : thr(Freader::thread_func, this)
 {
     info = NULL;
     oldinfo = NULL;
+    songf = NULL;
     consumed = true;
     conti = true;
     pause = false;
-    songf = getenv("OSU_SONG_FOLDER"); // will search song folder automatically in thread since process handle is not initialized
-    songf_env = songf != NULL;
-
     init_sigstatus(&st);
 }
 
@@ -21,14 +19,14 @@ Freader::~Freader()
 {
     this->conti = false;
     thr.join();
-    if (!songf_env) free(songf);
+    if (songf) free(songf);
 }
 
 void Freader::thread_func(Freader *fr)
 {
     ptr_type base = NULL;
-    char *songpath = NULL;
-    char *oldpath = NULL;
+    wchar_t *songpath = NULL;
+    wchar_t *oldpath = NULL;
     unsigned int len = 0;
     while (fr->conti)
     {
@@ -67,10 +65,7 @@ void Freader::thread_func(Freader *fr)
 
             if (fr->songf == NULL)
             {
-                if (!fr->songf_env)
-                {
-                    fr->songf = get_songsfolder(sst);
-                }
+                fr->songf = get_songsfolder(sst);
                 if (fr->songf == NULL)
                 {
                     printerr("Song folder not found!");
@@ -93,7 +88,7 @@ void Freader::thread_func(Freader *fr)
             songpath = get_mappath(sst, base, &len);
             if (songpath != NULL)
             {
-                if (oldpath != NULL && strcmp(songpath, oldpath) == 0)
+                if (oldpath != NULL && wcscmp(songpath, oldpath) == 0)
                 {
                     free(songpath);
                     Sleep(1000);
@@ -112,25 +107,41 @@ void Freader::thread_func(Freader *fr)
                 continue;
             }
 
-            int fullsize = strlen(fr->songf) + 1 + len;
-            char *fullpath = (char*) malloc(fullsize);
+            int fullsize = wcslen(fr->songf) + 1 + len;
+            wchar_t *fullpath = (wchar_t*) malloc(fullsize * sizeof(wchar_t));
             if (fullpath == NULL)
             {
                 printerr("Failed allocating!");
                 continue;
             }
 
-            snprintf(fullpath, fullsize, "%s/%s", fr->songf, songpath);
+            swprintf(fullpath, fullsize, L"%ls/%ls", fr->songf, songpath);
 
             free_mapinfo(fr->oldinfo);
             fr->oldinfo = fr->info;
-            fr->info = read_beatmap(fullpath);
+
+            char *mbspath = (char*) malloc(fullsize * MB_CUR_MAX);
+            if (mbspath == NULL)
+            {
+                printerr("Failed allocating!");
+                free(fullpath);
+                continue;
+            }
+            if (wcstombs(mbspath, fullpath, fullsize * MB_CUR_MAX) == -1)
+            {
+                perror("wcstombs");
+                continue;
+            }
+            fr->info = read_beatmap(mbspath);
             if (fr->info == NULL)
             {
                 printerr("Failed reading!");
+                free(fullpath);
+                free(mbspath);
                 continue;
             }
             free(fullpath);
+            free(mbspath);
 
             fr->consumed = false;
             Fl::awake();
@@ -141,7 +152,11 @@ void Freader::thread_func(Freader *fr)
             // process lost!
             stop_memread(sst);
             base = NULL;
-            if (!fr->songf_env) free(fr->songf);
+            if (fr->songf)
+            {
+                free(fr->songf);
+                fr->songf = NULL;
+            }
         }
     }
     free_mapinfo(fr->oldinfo);

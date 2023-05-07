@@ -7,6 +7,7 @@
 #include <signal.h>
 #include <ctype.h>
 #include <sys/stat.h>
+#include <wchar.h>
 #include "cosumem.h"
 #include "tools.h"
 #include "cosuplatform.h"
@@ -29,27 +30,49 @@ static uint16_t *trim(uint16_t *str, int *res_size)
     return str;
 }
 
-char *get_songsfolder(struct sigscan_status *st)
+wchar_t *get_songsfolder(struct sigscan_status *st)
 {
-    // const uint8_t settingspattern[] = { 0x83, 0xE0, 0x20, 0x85, 0xC0, 0x7E, 0x2F };
-
-    char *expath = get_rootpath(st);
-
-    int pathsize = strlen(expath) + 1 + 5 + 1;
-    char *songspath = (char*) malloc(pathsize); // "/Songs"
-    // i could simply realloc expath and strcat at the end of it
-    snprintf(songspath, pathsize, "%s" STR_PATHSEP "Songs", expath);
-    free(expath);
-
-    printf("SF: %s\n", songspath);
-    struct stat stt;
-    if (stat(songspath, &stt) != 0)
+    wchar_t *expath = get_rootpath(st);
+    if (expath == NULL)
     {
-        perror("Song folder");
-        free(songspath);
+        printerr("Failed getting process path!");
         return NULL;
     }
 
+    int pathsize = wcslen(expath) + 1 + 5 + 1;
+    wchar_t *songspath = (wchar_t*) calloc(pathsize, sizeof(wchar_t)); // "/Songs"
+    if (songspath == NULL)
+    {
+        printerr("Failed allocation of wide string of song folder!");
+        return NULL;
+    }
+    // i could simply realloc expath and strcat at the end of it
+    // TODO: there is no support for custom songs folder for now
+    swprintf(songspath, pathsize, L"%ls" STR_PATHSEP "Songs", expath);
+    free(expath);
+
+    char *mbs = (char*) malloc(pathsize * MB_CUR_MAX);
+    if (mbs == NULL)
+    {
+        printerr("Failed allocation of multibyte string of song folder!");
+        return NULL;
+    }
+    if (wcstombs(mbs, songspath, pathsize * MB_CUR_MAX) == -1)
+    {
+        perror("wcstombs");
+        return NULL;
+    }
+
+    struct stat stt;
+    if (stat(mbs, &stt) != 0)
+    {
+        perror("Songs folder");
+        free(songspath);
+        free(mbs);
+        return NULL;
+    }
+
+    free(mbs);
     if (stt.st_mode & S_IFDIR)
     {
         return songspath;
@@ -92,7 +115,7 @@ int get_mapid(struct sigscan_status *st, ptr_type base_address)
     return id;
 }
 
-char *get_mappath(struct sigscan_status *st, ptr_type base_address, unsigned int *length)
+wchar_t *get_mappath(struct sigscan_status *st, ptr_type base_address, unsigned int *length)
 {
     ptr_type beatmap_ptr = get_beatmap_ptr(st, base_address);
     if (beatmap_ptr == PTR_NULL) return PTR_NULL;
@@ -136,8 +159,8 @@ char *get_mappath(struct sigscan_status *st, ptr_type base_address, unsigned int
 
     int size;
     size = foldersize + 1 + pathsize + 1; // / , \0
-    char *songpath;
-    songpath = (char*) malloc(size);
+    wchar_t *songpath;
+    songpath = (wchar_t*) malloc(size * sizeof(wchar_t));
 
     if (!songpath) goto readfail;
 
@@ -148,8 +171,6 @@ char *get_mappath(struct sigscan_status *st, ptr_type base_address, unsigned int
         if (i < foldersize) put = *(trim_fdstr + i);
         else if (i == foldersize) put = '/';
         else put = *(trim_pstr + (i - foldersize - 1));
-
-        if (put > 127) goto readfail;
 
         if (put == '\\') *(songpath+i) = '/'; // workaround: some installation put \ in song folder
         else *(songpath+i) = put;
@@ -185,12 +206,12 @@ int main()
     setbuf(stdout, NULL);
     ptr_type base = NULL;
 
-    char *songpath = NULL;
-    char *oldpath = NULL;
+    wchar_t *songpath = NULL;
+    wchar_t *oldpath = NULL;
     unsigned int len = 0;
 
-    int fd = open("/tmp/osu_path", O_CREAT|O_WRONLY|O_TRUNC, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH);
-    if (fd == -1)
+    FILE *fd = fopen("/tmp/osu_path", "w+");
+    if (fd == NULL)
     {
         perror("/tmp/osu_path");
         return -1;
@@ -257,7 +278,7 @@ int main()
             songpath = get_mappath(&st, base, &len);
             if (songpath != NULL)
             {
-                if (oldpath != NULL && strcmp(songpath, oldpath) == 0)
+                if (oldpath != NULL && wcscmp(songpath, oldpath) == 0)
                 {
                     free(songpath);
                     goto contin;
@@ -275,14 +296,15 @@ int main()
                 goto contin;
             }
 
-            if (lseek(fd, 0, SEEK_SET) == -1)
+            if (fseek(fd, 0, SEEK_SET) == -1)
             {
                 perror("/tmp/osu_path");
             }
             else
             {
-                ssize_t w = write(fd, songpath, len);
-                if (w == -1 || ftruncate(fd, w) == -1)
+                int w = fputws(songpath, fd);
+                // todo: len does not represent exact bytes.
+                if (w < 0/* || truncate("/tmp/osu_path", len - 1) == -1*/)
                 {
                     perror("/tmp/osu_path");
                 }
@@ -301,7 +323,7 @@ contin:
     free(oldpath);
     free(songpath);
     stop_memread(&st);
-    close(fd);
+    fclose(fd);
     return 0;
 }
 #endif

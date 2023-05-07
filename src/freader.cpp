@@ -75,6 +75,7 @@ void Freader::thread_func(Freader *fr)
         if (fr->info == NULL)
         {
             printerr("Failed reading!");
+            free(fullpath);
             continue;
         }
         free(fullpath);

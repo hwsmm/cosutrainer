@@ -9,9 +9,8 @@ private:
     std::thread thr;
     struct sigscan_status st;
     static void thread_func(Freader *fr);
-    char *songf;
+    wchar_t *songf;
     bool conti;
-    bool songf_env;
 public:
     Freader();
     ~Freader();

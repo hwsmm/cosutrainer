@@ -1,5 +1,6 @@
 #pragma once
 #include <stdbool.h>
+#include <wchar.h>
 #include "buffers.h"
 
 enum SECTION
@@ -19,8 +20,9 @@ enum SPEED_MODE
 
 struct mapinfo
 {
-    char *fullpath; // should be absolute path if it's returned from read_beatmap
-    char *audioname, *songname, *diffname, *bgname;
+    wchar_t *fullpath; // should be absolute path if it's returned from read_beatmap
+    wchar_t *audioname, *bgname;
+    char *diffname, *songname;
 
     double maxbpm, minbpm;
     float hp, cs, ar, od;

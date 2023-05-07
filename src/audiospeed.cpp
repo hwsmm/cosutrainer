@@ -1,17 +1,19 @@
-#include <stdio.h>
-#include <stdbool.h>
-#include <string.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstring>
+#include <cstdlib>
 #include <mpg123.h>
 #include <lame/lame.h>
 #include <sndfile.h>
 #include <soundtouch/SoundTouch.h>
+#include <fcntl.h>
 #include <stdexcept>
 #include "tools.h"
 #include "buffers.h"
 #include "audiospeed.h"
+#include "cosuplatform.h"
 
 using namespace soundtouch;
+using namespace std;
 
 int change_mp3_speed(const char* source, struct buffers *bufs, double speed, bool pitch, float *progress)
 {
@@ -44,150 +46,165 @@ int change_mp3_speed(const char* source, struct buffers *bufs, double speed, boo
     bool flush = false;
 
     int success = 1;
-
-    err = mpg123_init();
-    if (err != MPG123_OK || (mh = mpg123_new(NULL, &err)) == NULL)
+    try
     {
-        goto cleanup;
-    }
-
-    mpg123_param(mh, MPG123_ADD_FLAGS, MPG123_FORCE_FLOAT|MPG123_GAPLESS, 0.);
-
-    if (mpg123_open(mh, source) != MPG123_OK || mpg123_getformat(mh, &rate, &channels, &encoding) != MPG123_OK)
-    {
-        goto cleanup;
-    }
-
-    mpg123_scan(mh);
-    fulllength = mpg123_length(mh);
-
-    mpg123_info(mh, &fi);
-    mpg123_format_none(mh);
-    mpg123_format(mh, rate, channels, encoding);
-    buffer_size = mpg123_outblock(mh);
-    buffer = (float*) malloc(buffer_size);
-    convbuf = (float*) malloc((convbuf_size = buffer_size));
-    if (buffer == NULL || convbuf == NULL) goto cleanup;
-
-    st.setSampleRate(rate);
-    st.setChannels(channels);
-    if (!pitch) st.setTempoChange((speed - 1.0) * 100.0);
-    else st.setRateChange((speed - 1.0) * 100.0);
-
-    gfp = lame_init();
-    lame_set_num_channels(gfp, channels);
-    lame_set_in_samplerate(gfp, rate);
-    switch (fi.vbr)
-    {
-    case MPG123_VBR:
-        lame_set_VBR(gfp, vbr_mtrh);
-        lame_set_VBR_q(gfp, 2);
-        lame_set_VBR_min_bitrate_kbps(gfp, 128);
-        lame_set_VBR_max_bitrate_kbps(gfp, 192);
-        break;
-    case MPG123_ABR:
-        lame_set_VBR(gfp, vbr_abr);
-        lame_set_VBR_q(gfp, 2);
-        lame_set_VBR_mean_bitrate_kbps(gfp, fi.abr_rate);
-        break;
-    default:
-        lame_set_brate(gfp, fi.bitrate);
-        break;
-    }
-
-    if (lame_init_params(gfp) < 0)
-    {
-        goto cleanup;
-    }
-
-    bufsizesample = convbuf_size / sizeof(float) / channels;
-
-    while (1)
-    {
-        if (err == MPG123_DONE) flush = true;
-
-        if (!flush)
+        err = mpg123_init();
+        if (err != MPG123_OK || (mh = mpg123_new(NULL, &err)) == NULL)
         {
-            err = mpg123_read(mh, (unsigned char*) buffer, buffer_size, &done);
-            processedsamples += (samplecount = (done/sizeof(float))/channels);
-            *progress = (float) processedsamples / (float) fulllength;
+            printerr("Failed initalizing mpg123");
+            throw -99;
+        }
 
-            if (err == MPG123_OK || err == MPG123_DONE)
+        mpg123_param(mh, MPG123_ADD_FLAGS, MPG123_FORCE_FLOAT|MPG123_GAPLESS, 0.);
+
+        if (mpg123_open(mh, source) != MPG123_OK || mpg123_getformat(mh, &rate, &channels, &encoding) != MPG123_OK)
+        {
+            throw -99;
+        }
+
+        mpg123_scan(mh);
+        fulllength = mpg123_length(mh);
+
+        mpg123_info(mh, &fi);
+        mpg123_format_none(mh);
+        mpg123_format(mh, rate, channels, encoding);
+        buffer_size = mpg123_outblock(mh);
+        buffer = (float*) malloc(buffer_size);
+        convbuf = (float*) malloc((convbuf_size = buffer_size));
+        if (buffer == NULL || convbuf == NULL) throw -99;
+
+        st.setSampleRate(rate);
+        st.setChannels(channels);
+        if (!pitch) st.setTempoChange((speed - 1.0) * 100.0);
+        else st.setRateChange((speed - 1.0) * 100.0);
+
+        gfp = lame_init();
+        lame_set_num_channels(gfp, channels);
+        lame_set_in_samplerate(gfp, rate);
+        switch (fi.vbr)
+        {
+        case MPG123_VBR:
+            lame_set_VBR(gfp, vbr_mtrh);
+            lame_set_VBR_q(gfp, 2);
+            lame_set_VBR_min_bitrate_kbps(gfp, 128);
+            lame_set_VBR_max_bitrate_kbps(gfp, 192);
+            break;
+        case MPG123_ABR:
+            lame_set_VBR(gfp, vbr_abr);
+            lame_set_VBR_q(gfp, 2);
+            lame_set_VBR_mean_bitrate_kbps(gfp, fi.abr_rate);
+            break;
+        default:
+            lame_set_brate(gfp, fi.bitrate);
+            break;
+        }
+
+        if (lame_init_params(gfp) < 0)
+        {
+            printerr("LAME failed initialization");
+            throw -99;
+        }
+
+        bufsizesample = convbuf_size / sizeof(float) / channels;
+
+        while (1)
+        {
+            if (err == MPG123_DONE) flush = true;
+
+            if (!flush)
             {
-                st.putSamples(buffer, samplecount);
+                err = mpg123_read(mh, (unsigned char*) buffer, buffer_size, &done);
+                processedsamples += (samplecount = (done/sizeof(float))/channels);
+                *progress = (float) processedsamples / (float) fulllength;
+
+                if (err == MPG123_OK || err == MPG123_DONE)
+                {
+                    st.putSamples(buffer, samplecount);
+                }
+                else
+                {
+                    printerr("Error while decoding a mp3");
+                    throw -99;
+                }
             }
             else
             {
-                goto cleanup;
+                st.flush();
             }
+
+            do
+            {
+                samplecount = st.receiveSamples(convbuf, bufsizesample);
+                if (samplecount == 0) continue;
+                wanted = 1.25 * samplecount + 7200;
+                if (mp3buf_size < wanted)
+                {
+                    unsigned char* tmp = (unsigned char*) realloc(mp3buf, wanted);
+                    if (tmp == NULL)
+                    {
+                        printerr("Failed allocating memory");
+                        throw -99;
+                    }
+
+                    mp3buf = tmp;
+                    mp3buf_size = wanted;
+                }
+
+                lamerr = lame_encode_buffer_interleaved_ieee_float(gfp, convbuf, samplecount, mp3buf, mp3buf_size);
+                if (lamerr < 0)
+                {
+                    printerr("LAME encoding failed");
+                    throw -99;
+                }
+
+                if (buffers_aud_put(bufs, mp3buf, lamerr) != 0)
+                {
+                    printerr("Audio Buffer failed");
+                    throw -99;
+                }
+            }
+            while (samplecount != 0);
+
+            if (flush) break;
+        }
+
+
+        lamerr = lame_encode_flush(gfp, mp3buf, mp3buf_size);
+        if (lamerr > 0)
+        {
+            if (buffers_aud_put(bufs, mp3buf, lamerr) != 0)
+            {
+                printerr("Audio Buffer failed");
+                throw -99;
+            }
+        }
+
+        /*lamerr = lame_encode_flush_nogap(gfp, mp3buf, mp3buf_size);
+        if (lamerr > 0)
+        {
+           if (buffers_aud_put(bufs, mp3buf, lamerr) != 0)
+           {
+              goto cleanup;
+           }
+        }*/
+        // seems to be useless
+
+        lamerr = lame_get_lametag_frame(gfp, mp3buf, mp3buf_size);
+        if ((unsigned long) lamerr < mp3buf_size)
+        {
+            memcpy(bufs->audbuf, mp3buf, lamerr);
         }
         else
         {
-            st.flush();
+            printerr("Failed finishing a mp3");
         }
 
-        do
-        {
-            samplecount = st.receiveSamples(convbuf, bufsizesample);
-            if (samplecount == 0) continue;
-            wanted = 1.25 * samplecount + 7200;
-            if (mp3buf_size < wanted)
-            {
-                unsigned char* tmp = (unsigned char*) realloc(mp3buf, wanted);
-                if (tmp == NULL) goto cleanup;
-
-                mp3buf = tmp;
-                mp3buf_size = wanted;
-            }
-
-            lamerr = lame_encode_buffer_interleaved_ieee_float(gfp, convbuf, samplecount, mp3buf, mp3buf_size);
-            if (lamerr < 0)
-            {
-                goto cleanup;
-            }
-
-            if (buffers_aud_put(bufs, mp3buf, lamerr) != 0)
-            {
-                goto cleanup;
-            }
-        }
-        while (samplecount != 0);
-
-        if (flush) break;
+        success = 0;
     }
-
-
-    lamerr = lame_encode_flush(gfp, mp3buf, mp3buf_size);
-    if (lamerr > 0)
+    catch (int i)
     {
-        if (buffers_aud_put(bufs, mp3buf, lamerr) != 0)
-        {
-            goto cleanup;
-        }
+        // just because i can't use goto in c++
     }
-
-    /*lamerr = lame_encode_flush_nogap(gfp, mp3buf, mp3buf_size);
-    if (lamerr > 0)
-    {
-       if (buffers_aud_put(bufs, mp3buf, lamerr) != 0)
-       {
-          goto cleanup;
-       }
-    }*/
-    // seems to be useless
-
-    lamerr = lame_get_lametag_frame(gfp, mp3buf, mp3buf_size);
-    if ((unsigned long) lamerr < mp3buf_size)
-    {
-        memcpy(bufs->audbuf, mp3buf, lamerr);
-    }
-    else
-    {
-        printerr("Failed finishing a mp3");
-    }
-
-    success = 0;
-cleanup:
     free(buffer);
     free(convbuf);
     free(mp3buf);

@@ -1,13 +1,18 @@
 #include "tools.h"
 #include <stdlib.h>
 #include <stdio.h>
-#include <unistd.h>
-#include <fcntl.h>
+
+#ifdef WIN32
+#include <windows.h>
+#define gtime() GetTickCount()
+#else
 #include <time.h>
+#define gtime() time(NULL)
+#endif
 
 void randominit()
 {
-    srand(time(NULL));
+    srand(gtime());
 }
 
 // generate random string with alphabets and save it to 'string'
@@ -96,4 +101,13 @@ char *replace_string(const char *source, const char *match, const char *replace)
     }
 
     return result;
+}
+
+unsigned long get_mbstowcs_bytes(const char *str)
+{
+    return 0;
+}
+unsigned long get_wcstombs_bytes(const wchar_t *str)
+{
+    return 0;
 }
