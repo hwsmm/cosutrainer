@@ -5,7 +5,6 @@
 #include <lame/lame.h>
 #include <sndfile.h>
 #include <soundtouch/SoundTouch.h>
-#include <fcntl.h>
 #include <stdexcept>
 #include "tools.h"
 #include "buffers.h"

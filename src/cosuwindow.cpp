@@ -3,7 +3,6 @@
 #include "mapeditor.h"
 #include "cosuplatform.h"
 #include <cstdio>
-#include <cwchar>
 #include <thread>
 #include <FL/Fl_JPEG_Image.H>
 #include <FL/Fl_PNG_Image.H>
@@ -178,30 +177,29 @@ void CosuWindow::start()
             struct mapinfo *info = fr.info;
             fr.consumed = true;
             Fl_Image *tempimg = NULL;
-            wchar_t *bgpath = NULL;
-            unsigned long newlen = 0;
+            char *bgpath = NULL;
             bool bgchanged = false;
             if (info->bgname != NULL && (fr.oldinfo == NULL || fr.oldinfo->bgname != NULL))
             {
-                unsigned long oldfdlen = fr.oldinfo != NULL ? wcsrchr(fr.oldinfo->fullpath, PATHSEP) - fr.oldinfo->fullpath : 0;
-                unsigned long fdlen = wcsrchr(info->fullpath, PATHSEP) - info->fullpath;
+                unsigned long oldfdlen = fr.oldinfo != NULL ? strrchr(fr.oldinfo->fullpath, PATHSEP) - fr.oldinfo->fullpath : 0;
+                unsigned long fdlen = strrchr(info->fullpath, PATHSEP) - info->fullpath;
 
-                if (fr.oldinfo == NULL || oldfdlen != fdlen || memcmp(fr.oldinfo->fullpath, info->fullpath, fdlen) != 0
-                        || wcscmp(fr.oldinfo->bgname, info->bgname) != 0)
+                if (fr.oldinfo == NULL || oldfdlen != fdlen || strncmp(fr.oldinfo->fullpath, info->fullpath, fdlen) != 0
+                        || strcmp(fr.oldinfo->bgname, info->bgname) != 0)
                 {
                     bgchanged = true;
-                    wchar_t *sepa = wcsrchr(info->fullpath, PATHSEP);
-                    newlen = sepa - info->fullpath + 1 + wcslen(info->bgname) + 1;
-                    bgpath = (wchar_t*) malloc(newlen * sizeof(wchar_t));
+                    char *sepa = strrchr(info->fullpath, PATHSEP);
+                    unsigned long newlen = sepa - info->fullpath + 1 + strlen(info->bgname) + 1;
+                    bgpath = (char*) malloc(newlen);
                     if (bgpath == NULL)
                     {
                         printerr("Error while allocating!");
                     }
                     else
                     {
-                        *sepa = '\0';
-                        swprintf(bgpath, newlen, L"%ls" STR_PATHSEP "%ls", info->fullpath, info->bgname);
-                        *sepa = PATHSEP;
+                        memcpy(bgpath, info->fullpath, sepa - info->fullpath);
+                        *(bgpath + (sepa - info->fullpath)) = PATHSEP;
+                        memcpy(bgpath + (sepa - info->fullpath + 1), info->bgname, strlen(info->bgname) + 1);
                     }
                 }
             }
@@ -212,25 +210,13 @@ void CosuWindow::start()
             }
             if (bgpath != NULL)
             {
-                char *mbgpath = (char*) malloc(newlen * MB_CUR_MAX);
-                if (mbgpath == NULL)
+                if (endswith(bgpath, ".png"))
                 {
-                    printerr("Failed allocating memory for mb bgpath!");
-                    tempimg = NULL;
+                    tempimg = new Fl_PNG_Image(bgpath);
                 }
-                if (wcstombs(mbgpath, bgpath, newlen * MB_CUR_MAX) == -1)
+                else if (endswith(bgpath, ".jpg") || endswith(bgpath, ".jpeg"))
                 {
-                    perror("wcstombs");
-                    tempimg = NULL;
-                }
-
-                if (endswith(mbgpath, ".png"))
-                {
-                    tempimg = new Fl_PNG_Image(mbgpath);
-                }
-                else if (endswith(mbgpath, ".jpg") || endswith(mbgpath, ".jpeg"))
-                {
-                    tempimg = new Fl_JPEG_Image(mbgpath);
+                    tempimg = new Fl_JPEG_Image(bgpath);
                 }
                 else
                 {

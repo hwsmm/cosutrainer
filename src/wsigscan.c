@@ -168,7 +168,7 @@ ptr_type find_pattern(struct sigscan_status *st, const uint8_t bytearray[], unsi
     return (ptr_type) result;
 }
 
-wchar_t *get_rootpath(struct sigscan_status *st)
+char *get_rootpath(struct sigscan_status *st)
 {
     LPWSTR pathbuf = (LPWSTR) calloc(MAX_PATH, sizeof(WCHAR));
     if (pathbuf == NULL)
@@ -199,7 +199,29 @@ wchar_t *get_rootpath(struct sigscan_status *st)
         err--;
     }
 
-    LPWSTR real = (LPWSTR) realloc(pathbuf, sizeof(WCHAR) * (wcslen(pathbuf) + 1));
-    if (real == NULL) return pathbuf;
-    else return real;
+    int mbnum = WideCharToMultibyte(CP_UTF8, 0, pathbuf, -1, NULL, 0, NULL, NULL);
+    if (mbnum == 0)
+    {
+        fputs("Failed converting!\n", stderr);
+        free(pathbuf);
+        return NULL;
+    }
+
+    LPSTR mbbuf = (LPSTR) malloc(mbnum);
+    if (mbbuf == NULL)
+    {
+        fputs("Failed allocation\n", stderr);
+        free(pathbuf);
+        return NULL;
+    }
+
+    if (WideCharToMultibyte(CP_UTF8, 0, pathbuf, err, mbbuf, mbnum, NULL, NULL) == 0)
+    {
+        fputs("Failed converting!\n", stderr);
+        free(pathbuf);
+        free(mbbuf);
+        return NULL;
+    }
+
+    return mbbuf;
 }

@@ -22,7 +22,7 @@ extern "C"
 
 int fork_launch(char* cmd);
 char *read_file(const char *file, int *size);
-wchar_t *get_realpath(const char *path);
+char *get_realpath(const char *path);
 
 #ifdef __cplusplus
 }

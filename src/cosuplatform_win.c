@@ -12,7 +12,7 @@ char *read_file(const char *file, int *size)
     return NULL; // stub;
 }
 
-wchar_t *get_realpath(const char *path)
+char *get_realpath(const char *path)
 {
     LPWSTR pathbuf = (LPWSTR) calloc(MAX_PATH, sizeof(WCHAR));
     if (pathbuf == NULL)
@@ -39,6 +39,7 @@ wchar_t *get_realpath(const char *path)
     if (MultiByteToWideChar(CP_UTF8, 0, path, -1, wcbuf, wcnum) == 0)
     {
         fputs("Failed converting!\n", stderr);
+        free(wcbuf);
         free(pathbuf);
         return NULL;
     }
@@ -59,7 +60,31 @@ wchar_t *get_realpath(const char *path)
 
     *(pathbuf + err) = '\0';
 
-    LPWSTR real = (LPWSTR) realloc(pathbuf, sizeof(WCHAR) * (err + 1));
-    if (real == NULL) return pathbuf;
-    else return real;
+    int mbnum = WideCharToMultiByte(CP_UTF8, 0, pathbuf, err, NULL, 0, NULL, NULL);
+    if (mbnum == 0)
+    {
+        fputs("Failed converting!\n", stderr);
+        free(pathbuf);
+        return NULL;
+    }
+
+    LPSTR mbbuf = (LPSTR) malloc(mbnum);
+    if (mbbuf == NULL)
+    {
+        fputs("Failed allocation\n", stderr);
+        free(pathbuf);
+        return NULL;
+    }
+
+    if (WideCharToMultiByte(CP_UTF8, 0, pathbuf, err, mbbuf, mbnum, NULL, NULL) == 0)
+    {
+        fputs("Failed converting!\n", stderr);
+        free(pathbuf);
+        free(mbbuf);
+        return NULL;
+    }
+
+    free(pathbuf);
+
+    return mbbuf;
 }

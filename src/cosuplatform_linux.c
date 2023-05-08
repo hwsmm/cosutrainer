@@ -58,18 +58,7 @@ char *read_file(const char *file, int *size)
     return buf;
 }
 
-wchar_t *get_realpath(const char *path)
+char *get_realpath(const char *path)
 {
-    char *rp = realpath(path, NULL);
-    if (rp == NULL) return NULL;
-    unsigned long wrpsize = (strlen(rp) + 1) * sizeof(wchar_t);
-    wchar_t *wrp = (wchar_t*) malloc(wrpsize);
-    if (wrp == NULL) return NULL;
-    if (mbstowcs(wrp, rp, wrpsize / sizeof(wchar_t)) == -1)
-    {
-        free(wrp);
-        wrp = NULL;
-    }
-    free(rp);
-    return wrp;
+    return realpath(path, NULL);
 }

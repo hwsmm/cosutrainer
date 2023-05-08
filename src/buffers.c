@@ -14,7 +14,7 @@ int buffers_init(struct buffers *bufs)
     bufs->mapsize = MAPFILE_INITSIZE;
     bufs->mapcur = 0;
     bufs->maplast = 0;
-    bufs->mappath = NULL;
+    bufs->mapname = NULL;
 
     bufs->audbuf = (char*) malloc(AUDFILE_INITSIZE);
     if (bufs->audbuf == NULL)
@@ -25,7 +25,7 @@ int buffers_init(struct buffers *bufs)
     bufs->audsize = AUDFILE_INITSIZE;
     bufs->audcur = 0;
     bufs->audlast = 0;
-    bufs->audpath = NULL;
+    bufs->audname = NULL;
 
     return 0;
 }
@@ -34,8 +34,8 @@ void buffers_free(struct buffers *bufs)
 {
     free(bufs->mapbuf);
     free(bufs->audbuf);
-    free(bufs->mappath);
-    free(bufs->audpath);
+    free(bufs->mapname);
+    free(bufs->audname);
 }
 
 #define DEFINE_BUFFERS_RESIZE(BUF) \

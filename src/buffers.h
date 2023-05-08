@@ -26,8 +26,8 @@ struct buffers
     unsigned long maplast;
     unsigned long audlast;
 
-    char *mappath;
-    char *audpath;
+    char *mapname;
+    char *audname;
 };
 
 int buffers_init(struct buffers *bufs);

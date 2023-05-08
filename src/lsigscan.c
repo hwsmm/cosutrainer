@@ -286,7 +286,7 @@ ptr_type find_pattern(struct sigscan_status *st, const uint8_t bytearray[], cons
     return result;
 }
 
-wchar_t *get_rootpath(struct sigscan_status *st)
+char *get_rootpath(struct sigscan_status *st)
 {
     return NULL;
 }

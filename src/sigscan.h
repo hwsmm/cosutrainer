@@ -34,6 +34,11 @@ struct sigscan_status
 #endif
 };
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 void init_sigstatus(struct sigscan_status *st);
 int init_memread(struct sigscan_status *st);
 bool stop_memread(struct sigscan_status *st);
@@ -47,4 +52,8 @@ void find_and_set_osu(struct sigscan_status *st);
 bool is_osu_alive(struct sigscan_status *st);
 bool readmemory(struct sigscan_status *st, ptr_type address, void *buffer, unsigned long len);
 ptr_type find_pattern(struct sigscan_status *st, const uint8_t bytearray[], unsigned int pattern_size, const bool mask[]);
-wchar_t *get_rootpath(struct sigscan_status *st);
+char *get_rootpath(struct sigscan_status *st);
+
+#ifdef __cplusplus
+}
+#endif

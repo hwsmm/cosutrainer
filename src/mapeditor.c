@@ -27,15 +27,6 @@ do { \
    strcpy(dest, src); \
 } while (0);
 
-#define wallocput(dest, src) \
-do { \
-   if (dest != NULL) free(dest); \
-   int namelen = strlen(src) + 1; \
-   dest = (wchar_t*) malloc(namelen * sizeof(wchar_t)); \
-   if (!dest) return -99; \
-   if (mbstowcs(dest, src, namelen) == -1) return -80; \
-} while (0);
-
 #define resize(x) \
 if (x > ep->editsize) \
 { \
@@ -211,7 +202,7 @@ static int write_mapinfo(char *line, void *vinfo, enum SECTION sect)
         {
             char *filename = CUTFIRST(line, "AudioFilename: ");
             remove_newline(filename);
-            wallocput(info->audioname, filename);
+            allocput(info->audioname, filename);
         }
         else if (CMPSTR(line, "Mode: "))
         {
@@ -269,7 +260,7 @@ static int write_mapinfo(char *line, void *vinfo, enum SECTION sect)
                 printerr("Failed parsing background line!");
                 return 1;
             }
-            wallocput(info->bgname, bgname);
+            allocput(info->bgname, bgname);
         }
     }
     return 0;
@@ -496,7 +487,7 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
         if (CMPSTR(line, "AudioFilename: ") && speed != 1)
         {
             edited = true;
-            snpedit("AudioFilename: %s\r\n", strrchr(ep->bufs->audpath, PATHSEP) + 1);
+            snpedit("AudioFilename: %s\r\n", ep->bufs->audname);
         }
         else if (CMPSTR(line, "AudioLeadIn: "))
         {
@@ -718,66 +709,74 @@ int edit_beatmap(struct editdata *edit, float *progress)
     bool name_conflict = true;
     char prefix[8] = {0};
 
-    wchar_t *fdelim = wcsrchr(edit->mi->fullpath, PATHSEP);
-    wchar_t *fname = NULL;
+    char *fname = strrchr(edit->mi->fullpath, PATHSEP) + 1;
 
-    if (fdelim == NULL)
-    {
-        printerr("Got improper file path!");
-        buffers_free(&bufs);
-        return -72;
-    }
-    *fdelim = '\0';
-    fname = fdelim + 1;
-
-    unsigned long dirpathlen = (uintptr_t) fdelim - (uintptr_t) edit->mi->fullpath;
-
-    unsigned long mapnlen = dirpathlen + 1 + 7 + 1 + wcslen(fname) * MB_CUR_MAX + 1;
-    unsigned long audnlen = 0;
-    bufs.mappath = (char*) malloc(mapnlen);
+    long mapnlen = 7 + 1 + strlen(fname) + 1;
+    long audnlen = 0;
+    bufs.mapname = (char*) malloc(mapnlen);
     if (edit->mi->audioname && edit->speed != 1)
     {
-        audnlen = dirpathlen + 1 + 7 + 1 + wcslen(edit->mi->audioname) * MB_CUR_MAX + 1;
-        bufs.audpath = (char*) malloc(audnlen);
+        audnlen = 7 + 1 + strlen(edit->mi->audioname) + 1;
+        bufs.audname = (char*) malloc(audnlen);
     }
 
-    if (bufs.mappath == NULL || (edit->mi->audioname && edit->speed != 1 && bufs.audpath == NULL))
+    if (bufs.mapname == NULL || (edit->mi->audioname && edit->speed != 1 && bufs.audname == NULL))
     {
         printerr("Failed allocating memory");
         buffers_free(&bufs);
         return -99;
     }
 
-    snprintf(bufs.mappath, mapnlen, "%ls" STR_PATHSEP "xxxxxxx_%ls", edit->mi->fullpath, fname);
-    if (bufs.audpath) snprintf(bufs.audpath, mapnlen, "%ls" STR_PATHSEP "xxxxxxx_%ls", edit->mi->fullpath, edit->mi->audioname);
+    snprintf(bufs.mapname + 7, mapnlen - 7, "_%s", fname);
+    if (bufs.audname) snprintf(bufs.audname + 7, audnlen - 7, "_%s", edit->mi->audioname);
 
     randominit();
 
     while (name_conflict == true)
     {
         randomstr(prefix, 7);
-        // potentially dangerous but mostly safe
-        memcpy(strrchr(bufs.mappath, PATHSEP) + 1, prefix, 7);
-        if (bufs.audpath) memcpy(strrchr(bufs.audpath, PATHSEP) + 1, prefix, 7);
-        if (access(bufs.mappath, F_OK) != 0 && (bufs.audpath == NULL || access(bufs.audpath, F_OK) != 0))
+        memcpy(bufs.mapname, prefix, 7);
+        if (bufs.audname) memcpy(bufs.audname, prefix, 7);
+        if (access(bufs.mapname, F_OK) != 0 && (bufs.audname == NULL || access(bufs.audname, F_OK) != 0))
             name_conflict = false;
     }
 
-    if (bufs.audpath && edit->speed != 1)
+    long folderlen = (long) (fname - edit->mi->fullpath);
+    char *folderpath = (char*) malloc(folderlen);
+    if (folderpath)
     {
-        unsigned long audplen = dirpathlen + 1 + wcslen(edit->mi->audioname) * MB_CUR_MAX + 1;
-        char *audp = (char*) malloc(audplen);
-        if (audp == NULL)
+        memcpy(folderpath, edit->mi->fullpath, folderlen - 1);
+        *(folderpath + folderlen - 1) = '\0';
+    }
+    else
+    {
+        printerr("Failed allocating!");
+        buffers_free(&bufs);
+        return -99;
+    }
+
+
+    if (bufs.audname && edit->speed != 1)
+    {
+        char *audp = NULL;
+        long audplen = folderlen - 1 + 1 + strlen(edit->mi->audioname) + 1;
+        audp = (char*) malloc(audplen);
+        if (audp)
+        {
+            snprintf(audp, audplen, "%s" STR_PATHSEP "%s", folderpath, edit->mi->audioname);
+        }
+        else
         {
             printerr("Failed allocating!");
+            free(folderpath);
             buffers_free(&bufs);
             return -99;
         }
-        snprintf(audp, audplen, "%ls" STR_PATHSEP "%ls", edit->mi->fullpath, edit->mi->audioname);
         ret = change_audio_speed(audp, &bufs, edit->speed, edit->pitch, progress);
         if (ret != 0)
         {
             printerr("Failed converting audio!");
+            free(folderpath);
             free(audp);
             buffers_free(&bufs);
             return -80;
@@ -785,20 +784,9 @@ int edit_beatmap(struct editdata *edit, float *progress)
         free(audp);
     }
 
-    unsigned long mapplen = dirpathlen + 1 + wcslen(fname) * MB_CUR_MAX + 1;
-    char *mapp = (char*) malloc(mapplen);
-    if (mapp == NULL)
-    {
-        printerr("Failed allocating!");
-        buffers_free(&bufs);
-        return -99;
-    }
-    snprintf(mapp, mapplen, "%ls" STR_PATHSEP "%ls", edit->mi->fullpath, fname);
-    *fdelim = PATHSEP;
-    ret = loop_map(mapp, &convert_map, &ep);
-    free(ep.editline);
-    free(mapp);
 
+    ret = loop_map(edit->mi->fullpath, &convert_map, &ep);
+    free(ep.editline);
     if (ret != 0)
     {
         printerr("Failed converting map!");
@@ -808,12 +796,9 @@ int edit_beatmap(struct editdata *edit, float *progress)
 
     if (edit->makezip)
     {
-        *fdelim = '\0';
-        unsigned long zipflen = dirpathlen + sizeof(".osz");
+        long zipflen = folderlen + sizeof(".osz") - 1;
         char *zipf = (char*) malloc(zipflen);
-        snprintf(zipf, zipflen, "%ls.osz", edit->mi->fullpath);
-        *fdelim = PATHSEP;
-
+        snprintf(zipf, zipflen, "%s.osz", folderpath);
         ret = create_actual_zip(zipf, &bufs);
 
         char *open_cmd = getenv("OSZ_HANDLER");
@@ -828,8 +813,35 @@ int edit_beatmap(struct editdata *edit, float *progress)
     }
     else
     {
-        char *mappath = bufs.mappath;
-        char *audpath = bufs.audpath;
+        char *mappath = NULL;
+        char *audpath = NULL;
+        long audflen = 0;
+        long mapflen = folderlen + 1 + mapnlen;
+        mappath = (char*) malloc(mapflen);
+        if (!mappath)
+        {
+            free(folderpath);
+            buffers_free(&bufs);
+            printerr("Failed allocating!");
+            return -99;
+        }
+        snprintf(mappath, mapflen, "%s" STR_PATHSEP "%s", folderpath, bufs.mapname);
+
+        if (bufs.audname)
+        {
+            audflen = folderlen + 1 + audnlen;
+            audpath = (char*) malloc(audflen);
+            if (!audpath)
+            {
+                free(mappath);
+                free(folderpath);
+                buffers_free(&bufs);
+                printerr("Failed allocating!");
+                return -99;
+            }
+            snprintf(audpath, audflen, "%s" STR_PATHSEP "%s", folderpath, bufs.audname);
+        }
+
         FILE *mapfd = fopen(mappath, "w");
         if (mapfd == NULL || fwrite(bufs.mapbuf, 1, bufs.maplast, mapfd) < bufs.maplast)
         {
@@ -844,11 +856,14 @@ int edit_beatmap(struct editdata *edit, float *progress)
                 {
                     printerr("Error writing an audio file");
                 }
-                if (audfd) fclose(audfd);
+                fclose(audfd);
             }
         }
-        if (mapfd) fclose(mapfd);
+        fclose(mapfd);
+        free(mappath);
+        free(audpath);
     }
+    free(folderpath);
     buffers_free(&bufs);
     return ret;
 }

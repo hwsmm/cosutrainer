@@ -20,8 +20,8 @@ enum SPEED_MODE
 
 struct mapinfo
 {
-    wchar_t *fullpath; // should be absolute path if it's returned from read_beatmap
-    wchar_t *audioname, *bgname;
+    char *fullpath; // should be absolute path if it's returned from read_beatmap
+    char *audioname, *bgname;
     char *diffname, *songname;
 
     double maxbpm, minbpm;

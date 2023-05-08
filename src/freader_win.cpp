@@ -107,41 +107,26 @@ void Freader::thread_func(Freader *fr)
                 continue;
             }
 
-            int fullsize = wcslen(fr->songf) + 1 + len;
-            wchar_t *fullpath = (wchar_t*) malloc(fullsize * sizeof(wchar_t));
+            int fullsize = strlen(fr->songf) + 1 + len * MB_CUR_MAX;
+            char *fullpath = (char*) malloc(fullsize);
             if (fullpath == NULL)
             {
                 printerr("Failed allocating!");
                 continue;
             }
 
-            swprintf(fullpath, fullsize, L"%ls/%ls", fr->songf, songpath);
+            snprintf(fullpath, fullsize, "%s/%ls", fr->songf, songpath);
 
             free_mapinfo(fr->oldinfo);
             fr->oldinfo = fr->info;
-
-            char *mbspath = (char*) malloc(fullsize * MB_CUR_MAX);
-            if (mbspath == NULL)
-            {
-                printerr("Failed allocating!");
-                free(fullpath);
-                continue;
-            }
-            if (wcstombs(mbspath, fullpath, fullsize * MB_CUR_MAX) == -1)
-            {
-                perror("wcstombs");
-                continue;
-            }
-            fr->info = read_beatmap(mbspath);
+            fr->info = read_beatmap(fullpath);
             if (fr->info == NULL)
             {
                 printerr("Failed reading!");
                 free(fullpath);
-                free(mbspath);
                 continue;
             }
             free(fullpath);
-            free(mbspath);
 
             fr->consumed = false;
             Fl::awake();

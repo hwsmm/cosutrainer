@@ -30,49 +30,33 @@ static uint16_t *trim(uint16_t *str, int *res_size)
     return str;
 }
 
-wchar_t *get_songsfolder(struct sigscan_status *st)
+char *get_songsfolder(struct sigscan_status *st)
 {
-    wchar_t *expath = get_rootpath(st);
+    char *expath = get_rootpath(st);
     if (expath == NULL)
     {
         printerr("Failed getting process path!");
         return NULL;
     }
 
-    int pathsize = wcslen(expath) + 1 + 5 + 1;
-    wchar_t *songspath = (wchar_t*) calloc(pathsize, sizeof(wchar_t)); // "/Songs"
+    int pathsize = strlen(expath) + 1 + 5 + 1;
+    char *songspath = (char*) calloc(pathsize, sizeof(char)); // "/Songs"
     if (songspath == NULL)
     {
         printerr("Failed allocation of wide string of song folder!");
         return NULL;
     }
-    // i could simply realloc expath and strcat at the end of it
-    // TODO: there is no support for custom songs folder for now
-    swprintf(songspath, pathsize, L"%ls" STR_PATHSEP "Songs", expath);
+    snprintf(songspath, pathsize, "%s" STR_PATHSEP "Songs", expath);
     free(expath);
 
-    char *mbs = (char*) malloc(pathsize * MB_CUR_MAX);
-    if (mbs == NULL)
-    {
-        printerr("Failed allocation of multibyte string of song folder!");
-        return NULL;
-    }
-    if (wcstombs(mbs, songspath, pathsize * MB_CUR_MAX) == -1)
-    {
-        perror("wcstombs");
-        return NULL;
-    }
-
     struct stat stt;
-    if (stat(mbs, &stt) != 0)
+    if (stat(songspath, &stt) != 0)
     {
         perror("Songs folder");
         free(songspath);
-        free(mbs);
         return NULL;
     }
 
-    free(mbs);
     if (stt.st_mode & S_IFDIR)
     {
         return songspath;
@@ -171,9 +155,10 @@ wchar_t *get_mappath(struct sigscan_status *st, ptr_type base_address, unsigned 
         if (i < foldersize) put = *(trim_fdstr + i);
         else if (i == foldersize) put = '/';
         else put = *(trim_pstr + (i - foldersize - 1));
-
-        if (put == '\\') *(songpath+i) = '/'; // workaround: some installation put \ in song folder
-        else *(songpath+i) = put;
+#ifndef WIN32
+        if (put == '\\') put = '/'; // workaround: some installation put \ in song folder
+#endif
+        *(songpath+i) = put;
     }
 
     *(songpath+i) = '\0';
