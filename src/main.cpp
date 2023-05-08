@@ -10,7 +10,9 @@
 int main(int argc, char *argv[])
 {
     fprintf(stderr, "Current locale: %s\n", setlocale(LC_CTYPE, ""));
+#ifdef WIN32
     fprintf(stderr, "New locale: %s\n", setlocale(LC_CTYPE, UTF8LOC));
+#endif
     if (argc > 1)
     {
         return cuimain(argc, argv);
