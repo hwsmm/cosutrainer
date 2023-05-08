@@ -195,8 +195,8 @@ int main()
     wchar_t *oldpath = NULL;
     unsigned int len = 0;
 
-    FILE *fd = fopen("/tmp/osu_path", "w+");
-    if (fd == NULL)
+    int fd = open("/tmp/osu_path", O_CREAT|O_WRONLY|O_TRUNC, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH);
+    if (fd == -1)
     {
         perror("/tmp/osu_path");
         return -1;
@@ -281,17 +281,33 @@ int main()
                 goto contin;
             }
 
-            if (fseek(fd, 0, SEEK_SET) == -1)
+            if (lseek(fd, 0, SEEK_SET) == -1)
             {
                 perror("/tmp/osu_path");
             }
             else
             {
-                int w = fputws(songpath, fd);
-                // todo: len does not represent exact bytes.
-                if (w < 0/* || truncate("/tmp/osu_path", len - 1) == -1*/)
+                char *mbstr = (char*) malloc(len * MB_CUR_MAX);
+                if (mbstr == NULL)
                 {
-                    perror("/tmp/osu_path");
+                    printerr("Failed allocation!");
+                }
+                else
+                {
+                    size_t convbytes = wcstombs(mbstr, songpath, len * MB_CUR_MAX);
+                    if (convbytes != -1)
+                    {
+                        ssize_t w = write(fd, mbstr, convbytes);
+                        if (w == -1 || ftruncate(fd, w) == -1)
+                        {
+                            perror("/tmp/osu_path");
+                        }
+                    }
+                    else
+                    {
+                        printerr("Failed converting!");
+                    }
+                    free(mbstr);
                 }
             }
         }
@@ -308,7 +324,7 @@ contin:
     free(oldpath);
     free(songpath);
     stop_memread(&st);
-    fclose(fd);
+    close(fd);
     return 0;
 }
 #endif
