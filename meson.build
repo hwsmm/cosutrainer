@@ -9,7 +9,7 @@ inc_dir = include_directories('./src')
 
 deps = [
   dependency('libmpg123'),
-  dependency('zip'),
+  dependency('libzip'),
   dependency('soundtouch'),
   dependency('sndfile'),
   dependency('threads'),
