@@ -37,7 +37,7 @@ void find_and_set_osu(struct sigscan_status *st)
     WTS_PROCESS_INFO* pWPIs = NULL;
     DWORD dwProcCount = 0;
     DWORD osupid = 0;
-    if (WTSEnumerateProcesses(WTS_CURRENT_SERVER_HANDLE, 0, 1, &pWPIs, &dwProcCount))
+    if (WTSEnumerateProcesses(WTS_CURRENT_SERVER_HANDLE, 0, 1, &pWPIs, &dwProcCount) != 0)
     {
         for (DWORD i = 0; i < dwProcCount; i++)
         {
@@ -47,6 +47,10 @@ void find_and_set_osu(struct sigscan_status *st)
                 break;
             }
         }
+    }
+    else
+    {
+        fputs("Failed getting process list!\n", stderr);
     }
 
     if (pWPIs)
@@ -126,9 +130,10 @@ ptr_type find_pattern(struct sigscan_status *st, const uint8_t bytearray[], unsi
         if (result != NULL) break;
 
         curaddr = ptr_add(info.BaseAddress, info.RegionSize);
-        if ((info.State & 0x1000) == 0 || (info.Protect & 0x100) != 0) continue;
 
+        if ((info.State & 0x1000) == 0 || (info.Protect & 0x100) != 0) continue;
         if (info.RegionSize < pattern_size) continue;
+
         if (info.RegionSize > cursize)
         {
             // didn't use realloc since i don't need to retain data from old buffer

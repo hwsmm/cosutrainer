@@ -266,6 +266,7 @@ int main()
                 if (oldpath != NULL && wcscmp(songpath, oldpath) == 0)
                 {
                     free(songpath);
+                    songpath = NULL;
                     goto contin;
                 }
                 else
@@ -322,7 +323,7 @@ contin:
     }
     unlink("/tmp/osu_path");
     free(oldpath);
-    free(songpath);
+    if (songpath != NULL) free(songpath);
     stop_memread(&st);
     close(fd);
     return 0;

@@ -7,7 +7,7 @@
 #include <stdbool.h>
 #endif
 
-#include <stdint.h>
+#include <inttypes.h>
 #include <wchar.h>
 
 #ifdef WIN32
@@ -17,7 +17,7 @@ typedef void* ptr_type;
 #endif
 #define PTR_SIZE 4 // sizeof(ptr_type) is not used since osu is a 32bit game, but requires 64bit pointers to function normally for some reason?
 #define PTR_NULL NULL
-#define ptr_add(x, offset) ((void*) ((long long) x + offset)) // to fix pointer_arith warnings
+#define ptr_add(x, offset) ((void*) ((intptr_t) x + offset)) // to fix pointer_arith warnings
 
 struct sigscan_status
 {

@@ -38,77 +38,59 @@ void find_and_set_osu(struct sigscan_status *st)
     }
 
     pid_t osupid;
-    char pidbuf[16] = {0};
     int ref = -3;
 
     pid_t candidate = 0;
-    DIR *d;
+    DIR *d = opendir("/proc");
     struct dirent *ent;
-    int commfd;
 
-    if (chdir("/proc"))
+    FILE *commfd;
+    char commpath[128] = { 0 };
+    char commbuf[16] = { 0 };
+
+    if (!d)
     {
         perror("/proc");
         ref = -1;
     }
     else
     {
-        d = opendir(".");
-        if (!d)
+        while ((ent = readdir(d)))
         {
-            perror("/proc");
-            ref = -1;
-        }
-        else
-        {
-            while ((ent = readdir(d)))
+            candidate = atoi(ent->d_name);
+            if (candidate > 0)
             {
-                candidate = atoi(ent->d_name);
-                if (candidate > 0)
+                if (snprintf(commpath, 128, "/proc/%s/comm", ent->d_name) < 128)
                 {
-                    if (!chdir(ent->d_name))
+                    commfd = fopen(commpath, "r");
+                    if (commfd == NULL)
                     {
-                        commfd = open("comm", O_RDONLY);
-                        if (commfd == -1)
-                        {
-                            printerr("Error while opening file");
-                            continue;
-                        }
-                        ssize_t readbytes = read(commfd, &pidbuf, 16);
-                        if (close(commfd) < 0)
-                        {
-                            printerr("Error while closing file");
-                        }
+                        perror(commpath);
+                        continue;
+                    }
 
-                        if (readbytes != -1)
-                        {
-                            if (CMPSTR(pidbuf, "osu!.exe"))
-                            {
-                                osupid = candidate;
-                                ref = 0;
-                                break;
-                            }
-                        }
-                        if (chdir(".."))
-                        {
-                            perror("..");
-                            ref = -1;
-                            break;
-                        }
+                    if (fgets(commbuf, 16, commfd) != commbuf) // doesn't need to be bigger since osu!.exe is only 8 characters...
+                    {
+                        perror(commpath);
+                        fclose(commfd);
+                        continue;
+                    }
+                    fclose(commfd);
+
+                    if (strncmp(commbuf, "osu!.exe", 8) == 0)
+                    {
+                        osupid = candidate;
+                        ref = 0;
+                        break;
                     }
                 }
-            }
-            if (closedir(d))
-            {
-                perror("/proc");
+                else
+                {
+                    printerr("How is PID this long... ignoring this entry");
+                }
             }
         }
-    }
-
-    if (chdir("/tmp"))
-    {
-        perror("/tmp");
-        ref = -1;
+        closedir(d);
     }
 
     if (ref < 0)
@@ -209,6 +191,9 @@ ptr_type find_pattern(struct sigscan_status *st, const uint8_t bytearray[], cons
     char line[1024];
     ptr_type result = NULL;
 
+    uint8_t *buffer = NULL;
+    unsigned long bufsize = 0;
+
     snprintf(mapsfile, sizeof mapsfile, "/proc/%d/maps", st->osu);
 
     maps = fopen(mapsfile, "r");
@@ -236,23 +221,27 @@ ptr_type find_pattern(struct sigscan_status *st, const uint8_t bytearray[], cons
         ptr_type startptr = (ptr_type) strtol(startstr, NULL, 16);
         ptr_type endptr = (ptr_type) strtol(endstr, NULL, 16);
 
-        unsigned long size = (unsigned long) endptr - (unsigned long) startptr + 1L;
+        unsigned long size = (intptr_t) endptr - (intptr_t) startptr + 1L;
 
         if (size < pattern_size)
         {
             continue;
         }
 
-        uint8_t *buffer = (uint8_t*) malloc(size);
-        if (buffer == NULL)
+        if (size > bufsize)
         {
-            printerr("Failed allocating memory");
-            break;
+            if (buffer != NULL) free(buffer);
+            buffer = (uint8_t*) malloc(size);
+            if (buffer == NULL)
+            {
+                printerr("Failed allocating memory");
+                break;
+            }
+            bufsize = size;
         }
 
         if (!readmemory(st, startptr, buffer, size))
         {
-            free(buffer);
             continue;
         }
 
@@ -275,13 +264,13 @@ ptr_type find_pattern(struct sigscan_status *st, const uint8_t bytearray[], cons
                 break;
             }
         }
-        free(buffer);
     }
 
     if (fclose(maps) == EOF)
     {
         perror(mapsfile);
     }
+    free(buffer);
 
     return result;
 }
