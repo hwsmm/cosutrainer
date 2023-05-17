@@ -40,7 +40,6 @@ int change_mp3_speed(const char* source, struct buffers *bufs, double speed, boo
     size_t samplecount = 0;
     size_t done = 0;
     size_t wanted = 0;
-    unsigned int processedsamples = 0;
     unsigned int fulllength = 0;
     bool flush = false;
 
@@ -113,8 +112,8 @@ int change_mp3_speed(const char* source, struct buffers *bufs, double speed, boo
             if (!flush)
             {
                 err = mpg123_read(mh, (unsigned char*) buffer, buffer_size, &done);
-                processedsamples += (samplecount = (done/sizeof(float))/channels);
-                *progress = (float) processedsamples / (float) fulllength;
+                samplecount = (done/sizeof(float))/channels;
+                *progress += (float) samplecount / (float) fulllength;
 
                 if (err == MPG123_OK || err == MPG123_DONE)
                 {
@@ -199,6 +198,7 @@ int change_mp3_speed(const char* source, struct buffers *bufs, double speed, boo
         }
 
         success = 0;
+        *progress = 1;
     }
     catch (int i)
     {
@@ -281,6 +281,7 @@ int change_audio_speed_libsndfile(const char* source, struct buffers *bufs, doub
     while (!flush)
     {
         readcount = sf_read_float(in, buffer, 1024);
+        *progress += (float) (readcount / info.channels) / (float) info.frames;
 
         if (readcount != 0) st.putSamples(buffer, readcount / info.channels);
         else
