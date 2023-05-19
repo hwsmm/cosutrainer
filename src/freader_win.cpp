@@ -115,7 +115,7 @@ void Freader::thread_func(Freader *fr)
                 continue;
             }
 
-            snprintf(fullpath, fullsize, "%s/%ls", fr->songf, songpath);
+            snprintf(fullpath, fullsize, "%s\\%ls", fr->songf, songpath);
 
             free_mapinfo(fr->oldinfo);
             fr->oldinfo = fr->info;
