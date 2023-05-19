@@ -220,7 +220,7 @@ char *get_rootpath(struct sigscan_status *st)
         return NULL;
     }
 
-    if (WideCharToMultiByte(CP_UTF8, 0, pathbuf, err, mbbuf, mbnum, NULL, NULL) == 0)
+    if (WideCharToMultiByte(CP_UTF8, 0, pathbuf, -1, mbbuf, mbnum, NULL, NULL) == 0)
     {
         fputs("Failed converting!\n", stderr);
         free(pathbuf);

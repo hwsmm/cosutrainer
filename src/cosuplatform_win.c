@@ -58,9 +58,7 @@ char *get_realpath(const char *path)
     }
     free(wcbuf);
 
-    *(pathbuf + err) = '\0';
-
-    int mbnum = WideCharToMultiByte(CP_UTF8, 0, pathbuf, err, NULL, 0, NULL, NULL);
+    int mbnum = WideCharToMultiByte(CP_UTF8, 0, pathbuf, -1, NULL, 0, NULL, NULL);
     if (mbnum == 0)
     {
         fputs("Failed converting!\n", stderr);
@@ -76,7 +74,7 @@ char *get_realpath(const char *path)
         return NULL;
     }
 
-    if (WideCharToMultiByte(CP_UTF8, 0, pathbuf, err, mbbuf, mbnum, NULL, NULL) == 0)
+    if (WideCharToMultiByte(CP_UTF8, 0, pathbuf, -1, mbbuf, mbnum, NULL, NULL) == 0)
     {
         fputs("Failed converting!\n", stderr);
         free(pathbuf);
