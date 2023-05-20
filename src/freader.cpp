@@ -10,6 +10,7 @@ Freader::Freader() : thr(Freader::thread_func, this)
     info = NULL;
     oldinfo = NULL;
     songf = getenv("OSU_SONG_FOLDER");
+    songf_env = songf != NULL;
     consumed = true;
     conti = true;
     pause = false;
@@ -19,6 +20,7 @@ Freader::~Freader()
 {
     this->conti = false;
     thr.join();
+    if (!songf_env && songf != NULL) free(songf);
 }
 
 void Freader::thread_func(Freader *fr)
@@ -33,8 +35,25 @@ void Freader::thread_func(Freader *fr)
 
         if (fr->songf == NULL)
         {
-            printerr("Song Folder not found!");
-            break;
+            char *homef = getenv("HOME");
+            if (homef != NULL)
+            {
+                // /home/yes/.cosu_songsfd
+                size_t fpathsize = strlen(homef) + sizeof("/.cosu_songsfd");
+                char *fpath = (char*) malloc(fpathsize);
+                if (fpath != NULL)
+                {
+                    snprintf(fpath, fpathsize, "%s/.cosu_songsfd", homef);
+                    fr->songf = read_file(fpath, NULL);
+                    if (fr->songf != NULL) remove_newline(fr->songf);
+                    free(fpath);
+                }
+            }
+            if (fr->songf == NULL)
+            {
+                printerr("Song Folder not found!");
+                break;
+            }
         }
 
         int readbytes = 0;
@@ -55,7 +74,7 @@ void Freader::thread_func(Freader *fr)
             continue;
         }
 
-        free(fr->path);
+        if (fr->path != NULL) free(fr->path);
         fr->path = new_path;
         int fullsize = strlen(fr->songf) + 1 + readbytes + 1;
         char *fullpath = (char*) malloc(fullsize);
@@ -65,8 +84,7 @@ void Freader::thread_func(Freader *fr)
             continue;
         }
 
-        snprintf(fullpath, fullsize, "%s/%s", fr->songf, fr->path);
-        remove_newline(fr->path);
+        snprintf(fullpath, fullsize, "%s/%s", fr->songf, trim(fr->path, &readbytes));
 
         // free_mapinfo(fr->info);
         free_mapinfo(fr->oldinfo);

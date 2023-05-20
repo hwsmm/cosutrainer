@@ -41,9 +41,9 @@ You can get it [here](https://software.opensuse.org//download.html?project=home%
 ### How to use
 1. Grab `cosu-trainer` and `osumem`
 2. Run osu! and get into song select
-3. Run `./osumem` (Most systems require root permission to run this)
-4. Set `OSU_SONG_FOLDER` variable (`export OSU_SONG_FOLDER=/put/osu/Songs/`, I recommend putting it into your .profile)
-5. Now you can use `./cosu-trainer` (read usage below)
+3. Linux: Run `./osumem` (Most systems require root permission to run this)
+4. Linux: Set `OSU_SONG_FOLDER` variable (`export OSU_SONG_FOLDER=/put/osu/Songs/`, I recommend putting it into your .profile), or `echo "<your Songs path>" > ~/.cosu_songsfd`
+5. Now you can use `./cosu-trainer` or `cosu-trainer.exe` (read usage below)
 6. After converting a map with it, press f5 in the game to refresh
 
 ### `cosu-trainer` GUI screenshot
@@ -87,6 +87,7 @@ cosuui.cpp cosuwindow.cpp  cuimain.c main.cpp tools.c mapeditor.c actualzip.c au
 **Some limitations**
 - cosu-trainer may become unresponsive while converting a map, just wait for a bit, and you will have a converted map.
 - CUI works, but 'auto' doesn't work
+- Custom songs folder doesn't work at the moment
 
 ## Thanks a lot to
 - Thanks a lot to developers of libraries I used in this program!!!

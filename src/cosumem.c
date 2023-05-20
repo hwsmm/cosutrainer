@@ -8,20 +8,21 @@
 #include <ctype.h>
 #include <sys/stat.h>
 #include <wchar.h>
+#include <wctype.h>
 #include "cosumem.h"
 #include "tools.h"
 #include "cosuplatform.h"
 
-static uint16_t *trim(uint16_t *str, int *res_size)
+static uint16_t *wtrim(uint16_t *str, int *res_size)
 {
     uint16_t *end = str + *res_size;
-    while (isspace(*str) && *str != '\0')
+    while (iswspace(*str) && *str != '\0')
     {
         str++;
         (*res_size)--;
     }
 
-    while (isspace(*(--end)) && end >= str)
+    while (iswspace(*(--end)) && end >= str)
     {
         (*res_size)--;
     }
@@ -132,14 +133,14 @@ wchar_t *get_mappath(struct sigscan_status *st, ptr_type base_address, unsigned 
 
     *(folderstrbuf+foldersize) = '\0';
     uint16_t *trim_fdstr;
-    trim_fdstr = trim(folderstrbuf, &foldersize);
+    trim_fdstr = wtrim(folderstrbuf, &foldersize);
 
     if (!readmemory(st, ptr_add(path_ptr, 8), pathstrbuf, pathsize * 2))
         goto readfail;
 
     *(pathstrbuf+pathsize) = '\0';
     uint16_t *trim_pstr;
-    trim_pstr = trim(pathstrbuf, &pathsize);
+    trim_pstr = wtrim(pathstrbuf, &pathsize);
 
     int size;
     size = foldersize + 1 + pathsize + 1; // / , \0

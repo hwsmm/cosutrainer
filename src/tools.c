@@ -1,6 +1,7 @@
 #include "tools.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include <ctype.h>
 
 #ifdef WIN32
 #include <windows.h>
@@ -90,4 +91,23 @@ char *replace_string(const char *source, const char *match, const char *replace)
     }
 
     return result;
+}
+
+char *trim(char *str, int *res_size)
+{
+    char *start = str;
+    char *end = start + *res_size;
+    while (isspace(*start) && *start != '\0')
+    {
+        start++;
+        (*res_size)--;
+    }
+
+    while (isspace(*(--end)) && end >= start)
+    {
+        (*res_size)--;
+    }
+    *(end + 1) = '\0';
+
+    return start;
 }
