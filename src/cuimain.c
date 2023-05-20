@@ -39,7 +39,7 @@ int cuimain(int argc, char *argv[])
     bool osumem = (strcmp(argv[1], "auto") == 0);
     if (osumem)
     {
-        char *song_folder = getenv("OSU_SONG_FOLDER");
+        char *song_folder = get_songspath();
         if (song_folder == NULL)
         {
             printerr("Set OSU_SONG_FOLDER variable to use 'auto' option.");
@@ -63,6 +63,7 @@ int cuimain(int argc, char *argv[])
         }
         snprintf(path, pathsize, "%s/%s", song_folder, song_path);
         remove_newline(path);
+        free(song_folder);
         free(song_path);
     }
     else

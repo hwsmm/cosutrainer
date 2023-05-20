@@ -86,3 +86,10 @@ char *get_realpath(const char *path)
 
     return mbbuf;
 }
+
+char *get_songspath()
+{
+    return NULL;
+    // if one ever needs to implement it, it needs to be for custom songs folder
+    // as osu! songs folder is normally osu! running folder\Songs, you need process handle we don't have here
+}

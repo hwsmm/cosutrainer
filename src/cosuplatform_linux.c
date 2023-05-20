@@ -62,3 +62,34 @@ char *get_realpath(const char *path)
 {
     return realpath(path, NULL);
 }
+
+char *get_songspath()
+{
+    char *tmpenv = getenv("OSU_SONG_FOLDER");
+    if (tmpenv != NULL)
+    {
+        char *songse = (char*) malloc(strlen(tmpenv) + 1);
+        if (songse != NULL)
+        {
+            strcpy(songse, tmpenv);
+            return songse;
+        }
+    }
+
+    char *homef = getenv("HOME");
+    if (homef != NULL)
+    {
+        // /home/yes/.cosu_songsfd
+        size_t fpathsize = strlen(homef) + sizeof("/.cosu_songsfd");
+        char *fpath = (char*) malloc(fpathsize);
+        if (fpath != NULL)
+        {
+            snprintf(fpath, fpathsize, "%s/.cosu_songsfd", homef);
+            char *songsf = read_file(fpath, NULL);
+            if (songsf != NULL) remove_newline(songsf);
+            free(fpath);
+            return songsf;
+        }
+    }
+    return NULL;
+}

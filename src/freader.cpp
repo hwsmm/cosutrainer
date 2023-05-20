@@ -9,8 +9,7 @@ Freader::Freader() : thr(Freader::thread_func, this)
     path = NULL;
     info = NULL;
     oldinfo = NULL;
-    songf = getenv("OSU_SONG_FOLDER");
-    songf_env = songf != NULL;
+    songf = NULL;
     consumed = true;
     conti = true;
     pause = false;
@@ -20,7 +19,6 @@ Freader::~Freader()
 {
     this->conti = false;
     thr.join();
-    if (!songf_env && songf != NULL) free(songf);
 }
 
 void Freader::thread_func(Freader *fr)
@@ -35,24 +33,11 @@ void Freader::thread_func(Freader *fr)
 
         if (fr->songf == NULL)
         {
-            char *homef = getenv("HOME");
-            if (homef != NULL)
-            {
-                // /home/yes/.cosu_songsfd
-                size_t fpathsize = strlen(homef) + sizeof("/.cosu_songsfd");
-                char *fpath = (char*) malloc(fpathsize);
-                if (fpath != NULL)
-                {
-                    snprintf(fpath, fpathsize, "%s/.cosu_songsfd", homef);
-                    fr->songf = read_file(fpath, NULL);
-                    if (fr->songf != NULL) remove_newline(fr->songf);
-                    free(fpath);
-                }
-            }
+            fr->songf = get_songspath();
             if (fr->songf == NULL)
             {
                 printerr("Song Folder not found!");
-                break;
+                continue;
             }
         }
 
@@ -104,4 +89,5 @@ void Freader::thread_func(Freader *fr)
     }
     free_mapinfo(fr->oldinfo);
     free_mapinfo(fr->info);
+    free(fr->songf);
 }
