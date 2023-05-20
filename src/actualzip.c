@@ -23,7 +23,7 @@ int create_actual_zip(char *zipfile, struct buffers *bufs)
         }
         else
         {
-            if (zip_file_add(zf, bufs->audname, audb, ZIP_FL_ENC_UTF_8) == -1)
+            if (zip_set_file_compression(zf, zip_file_add(zf, bufs->audname, audb, ZIP_FL_ENC_UTF_8), ZIP_CM_STORE, 0) == -1)
             {
                 zip_source_free(audb);
                 zip_discard(zf);
@@ -41,7 +41,7 @@ int create_actual_zip(char *zipfile, struct buffers *bufs)
     }
     else
     {
-        if (zip_file_add(zf, bufs->mapname, mapb, ZIP_FL_ENC_UTF_8) == -1)
+        if (zip_set_file_compression(zf, zip_file_add(zf, bufs->mapname, mapb, ZIP_FL_ENC_UTF_8), ZIP_CM_STORE, 0) == -1)
         {
             if (audb) zip_source_free(audb);
             zip_source_free(mapb);
