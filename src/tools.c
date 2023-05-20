@@ -47,17 +47,6 @@ int endswith(const char *str, const char *suffix)
     return strncmp(str + lenstr - lensuffix, suffix, lensuffix) == 0;
 }
 
-int count_digits(unsigned long n)
-{
-    int count = 1;
-    while (n > 9)
-    {
-        n /= 10;
-        count++;
-    }
-    return count;
-}
-
 char *replace_string(const char *source, const char *match, const char *replace)
 {
     char *result = NULL;

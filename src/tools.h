@@ -22,7 +22,6 @@ void randominit();
 void randomstr(char *string, int size);
 void remove_newline(char* line);
 int endswith(const char *str, const char *suffix);
-int count_digits(unsigned long n);
 char *replace_string(const char *source, const char *match, const char *replace);
 
 #ifdef __cplusplus

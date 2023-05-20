@@ -202,7 +202,7 @@ int change_mp3_speed(const char* source, struct buffers *bufs, double speed, boo
     }
     catch (int i)
     {
-        // just because i can't use goto in c++
+        success = i;
     }
     free(buffer);
     free(convbuf);
