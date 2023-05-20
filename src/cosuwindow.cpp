@@ -131,6 +131,7 @@ void CosuWindow::diffch_callb(Fl_Widget *w, void *data)
 void CosuWindow::start()
 {
     Fl::scheme("plastic");
+    Fl_Image::RGB_scaling(FL_RGB_SCALING_BILINEAR);
     Fl_Window *window = cosuui.make_window();
 
     cosuui.rate->callback(rateradio_callb, (void*) this);
@@ -225,7 +226,8 @@ void CosuWindow::start()
 
                 if (tempimg != NULL)
                 {
-                    Fl_Image *res = ((Fl_RGB_Image*) tempimg)->copy(370, 208);
+                    float newh = (370.0f / (float) (tempimg->w())) * (float) tempimg->h();
+                    Fl_Image *res = ((Fl_RGB_Image*) tempimg)->copy(370, (int) newh);
                     delete tempimg;
                     tempimg = res;
                 }
