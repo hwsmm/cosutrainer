@@ -7,6 +7,7 @@
 #include <limits.h>
 #include <math.h>
 #include <inttypes.h>
+#include <stdarg.h>
 
 #define tkn(x) strtok(x, ",")
 #define nexttkn() strtok(NULL, ",")
@@ -18,55 +19,75 @@ if ((x = nexttkn()) == NULL) \
    return 1; \
 }
 
+static int _allocput(char **dest, const char *src)
+{
+    if (*dest != NULL) free(*dest);
+    int namelen = strlen(src);
+    *dest = (char*) malloc(namelen + 1);
+    if (*dest == NULL) return -99;
+    strcpy(*dest, src);
+    return 0;
+}
+
 #define allocput(dest, src) \
-do { \
-   if (dest != NULL) free(dest); \
-   int namelen = strlen(src); \
-   dest = (char*) malloc(namelen + 1); \
-   if (!dest) return -99; \
-   strcpy(dest, src); \
-} while (0);
+if (_allocput(&dest, src) != 0) return -99;
+
+static int _resize(struct editpass *ep, unsigned long size)
+{
+    char *resi = (char*) realloc(ep->editline, size);
+    if (resi == NULL)
+    {
+        printerr("Failed reallocating!");
+        return -1;
+    }
+    ep->editline = resi;
+    ep->editsize = size;
+    return 0;
+}
 
 #define resize(x) \
-if (x > ep->editsize) \
-{ \
-   char *resi = (char*) realloc(ep->editline, x); \
-   if (resi == NULL) \
-   { \
-      printerr("Failed reallocating!"); \
-      return -1; \
-   } \
-   ep->editline = resi; \
-   ep->editsize = x; \
+if (_resize(ep, x) != 0) return -1;
+
+static int _putstr(struct editpass *ep, unsigned int *ecur, const char *src, unsigned int len)
+{
+    if (ep->editsize - *ecur - 1 < len)
+    {
+        if (_resize(ep, ep->editsize + len + 1024) != 0) return -1;
+    }
+    strcpy(ep->editline + *ecur, src);
+    *ecur += len;
+    return 0;
 }
 
 #define putstr(x, len) \
-do \
-{ \
-   if (ep->editsize - ecur - 1 < len) \
-   { \
-      resize(ep->editsize + len + 1024); \
-   } \
-   strcpy(ep->editline + ecur, x); \
-   ecur += len; \
-} \
-while (0);
-
+if (_putstr(ep, &ecur, x, len) != 0) return -1;
 #define putsstr(x) putstr(x, sizeof x - 1);
 #define putdstr(x) putstr(x, strlen(x));
-#define snpedit(...) \
-do \
-{ \
-   unsigned int written = 0; \
-   size_t writable = ep->editsize - ecur - 1; \
-   while ((written = snprintf(ep->editline + ecur, writable, ##__VA_ARGS__)) >= writable) \
-   { \
-      resize(ep->editsize + 1024); \
-      writable = ep->editsize - ecur - 1; \
-   } \
-   ecur += written; \
-} \
-while (0);
+
+static int _snpedit(struct editpass *ep, unsigned int *ecur, const char *format, ...)
+{
+    va_list args, cpy;
+    va_start(args, format);
+    va_copy(cpy, args);
+
+    unsigned int written = 0;
+    size_t writable = ep->editsize - *ecur - 1;
+    while ((written = vsnprintf(ep->editline + *ecur, writable, format, cpy)) >= writable)
+    {
+        va_end(cpy);
+        va_copy(cpy, args);
+        if (_resize(ep, ep->editsize + 1024) != 0) return -1;
+        writable = ep->editsize - *ecur - 1;
+    }
+    *ecur += written;
+
+    va_end(cpy);
+    va_end(args);
+    return 0;
+}
+
+#define snpedit(fmt, ...) \
+if (_snpedit(ep, &ecur, fmt, ##__VA_ARGS__) != 0) return -1;
 
 static char *find_null(char *str)
 {
