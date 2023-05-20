@@ -604,6 +604,10 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
             remove_newline(line);
             snpedit("%s osutrainer\r\n", line);
         }
+        else if (CMPSTR(line, "BeatmapID:"))
+        {
+            edited = true;
+        }
     }
 
     if (edited && ecur == 0) return 0;
