@@ -24,8 +24,16 @@ struct ar_conf
 8,10,xgamma -gamma 2.0
 10,11,xgamma -gamma 1.8
 */
+#ifdef __cplusplus
+extern "C"
+{
+#endif
 
 int init_arconfcmd(struct ar_conf *conf);
 int run_ardefcmd(struct ar_conf *conf);
 int run_arconfcmd(struct ar_conf *conf, unsigned int mods, struct mapinfo *info, bool new_playing);
 void free_arconfcmd(struct ar_conf *conf);
+
+#ifdef __cplusplus
+}
+#endif
