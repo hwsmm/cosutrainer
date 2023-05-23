@@ -6,6 +6,7 @@
 #include <sys/types.h>
 #include <dirent.h>
 #include "tools.h"
+#include "cosuplatform.h"
 
 int main(int argc, char *argv[])
 {
@@ -16,7 +17,7 @@ int main(int argc, char *argv[])
     }
     else
     {
-        mainfd = getenv("OSU_SONG_FOLDER");
+        mainfd = get_songspath();
     }
 
     if (mainfd == NULL)
@@ -153,6 +154,10 @@ int main(int argc, char *argv[])
     {
         perror(mainfd);
         return 1;
+    }
+    if (argc < 2)
+    {
+        free(mainfd);
     }
     return 0;
 }
