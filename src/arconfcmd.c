@@ -106,7 +106,7 @@ int init_arconfcmd(struct ar_conf *conf)
         struct ar_entry *index2 = conf->ar_entry_list;
         while (index2 != NULL)
         {
-            if (index->maxar == index2->minar)
+            if (index != index2 && index->maxar == index2->minar)
             {
                 index->maxoverlap = true;
                 break;
