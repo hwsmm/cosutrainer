@@ -17,13 +17,6 @@ struct ar_conf
     bool playing;
 };
 
-/*
-~/.cosu_arcmd
-0,5,xgamma -gamma 2.4
-5,8,xgamma -gamma 2.2
-8,10,xgamma -gamma 2.0
-10,11,xgamma -gamma 1.8
-*/
 #ifdef __cplusplus
 extern "C"
 {

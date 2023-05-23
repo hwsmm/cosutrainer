@@ -115,7 +115,6 @@ int init_arconfcmd(struct ar_conf *conf)
         }
         index = index->next;
     }
-    // i may need to add sort but that's barely needed for this small list
     return 0;
 }
 
