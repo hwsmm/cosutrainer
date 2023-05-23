@@ -1,6 +1,5 @@
 #pragma once
 #include <stdbool.h>
-#include <wchar.h>
 #include "buffers.h"
 
 enum SECTION
@@ -65,6 +64,8 @@ extern "C"
 {
 #endif
 
+double scale_ar(double ar, double speed, int mode);
+double scale_od(double od, double speed, int mode);
 struct mapinfo *read_beatmap(char *mapfile);
 void free_mapinfo(struct mapinfo *info);
 int edit_beatmap(struct editdata *edit, float *progress);

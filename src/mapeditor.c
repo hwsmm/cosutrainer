@@ -95,7 +95,7 @@ static char *find_null(char *str)
     return str;
 }
 
-static double scale_ar(double ar, double speed, int mode)
+double scale_ar(double ar, double speed, int mode)
 {
     if (mode == 1 || mode == 3) return ar;
 
@@ -105,7 +105,7 @@ static double scale_ar(double ar, double speed, int mode)
 }
 
 // fix mania od
-static double scale_od(double od, double speed, int mode)
+double scale_od(double od, double speed, int mode)
 {
     switch (mode)
     {
@@ -726,10 +726,10 @@ int edit_beatmap(struct editdata *edit, float *progress)
     }
 
     if (edit->mi->mode == 2) edit->od = 0;
-    else CLAMP(edit->od, 0, 10);
+    else CLAMP(edit->od, 0.0f, 10.0f);
 
     if (edit->mi->mode == 1 || edit->mi->mode == 3) edit->ar = 0;
-    else CLAMP(edit->ar, 0, 10);
+    else CLAMP(edit->ar, 0.0f, 10.0f);
 
     char *fname = strrchr(edit->mi->fullpath, PATHSEP) + 1;
 

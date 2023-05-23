@@ -22,6 +22,7 @@ It's very destructive and experimental, so don't use unless you desperately need
 - Generates an osz file for easier import
 - An user-defined osz handler can be set for seamless integration with osu!
 - Supports MP3 and [all formats that libsndfile supports](https://libsndfile.github.io/libsndfile/formats.html). (though osu! only accepts ogg and mp3 as rankable formats)
+- Can launch commands as AR changes (you can use it to adjust gamma automatically)
 
 ### Requirements
 - osu! must run on WINE with dotnet 4.5+ for proper memory scanning
@@ -75,6 +76,18 @@ I recommend getting [osu-handler](https://aur.archlinux.org/packages/osu-handler
 You can also get DEB/RPM of osu-handler [here](https://software.opensuse.org//download.html?project=home%3Ahwsnemo%3Apackaged-wine-osu&package=osu-handler-wine).
 I package this one, so if there's any problem with it, let me know!
 
+### How to adjust gamma automatically (only on Linux for now)
+You can make a file named `.cosu_arconf` in your home directory to let cosu-trainer adjust your gamma as AR of the map your map changes!
+Just change `echo` commands to `xgamma` or whatever you want. `default` command will be used if the AR is not in ranges of every entry, or whenever you stop playing a map.
+```
+0      5 echo ar is within 0 and 5
+5      7 echo ar is within 5 and 7
+9    9.6 echo ar is within 9 and 9.6
+9.6   10 echo ar is within 9 and 10
+10    11 echo ar is within 10 and 11
+default  echo ar is default
+```
+
 ### Experimental Windows support
 Things mostly work but it's kinda flaky. You can use [MSYS2](https://msys2.org) (Note that cosu-trainer only supports UCRT).
 Install MinGW GCC and all dependencies through their package manager and use a following command in `src` to compile cosu-trainer.
@@ -88,6 +101,7 @@ cosuui.cpp cosuwindow.cpp  cuimain.c main.cpp tools.c mapeditor.c actualzip.c au
 - cosu-trainer may become unresponsive while converting a map, just wait for a bit, and you will have a converted map.
 - CUI works, but 'auto' doesn't work
 - Custom songs folder doesn't work at the moment
+- `OSZ_HANDLER` doesn't work
 
 ## Thanks a lot to
 - Thanks a lot to developers of libraries I used in this program!!!

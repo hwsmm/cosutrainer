@@ -95,19 +95,21 @@ char *replace_string(const char *source, const char *match, const char *replace)
 
 char *trim(char *str, int *res_size)
 {
+    int size = res_size == NULL ? strlen(str) : *res_size;
     char *start = str;
-    char *end = start + *res_size;
+    char *end = start + size;
     while (isspace(*start) && *start != '\0')
     {
         start++;
-        (*res_size)--;
+        size--;
     }
 
     while (isspace(*(--end)) && end >= start)
     {
-        (*res_size)--;
+        size--;
     }
     *(end + 1) = '\0';
 
+    if (res_size != NULL) *res_size = size;
     return start;
 }

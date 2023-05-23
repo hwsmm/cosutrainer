@@ -5,7 +5,6 @@
 #include <fcntl.h>
 #include <string.h>
 #include <signal.h>
-#include <ctype.h>
 #include <sys/stat.h>
 #include <wchar.h>
 #include <wctype.h>
@@ -29,6 +28,53 @@ static uint16_t *wtrim(uint16_t *str, int *res_size)
     *(end + 1) = '\0';
 
     return str;
+}
+
+bool match_pattern(struct sigscan_status *st, ptr_type *baseaddr, ptr_type *statusaddr, ptr_type *modsaddr)
+{
+    if (*baseaddr == PTR_NULL) _osu_find_ptrn(*baseaddr, st, BASE);
+    if (*statusaddr == PTR_NULL) _osu_find_ptrn(*statusaddr, st, STATUS);
+    if (*modsaddr == PTR_NULL) _osu_find_ptrn_mask(*modsaddr, st, MODS);
+    return *baseaddr != PTR_NULL && *statusaddr != PTR_NULL && *modsaddr != PTR_NULL;
+}
+
+int is_playing(struct sigscan_status *st, ptr_type statussigaddr)
+{
+    ptr_type statusaddr = PTR_NULL;
+    if (!readmemory(st, ptr_add(statussigaddr, -0x4), &statusaddr, PTR_SIZE))
+    {
+        printerr("Couldn't dereference Status");
+        return -1;
+    }
+
+    int status;
+    if (!readmemory(st, statusaddr, &status, 4))
+    {
+        printerr("Couldn't read memory!");
+        return -1;
+    }
+    return status;
+}
+
+unsigned int get_mods(struct sigscan_status *st, ptr_type modsaddr, int *err)
+{
+    ptr_type modsptr = PTR_NULL;
+    if (!readmemory(st, ptr_add(modsaddr, 0x9), &modsptr, PTR_SIZE))
+    {
+        printerr("Couldn't get a pointer for mods");
+        *err = -1;
+        return -1;
+    }
+
+    unsigned int mods;
+    if (!readmemory(st, modsptr, &mods, 4))
+    {
+        printerr("Couldn't read mods");
+        *err = -1;
+        return -1;
+    }
+    *err = 0;
+    return mods;
 }
 
 char *get_songsfolder(struct sigscan_status *st)
@@ -68,13 +114,6 @@ char *get_songsfolder(struct sigscan_status *st)
         free(songspath);
         return NULL;
     }
-}
-
-ptr_type match_pattern(struct sigscan_status *st)
-{
-    // "F8 01 74 04 83 65"
-    const uint8_t basepattern[] = { 0xf8, 0x01, 0x74, 0x04, 0x83, 0x65 };
-    return find_pattern(st, basepattern, 6, NULL);
 }
 
 ptr_type get_beatmap_ptr(struct sigscan_status *st, ptr_type base_address)
@@ -190,18 +229,18 @@ int main()
     struct sigscan_status st;
     init_sigstatus(&st);
     setbuf(stdout, NULL);
-    ptr_type base = NULL;
+    ptr_type base = PTR_NULL;
+    ptr_type statusaddr = PTR_NULL;
+    ptr_type modsaddr = PTR_NULL;
+    int oldplaying = 0;
+    int playing = 0;
+    unsigned int mods = 0;
 
     wchar_t *songpath = NULL;
     wchar_t *oldpath = NULL;
     unsigned int len = 0;
 
-    int fd = open("/tmp/osu_path", O_CREAT|O_WRONLY|O_TRUNC, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH);
-    if (fd == -1)
-    {
-        perror("/tmp/osu_path");
-        return -1;
-    }
+    int fd = -1;
 
     struct sigaction act;
     memset(&act, 0, sizeof(act));
@@ -244,11 +283,11 @@ int main()
                 }
             }
 
-            if (base == NULL)
+            if (base == PTR_NULL || statusaddr == PTR_NULL || modsaddr == PTR_NULL)
             {
                 puts("starting to scan memory...");
-                base = match_pattern(&st);
-                if (base != NULL)
+
+                if (match_pattern(&st, &base, &statusaddr, &modsaddr))
                 {
                     puts("scan succeeded. you can now use 'auto' option");
                 }
@@ -261,6 +300,29 @@ int main()
                 }
             }
 
+            bool write = false;
+
+            playing = is_playing(&st, statusaddr);
+            if (playing < 0)
+            {
+                playing = 0;
+                statusaddr = PTR_NULL;
+            }
+            else
+            {
+                if (oldplaying == 2 && playing != 2) write = true;
+                else if (oldplaying != 2 && playing == 2) write = true;
+                oldplaying = playing;
+            }
+
+            int err;
+            mods = get_mods(&st, modsaddr, &err);
+            if (err != 0)
+            {
+                mods = 0;
+                modsaddr = PTR_NULL;
+            }
+
             songpath = get_mappath(&st, base, &len);
             if (songpath != NULL)
             {
@@ -268,12 +330,13 @@ int main()
                 {
                     free(songpath);
                     songpath = NULL;
-                    goto contin;
+                    if (!write) goto contin;
                 }
                 else
                 {
                     free(oldpath);
                     oldpath = songpath;
+                    write = true;
                 }
             }
             else
@@ -283,33 +346,33 @@ int main()
                 goto contin;
             }
 
-            if (lseek(fd, 0, SEEK_SET) == -1)
+            if (fd == -1)
             {
-                perror("/tmp/osu_path");
-            }
-            else
-            {
-                char *mbstr = (char*) malloc(len * MB_CUR_MAX);
-                if (mbstr == NULL)
+                fd = open("/tmp/osu_path", O_CREAT|O_WRONLY|O_TRUNC, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH);
+                if (fd == -1)
                 {
-                    printerr("Failed allocation!");
+                    perror("/tmp/osu_path");
+                    goto contin;
+                }
+            }
+
+            if (write)
+            {
+                if (lseek(fd, 0, SEEK_SET) == -1)
+                {
+                    perror("/tmp/osu_path");
+                    close(fd);
+                    fd = -1;
                 }
                 else
                 {
-                    size_t convbytes = wcstombs(mbstr, songpath, len * MB_CUR_MAX);
-                    if (convbytes != -1)
+                    int pw = dprintf(fd, "%ls\n%d,%u\n", oldpath == NULL ? songpath : oldpath, playing, mods);
+                    if (pw < 0 || ftruncate(fd, pw) == -1)
                     {
-                        ssize_t w = write(fd, mbstr, convbytes);
-                        if (w == -1 || ftruncate(fd, w) == -1)
-                        {
-                            perror("/tmp/osu_path");
-                        }
+                        perror("/tmp/osu_path");
+                        close(fd);
+                        fd = -1;
                     }
-                    else
-                    {
-                        printerr("Failed converting!");
-                    }
-                    free(mbstr);
                 }
             }
         }

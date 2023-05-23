@@ -4,7 +4,7 @@
 #include <unistd.h>
 #include <FL/Fl.H>
 
-Freader::Freader() : thr(Freader::thread_func, this)
+Freader::Freader(bool use_gui) : thr(Freader::thread_func, this)
 {
     path = NULL;
     info = NULL;
@@ -13,16 +13,31 @@ Freader::Freader() : thr(Freader::thread_func, this)
     consumed = true;
     conti = true;
     pause = false;
+    gui = use_gui;
+}
+
+Freader::Freader() : Freader(true)
+{
 }
 
 Freader::~Freader()
 {
     this->conti = false;
     thr.join();
+    free_mapinfo(oldinfo);
+    free_mapinfo(info);
+    free(path);
+    free(songf);
 }
 
 void Freader::thread_func(Freader *fr)
 {
+    int arconf_status = init_arconfcmd(&(fr->arc));
+    if (arconf_status < 0)
+    {
+        printerr("AR command is disabled");
+    }
+
     while (fr->conti)
     {
         if (fr->pause)
@@ -49,12 +64,27 @@ void Freader::thread_func(Freader *fr)
             continue;
         }
 
+        char *new_read = strchr(new_path, '\n');
+        if (new_read == NULL)
+        {
+            printerr("/tmp/osu_path format is not valid");
+            continue;
+        }
+        *new_read = '\0';
+        new_read++;
+
+        char *playstr = strtok(new_read, ",");
+        char *modsstr = playstr + strlen(playstr) + 1;
+        int status_val = atoi(playstr);
+        unsigned int mods = strtoul(modsstr, NULL, 10);
+
         if (fr->path == NULL)
         {
         }
         else if (strcmp(fr->path, new_path) == 0)
         {
             free(new_path);
+            if (arconf_status >= 0) run_arconfcmd(&(fr->arc), mods, fr->info, status_val == 2);
             sleep(1);
             continue;
         }
@@ -84,10 +114,14 @@ void Freader::thread_func(Freader *fr)
         free(fullpath);
 
         fr->consumed = false;
-        Fl::awake();
+        if (fr->gui) Fl::awake();
+
+        if (arconf_status >= 0) run_arconfcmd(&(fr->arc), mods, fr->info, status_val == 2);
         sleep(1);
     }
-    free_mapinfo(fr->oldinfo);
-    free_mapinfo(fr->info);
-    free(fr->songf);
+
+    if (arconf_status >= 0)
+    {
+        free_arconfcmd(&(fr->arc));
+    }
 }

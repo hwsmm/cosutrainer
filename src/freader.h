@@ -1,8 +1,8 @@
 #pragma once
 #include "mapeditor.h"
+#include "arconfcmd.h"
 #include <thread>
 
-// wondering if i should use wchar_t even in here. things barely matter here
 class Freader
 {
 private:
@@ -11,7 +11,10 @@ private:
     char *songf;
     bool conti;
     bool songf_env;
+    bool gui;
+    struct ar_conf arc;
 public:
+    Freader(bool gui);
     Freader();
     ~Freader();
     char *path;
