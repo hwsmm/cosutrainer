@@ -9,6 +9,7 @@
 
 #include <inttypes.h>
 #include <wchar.h>
+#include "osusig_patterns.h"
 
 #ifdef WIN32
 typedef LPVOID ptr_type;

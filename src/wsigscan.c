@@ -173,6 +173,7 @@ ptr_type find_pattern(struct sigscan_status *st, const uint8_t bytearray[], unsi
     return (ptr_type) result;
 }
 
+#ifndef KEYOVERLAY
 char *get_rootpath(struct sigscan_status *st)
 {
     LPWSTR pathbuf = (LPWSTR) calloc(MAX_PATH, sizeof(WCHAR));
@@ -230,3 +231,4 @@ char *get_rootpath(struct sigscan_status *st)
 
     return mbbuf;
 }
+#endif
