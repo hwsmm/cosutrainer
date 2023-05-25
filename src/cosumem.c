@@ -32,10 +32,12 @@ static uint16_t *wtrim(uint16_t *str, int *res_size)
 
 bool match_pattern(struct sigscan_status *st, ptr_type *baseaddr, ptr_type *statusaddr, ptr_type *modsaddr)
 {
-    if (*baseaddr == PTR_NULL) _osu_find_ptrn(*baseaddr, st, BASE);
-    if (*statusaddr == PTR_NULL) _osu_find_ptrn(*statusaddr, st, STATUS);
-    if (*modsaddr == PTR_NULL) _osu_find_ptrn_mask(*modsaddr, st, MODS);
-    return *baseaddr != PTR_NULL && *statusaddr != PTR_NULL && *modsaddr != PTR_NULL;
+    if (baseaddr != NULL && *baseaddr == PTR_NULL) _osu_find_ptrn(*baseaddr, st, BASE);
+    if (statusaddr != NULL && *statusaddr == PTR_NULL) _osu_find_ptrn(*statusaddr, st, STATUS);
+    if (modsaddr != NULL && *modsaddr == PTR_NULL) _osu_find_ptrn_mask(*modsaddr, st, MODS);
+    return (baseaddr == NULL || *baseaddr != PTR_NULL)
+        && (statusaddr == NULL || *statusaddr != PTR_NULL)
+        && (modsaddr == NULL || *modsaddr != PTR_NULL);
 }
 
 int is_playing(struct sigscan_status *st, ptr_type statussigaddr)

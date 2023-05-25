@@ -93,7 +93,7 @@ bool stop_memread(struct sigscan_status *st)
     return CloseHandle(st->osuproc);
 }
 
-bool readmemory(struct sigscan_status *st, ptr_type address, void *buffer, unsigned long len)
+bool readmemory(struct sigscan_status *st, ptr_type address, void *buffer, size_t len)
 {
     if (!ReadProcessMemory(st->osuproc, (LPCVOID) address, buffer, len, NULL))
     {

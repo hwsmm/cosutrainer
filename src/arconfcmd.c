@@ -99,6 +99,7 @@ int init_arconfcmd(struct ar_conf *conf)
         }
         strcpy(index->command, cmd);
     }
+    fclose(cf);
 
     index = conf->ar_entry_list;
     while (index != NULL)
