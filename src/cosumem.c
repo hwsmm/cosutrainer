@@ -276,6 +276,16 @@ int main()
                 goto contin;
             }
 
+            if (fd == -1)
+            {
+                fd = open("/tmp/osu_path", O_CREAT|O_WRONLY|O_TRUNC, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH);
+                if (fd == -1)
+                {
+                    perror("/tmp/osu_path");
+                    goto contin;
+                }
+            }
+
             if (lseek(fd, 0, SEEK_SET) == -1)
             {
                 perror("/tmp/osu_path");
