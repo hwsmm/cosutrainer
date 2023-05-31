@@ -1,4 +1,4 @@
-//#define OSUMEM_PREAD
+// #define OSUMEM_PREAD
 
 #ifndef OSUMEM_PREAD
 #ifndef _GNU_SOURCE
@@ -166,7 +166,7 @@ bool stop_memread(struct sigscan_status *st)
 {
     if (st->mem_fd != -1 && close(st->mem_fd) == -1)
     {
-        perror("proc_mem");
+        perror("mem");
         return false;
     }
     st->mem_fd = -1;
@@ -177,7 +177,7 @@ bool readmemory(struct sigscan_status *st, ptr_type address, void *buffer, size_
 {
     if (pread(st->mem_fd, buffer, len, (off_t) address) == -1)
     {
-        perror(NULL);
+        perror("mem");
         return false;
     }
     return true;

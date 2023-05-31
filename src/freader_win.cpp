@@ -74,10 +74,9 @@ void Freader::thread_func(Freader *fr)
                 }
             }
 
-            if (base == NULL)
+            if (base == PTR_NULL)
             {
-                match_pattern(sst, &base, NULL, NULL);
-                if (base == NULL)
+                if (!match_pattern(sst, &base) || base == PTR_NULL)
                 {
                     printerr("Failed scanning memory!");
                     Sleep(1000);

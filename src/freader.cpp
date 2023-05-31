@@ -4,7 +4,7 @@
 #include <unistd.h>
 #include <FL/Fl.H>
 
-Freader::Freader(bool use_gui) : thr(Freader::thread_func, this)
+Freader::Freader() : thr(Freader::thread_func, this)
 {
     path = NULL;
     info = NULL;
@@ -13,11 +13,6 @@ Freader::Freader(bool use_gui) : thr(Freader::thread_func, this)
     consumed = true;
     conti = true;
     pause = false;
-    gui = use_gui;
-}
-
-Freader::Freader() : Freader(true)
-{
 }
 
 Freader::~Freader()
@@ -32,12 +27,6 @@ Freader::~Freader()
 
 void Freader::thread_func(Freader *fr)
 {
-    int arconf_status = init_arconfcmd(&(fr->arc));
-    if (arconf_status < 0)
-    {
-        printerr("AR command is disabled");
-    }
-
     while (fr->conti)
     {
         if (fr->pause)
@@ -64,27 +53,12 @@ void Freader::thread_func(Freader *fr)
             continue;
         }
 
-        char *new_read = strchr(new_path, '\n');
-        if (new_read == NULL)
-        {
-            printerr("/tmp/osu_path format is not valid");
-            continue;
-        }
-        *new_read = '\0';
-        new_read++;
-
-        char *playstr = strtok(new_read, ",");
-        char *modsstr = playstr + strlen(playstr) + 1;
-        int status_val = atoi(playstr);
-        unsigned int mods = strtoul(modsstr, NULL, 10);
-
         if (fr->path == NULL)
         {
         }
         else if (strcmp(fr->path, new_path) == 0)
         {
             free(new_path);
-            if (arconf_status >= 0) run_arconfcmd(&(fr->arc), mods, fr->info, status_val == 2);
             sleep(1);
             continue;
         }
@@ -114,14 +88,7 @@ void Freader::thread_func(Freader *fr)
         free(fullpath);
 
         fr->consumed = false;
-        if (fr->gui) Fl::awake();
-
-        if (arconf_status >= 0) run_arconfcmd(&(fr->arc), mods, fr->info, status_val == 2);
+        Fl::awake();
         sleep(1);
-    }
-
-    if (arconf_status >= 0)
-    {
-        free_arconfcmd(&(fr->arc));
     }
 }
