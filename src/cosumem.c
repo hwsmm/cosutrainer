@@ -12,24 +12,6 @@
 #include "tools.h"
 #include "cosuplatform.h"
 
-static uint16_t *wtrim(uint16_t *str, int *res_size)
-{
-    uint16_t *end = str + *res_size;
-    while (iswspace(*str) && *str != '\0')
-    {
-        str++;
-        (*res_size)--;
-    }
-
-    while (iswspace(*(--end)) && end >= str)
-    {
-        (*res_size)--;
-    }
-    *(end + 1) = '\0';
-
-    return str;
-}
-
 bool match_pattern(struct sigscan_status *st, ptr_type *baseaddr)
 {
     if (baseaddr != NULL && *baseaddr == PTR_NULL) _osu_find_ptrn(*baseaddr, st, BASE);
@@ -130,15 +112,11 @@ wchar_t *get_mappath(struct sigscan_status *st, ptr_type base_address, unsigned 
         goto readfail;
 
     *(folderstrbuf+foldersize) = '\0';
-    uint16_t *trim_fdstr;
-    trim_fdstr = wtrim(folderstrbuf, &foldersize);
 
     if (!readmemory(st, ptr_add(path_ptr, 8), pathstrbuf, pathsize * 2))
         goto readfail;
 
     *(pathstrbuf+pathsize) = '\0';
-    uint16_t *trim_pstr;
-    trim_pstr = wtrim(pathstrbuf, &pathsize);
 
     int size;
     size = foldersize + 1 + pathsize + 1; // / , \0
@@ -151,9 +129,9 @@ wchar_t *get_mappath(struct sigscan_status *st, ptr_type base_address, unsigned 
     for (i = 0; i < size - 1; i++)
     {
         uint16_t put;
-        if (i < foldersize) put = *(trim_fdstr + i);
+        if (i < foldersize) put = *(folderstrbuf + i);
         else if (i == foldersize) put = '/';
-        else put = *(trim_pstr + (i - foldersize - 1));
+        else put = *(pathstrbuf + (i - foldersize - 1));
 #ifndef WIN32
         if (put == '\\') put = '/'; // workaround: some installation put \ in song folder
 #endif

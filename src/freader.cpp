@@ -65,7 +65,9 @@ void Freader::thread_func(Freader *fr)
 
         if (fr->path != NULL) free(fr->path);
         fr->path = new_path;
-        int fullsize = strlen(fr->songf) + 1 + readbytes + 1;
+
+        int songflen = strlen(fr->songf);
+        int fullsize = songflen + 1 + readbytes + 1;
         char *fullpath = (char*) malloc(fullsize);
         if (fullpath == NULL)
         {
@@ -73,7 +75,16 @@ void Freader::thread_func(Freader *fr)
             continue;
         }
 
-        snprintf(fullpath, fullsize, "%s/%s", fr->songf, trim(fr->path, &readbytes));
+        strcpy(fullpath, fr->songf);
+        *(fullpath + songflen) = '/';
+        strcpy(fullpath + songflen + 1, trim(fr->path, &readbytes));
+
+        if (try_convertwinpath(fullpath, songflen + 1) < 0)
+        {
+            printerr("Failed converting path!");
+            free(fullpath);
+            continue;
+        }
 
         // free_mapinfo(fr->info);
         free_mapinfo(fr->oldinfo);

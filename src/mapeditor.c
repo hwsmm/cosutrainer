@@ -61,7 +61,7 @@ static int _putstr(struct editpass *ep, unsigned int *ecur, const char *src, uns
 
 #define putstr(x, len) \
 if (_putstr(ep, &ecur, x, len) != 0) return -1;
-#define putsstr(x) putstr(x, sizeof x - 1);
+#define putsstr(x) putstr(x, sizeof(x) - 1);
 #define putdstr(x) putstr(x, strlen(x));
 
 static int _snpedit(struct editpass *ep, unsigned int *ecur, const char *format, ...)
@@ -287,6 +287,53 @@ static int write_mapinfo(char *line, void *vinfo, enum SECTION sect)
     return 0;
 }
 
+#ifndef WIN32
+static int convert_vaildpath(struct mapinfo *mi)
+{
+    char *sep = strrchr(mi->fullpath, PATHSEP);
+    *sep = '\0';
+
+    int fdlen = strlen(mi->fullpath);
+    int solen = mi->audioname != NULL ? strlen(mi->audioname) : 0;
+    int bglen = mi->bgname != NULL ? strlen(mi->bgname) : 0;
+    int res = 0;
+    char *temp = (char*) malloc(fdlen + 1 + (solen > bglen ? solen : bglen) + 1);
+    if (temp == NULL)
+    {
+        printerr("Failed allocation!");
+        return -1;
+    }
+    strcpy(temp, mi->fullpath);
+    *sep = PATHSEP;
+    *(temp + fdlen) = PATHSEP;
+
+    if (mi->audioname != NULL)
+    {
+        strcpy(temp + fdlen + 1, mi->audioname);
+        int ares = try_convertwinpath(temp, fdlen + 1);
+        if (ares == 0)
+        {
+            strcpy(mi->audioname, temp + fdlen + 1);
+        }
+        res = ares;
+    }
+
+    if (mi->bgname != NULL)
+    {
+        strcpy(temp + fdlen + 1, mi->bgname);
+        int bres = try_convertwinpath(temp, fdlen + 1);
+        if (bres == 0)
+        {
+            strcpy(mi->bgname, temp + fdlen + 1);
+        }
+        if (res >= 0) res = bres;
+    }
+
+    free(temp);
+    return res;
+}
+#endif
+
 struct mapinfo *read_beatmap(char *mapfile)
 {
     struct mapinfo *info = (struct mapinfo*) calloc(sizeof(struct mapinfo), 1);
@@ -305,6 +352,10 @@ struct mapinfo *read_beatmap(char *mapfile)
         info->minbpm = 1 / info->minbpm * 1000 * 60;
 
         if (!info->arexists) info->ar = info->od;
+
+#ifndef WIN32
+        convert_vaildpath(info);
+#endif
     }
     else
     {
@@ -337,7 +388,9 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
 
     if (sect == root)
     {
-        if (CMPSTR(line, "osu file format"))
+        // https://osu.ppy.sh/beatmapsets/134151#osu/336571
+        // some insane map files put weird characters at first
+        if (strstr(line, "osu file format") != NULL)
         {
             edited = true;
             putsstr("osu file format v14\r\n");

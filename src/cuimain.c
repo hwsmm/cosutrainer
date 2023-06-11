@@ -45,6 +45,7 @@ int cuimain(int argc, char *argv[])
             printerr("Set OSU_SONG_FOLDER variable to use 'auto' option.");
             return 2;
         }
+        int songflen = strlen(song_folder);
 
         int readbytes = 0;
         char *song_path = read_file("/tmp/osu_path", &readbytes);
@@ -53,7 +54,7 @@ int cuimain(int argc, char *argv[])
             return 2;
         }
 
-        int pathsize = strlen(song_folder) + 1 + readbytes + 1;
+        int pathsize = songflen + 1 + readbytes + 1;
         path = (char*) malloc(pathsize);
         if (path == NULL)
         {
@@ -61,10 +62,21 @@ int cuimain(int argc, char *argv[])
             free(song_path);
             return 3;
         }
-        snprintf(path, pathsize, "%s/%s", song_folder, song_path);
-        remove_newline(path);
+
+        strcpy(path, song_folder);
+        *(path + songflen) = '/';
+        strcpy(path + songflen + 1, trim(song_path, &readbytes));
+
+        int rets = try_convertwinpath(path, songflen + 1);
+        if (rets < 0)
+        {
+            printerr("Failed converting path!");
+            free(path);
+        }
         free(song_folder);
         free(song_path);
+
+        if (rets < 0) return 5;
     }
     else
     {

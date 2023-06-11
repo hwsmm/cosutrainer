@@ -23,6 +23,7 @@ void remove_newline(char* line);
 int endswith(const char *str, const char *suffix);
 char *replace_string(const char *source, const char *match, const char *replace);
 char *trim(char *str, int *res_size);
+int try_convertwinpath(char *path, int pos);
 
 #ifdef __cplusplus
 }
