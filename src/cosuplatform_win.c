@@ -93,3 +93,26 @@ char *get_songspath()
     // if one ever needs to implement it, it needs to be for custom songs folder
     // as osu! songs folder is normally osu! running folder\Songs, you need process handle we don't have here
 }
+
+// stub, since winapi functions already handle them well enough
+int try_convertwinpath(char *path, int pos)
+{
+    if (access(path, F_OK) == 0)
+    {
+        return 1;
+    }
+    return -1;
+}
+
+char *get_iconpath()
+{
+    const char path[] = ".\\cosutrainer.png";
+    char *cpy = (char*) malloc(sizeof(path));
+    if (cpy == NULL)
+    {
+        printerr("Failed allocating!");
+        return NULL;
+    }
+    strcpy(cpy, path);
+    return cpy;
+}

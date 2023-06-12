@@ -24,6 +24,8 @@ int fork_launch(char* cmd);
 char *read_file(const char *file, int *size);
 char *get_realpath(const char *path);
 char *get_songspath();
+char *get_iconpath();
+int try_convertwinpath(char *path, int pos);
 
 #ifdef __cplusplus
 }
