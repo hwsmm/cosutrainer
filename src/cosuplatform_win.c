@@ -1,6 +1,7 @@
 #include "cosuplatform.h"
 #include <stdio.h>
 #include <windows.h>
+#include <strsafe.h>
 
 int fork_launch(char* cmd)
 {
@@ -106,13 +107,60 @@ int try_convertwinpath(char *path, int pos)
 
 char *get_iconpath()
 {
-    const char path[] = ".\\cosutrainer.png";
-    char *cpy = (char*) malloc(sizeof(path));
-    if (cpy == NULL)
+    const WCHAR name[] = L"cosutrainer.png";
+
+    LPWSTR pathbuf = (LPWSTR) calloc(MAX_PATH, sizeof(WCHAR));
+    if (pathbuf == NULL)
     {
-        printerr("Failed allocating!");
+        fputs("Failed allocating memory for process path!\n", stderr);
         return NULL;
     }
-    strcpy(cpy, path);
-    return cpy;
+
+    DWORD err = GetModuleFileNameW(NULL, pathbuf, MAX_PATH);
+    if (err >= MAX_PATH)
+    {
+        fputs("Windows may have truncated file path!\n", stderr);
+    }
+    else if (err == 0)
+    {
+        fprintf(stderr, "Failed getting process path: %lu\n", GetLastError());
+        return NULL;
+    }
+
+    LPWSTR findslash = pathbuf + wcslen(pathbuf);
+    while (*--findslash)
+    {
+        if (*findslash == '\\')
+        {
+            StringCchCopyW(findslash + 1, MAX_PATH - err - 1, name);
+            break;
+        }
+        err--;
+    }
+
+    int mbnum = WideCharToMultiByte(CP_UTF8, 0, pathbuf, -1, NULL, 0, NULL, NULL);
+    if (mbnum == 0)
+    {
+        fputs("Failed converting!\n", stderr);
+        free(pathbuf);
+        return NULL;
+    }
+
+    LPSTR mbbuf = (LPSTR) malloc(mbnum);
+    if (mbbuf == NULL)
+    {
+        fputs("Failed allocation\n", stderr);
+        free(pathbuf);
+        return NULL;
+    }
+
+    if (WideCharToMultiByte(CP_UTF8, 0, pathbuf, -1, mbbuf, mbnum, NULL, NULL) == 0)
+    {
+        fputs("Failed converting!\n", stderr);
+        free(pathbuf);
+        free(mbbuf);
+        return NULL;
+    }
+
+    return mbbuf;
 }
