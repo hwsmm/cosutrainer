@@ -21,8 +21,8 @@ Freader::~Freader()
     thr.join();
     free_mapinfo(oldinfo);
     free_mapinfo(info);
-    free(path);
-    free(songf);
+    if (path != NULL) free(path);
+    if (songf != NULL) free(songf);
 }
 
 void Freader::thread_func(Freader *fr)
@@ -41,6 +41,7 @@ void Freader::thread_func(Freader *fr)
             if (fr->songf == NULL)
             {
                 printerr("Song Folder not found!");
+                sleep(1);
                 continue;
             }
         }
@@ -81,7 +82,7 @@ void Freader::thread_func(Freader *fr)
 
         if (try_convertwinpath(fullpath, songflen + 1) < 0)
         {
-            printerr("Failed converting path!");
+            printerr("Failed finding path!");
             free(fullpath);
             continue;
         }

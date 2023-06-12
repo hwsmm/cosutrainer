@@ -133,6 +133,9 @@ void CosuWindow::start()
     Fl::scheme("plastic");
     Fl_Image::RGB_scaling(FL_RGB_SCALING_BILINEAR);
     Fl_Window *window = cosuui.make_window();
+    Fl_Image emptyimg(0,0,0);
+    Fl_Image *img = NULL;
+    Fl_RGB_Image *icon = NULL;
 
     cosuui.rate->callback(rateradio_callb, (void*) this);
     cosuui.bpm->callback(bpmradio_callb, (void*) this);
@@ -145,10 +148,18 @@ void CosuWindow::start()
         (*(diffw + gi))->callback(diffch_callb, (void*) this);
     }
 
-    window->show();
+    char *icp = get_iconpath();
+    if (icp != NULL)
+    {
+        icon = new Fl_PNG_Image(icp);
+        free(icp);
+        if (icon != NULL)
+        {
+            window->icon(icon);
+        }
+    }
 
-    Fl_Image emptyimg(0,0,0);
-    Fl_Image *img = NULL;
+    window->show();
 
     done = true;
 
@@ -278,4 +289,5 @@ void CosuWindow::start()
         }
     }
     if (img != NULL) delete img;
+    if (icon != NULL) delete icon;
 }
