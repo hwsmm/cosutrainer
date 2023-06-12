@@ -155,7 +155,7 @@ void CosuWindow::start()
         free(icp);
         if (icon != NULL)
         {
-            window->icon(icon);
+            Fl_Window::default_icon(icon);
         }
     }
 
