@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=cosu-trainer
+Comment=A simple osu! map rate changer for Linux
+Exec=cosu-trainer
+Icon=cosutrainer
+Terminal=false
+Categories=Game;
