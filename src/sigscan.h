@@ -9,6 +9,7 @@
 
 #include <inttypes.h>
 #include <wchar.h>
+#include <stdio.h>
 #include "osusig_patterns.h"
 
 #ifdef WIN32

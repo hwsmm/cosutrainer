@@ -123,13 +123,14 @@ void *start_regionit(struct sigscan_status *st)
 
 int next_regionit(void *regionit, struct vm_region *res)
 {
+    struct winmemit *it = (struct winmemit*) regionit;
     MEMORY_BASIC_INFORMATION info;
-    if (VirtualQueryEx(regionit->st->osuproc, regionit->curaddr, &info, sizeof(info)) != sizeof(info))
+    if (VirtualQueryEx(it->st->osuproc, it->curaddr, &info, sizeof(info)) != sizeof(info))
     {
         return 0;
     }
 
-    regionit->curaddr = ptr_add(info.BaseAddress, info.RegionSize);
+    it->curaddr = ptr_add(info.BaseAddress, info.RegionSize);
 
     if ((info.State & 0x1000) == 0 || (info.Protect & 0x100) != 0)
     {
