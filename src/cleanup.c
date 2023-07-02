@@ -5,6 +5,7 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <dirent.h>
+#include <strings.h>
 #include "tools.h"
 #include "cosuplatform.h"
 
@@ -111,7 +112,7 @@ int main(int argc, char *argv[])
                 bool found = false;
                 for (i = 0; i < index + 1; i++)
                 {
-                    if (strcmp(sent->d_name, mp3s[i]) == 0)
+                    if (strcasecmp(sent->d_name, mp3s[i]) == 0)
                     {
                         found = true;
                         break;
