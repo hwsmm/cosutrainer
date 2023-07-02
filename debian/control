@@ -1,0 +1,9 @@
+Source: cosu-trainer
+Build-Depends: debhelper, gcc, meson, libmpg123-dev, libmp3lame-dev, libsndfile1-dev, libsoundtouch-dev, libfltk1.3-dev, libzip-dev, zlib1g-dev, pkg-config
+Maintainer: hwsnemo <hwsnemo@gmail.com>
+Standards-Version: 4.6.0
+
+Package: cosu-trainer
+Depends: ${shlibs:Depends}
+Architecture: amd64 i386
+Description: Change various parameters of an osu! map easily
