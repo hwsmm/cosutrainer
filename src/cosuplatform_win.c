@@ -162,5 +162,6 @@ char *get_iconpath()
         return NULL;
     }
 
+    free(pathbuf);
     return mbbuf;
 }

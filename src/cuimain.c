@@ -119,6 +119,7 @@ int cuimain(int argc, char *argv[])
 
     edit.pitch = false;
     edit.flip = none;
+    edit.nospinner = false;
 
     if (argc >= 4)
     {

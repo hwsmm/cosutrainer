@@ -102,74 +102,48 @@ bool readmemory(struct sigscan_status *st, ptr_type address, void *buffer, size_
     return true;
 }
 
-ptr_type find_pattern(struct sigscan_status *st, const uint8_t bytearray[], unsigned int pattern_size, const bool mask[])
+struct winmemit
+{
+    struct sigscan_status *st;
+    LPVOID curaddr;
+};
+
+void *start_regionit(struct sigscan_status *st)
+{
+    struct winmemit *it = (struct winmemit*) malloc(sizeof(struct winmemit));
+    if (it == NULL)
+    {
+        return NULL;
+    }
+
+    it->st = st;
+    it->curaddr = NULL;
+    return it;
+}
+
+int next_regionit(void *regionit, struct vm_region *res)
 {
     MEMORY_BASIC_INFORMATION info;
-    LPVOID curaddr = NULL;
-    LPVOID result = NULL;
-    uint8_t *buffer = NULL;
-    SIZE_T cursize = 0;
-
-    // check first if we can get memory map from the process
-    if (VirtualQueryEx(st->osuproc, curaddr, &info, sizeof(info)) == 0)
+    if (VirtualQueryEx(regionit->st->osuproc, regionit->curaddr, &info, sizeof(info)) != sizeof(info))
     {
-        fprintf(stderr, "Failed getting virtual memory map: %lu\n", GetLastError());
-        return PTR_NULL;
+        return 0;
     }
-    buffer = (uint8_t*) malloc(info.RegionSize);
-    if (buffer == NULL)
+
+    regionit->curaddr = ptr_add(info.BaseAddress, info.RegionSize);
+
+    if ((info.State & 0x1000) == 0 || (info.Protect & 0x100) != 0)
     {
-        fputs("Failed allocating memory while initializing buffer while looking for a pattern\n", stderr);
-        return PTR_NULL;
+        return next_regionit(regionit, res);
     }
-    cursize = info.RegionSize;
 
-    do
-    {
-        if (result != NULL) break;
+    res->start = info.BaseAddress;
+    res->len = info.RegionSize;
+    return 1;
+}
 
-        curaddr = ptr_add(info.BaseAddress, info.RegionSize);
-
-        if ((info.State & 0x1000) == 0 || (info.Protect & 0x100) != 0) continue;
-        if (info.RegionSize < pattern_size) continue;
-
-        if (info.RegionSize > cursize)
-        {
-            // didn't use realloc since i don't need to retain data from old buffer
-            free(buffer);
-            buffer = (uint8_t*) malloc(info.RegionSize);
-            if (buffer == NULL)
-            {
-                fputs("Failed allocating a new buffer\n", stderr);
-                return PTR_NULL;
-            }
-            cursize = info.RegionSize;
-        }
-        if (ReadProcessMemory(st->osuproc, info.BaseAddress, buffer, info.RegionSize, NULL))
-        {
-            for (SIZE_T i = 0; i < info.RegionSize - pattern_size; i++)
-            {
-                bool match = true;
-                for (SIZE_T e = 0; e < pattern_size; e++)
-                {
-                    if (*(buffer + i + e) != bytearray[e] && (mask == NULL || mask[e] != true))
-                    {
-                        match = false;
-                        break;
-                    }
-                }
-                if (match)
-                {
-                    result = ptr_add(info.BaseAddress, i);
-                    break;
-                }
-            }
-        }
-    }
-    while (VirtualQueryEx(st->osuproc, curaddr, &info, sizeof(info)) == sizeof(info));
-    free(buffer);
-
-    return (ptr_type) result;
+void stop_regionit(void *regionit)
+{
+    free(regionit);
 }
 
 #ifndef KEYOVERLAY

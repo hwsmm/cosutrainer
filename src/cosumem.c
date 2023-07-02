@@ -12,6 +12,8 @@
 #include "tools.h"
 #include "cosuplatform.h"
 
+extern ptr_type find_pattern(struct sigscan_status *st, const uint8_t bytearray[], const unsigned int pattern_size, const bool mask[]);
+
 bool match_pattern(struct sigscan_status *st, ptr_type *baseaddr)
 {
     if (baseaddr != NULL && *baseaddr == PTR_NULL) _osu_find_ptrn(*baseaddr, st, BASE);
@@ -165,7 +167,6 @@ int main()
 {
     struct sigscan_status st;
     init_sigstatus(&st);
-    setbuf(stdout, NULL);
     ptr_type base = PTR_NULL;
 
     wchar_t *songpath = NULL;
@@ -183,38 +184,14 @@ int main()
         return -3;
     }
 
+    puts("memory scanner is starting... open osu! if you didn't");
     while (run)
     {
-        if (OSUMEM_NOT_FOUND(&st))
+        DEFAULT_LOGIC(&st,
         {
-            find_and_set_osu(&st);
-            if (OSUMEM_NOT_FOUND(&st))
-            {
-                putchar('.');
-                goto contin;
-            }
-            else
-            {
-                putchar('\n');
-            }
-        }
-        else
+            printerr("osu is found!");
+        },
         {
-            find_and_set_osu(&st);
-        }
-
-        if (OSUMEM_OK(&st))
-        {
-            if (OSUMEM_NEW_OSU(&st))
-            {
-                fputs("osu! is found. ", stdout);
-                if (init_memread(&st) == -1)
-                {
-                    puts("failed opening memory...");
-                    continue;
-                }
-            }
-
             if (base == PTR_NULL)
             {
                 puts("starting to scan memory...");
@@ -293,13 +270,11 @@ int main()
                     free(mbstr);
                 }
             }
-        }
-        else
+        },
         {
-            fputs("process lost! waiting for osu", stderr);
+            printerr("process lost! waiting for osu...");
             base = NULL;
-            stop_memread(&st);
-        }
+        })
 contin:
         sleep(1);
     }

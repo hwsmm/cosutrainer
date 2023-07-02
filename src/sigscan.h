@@ -35,6 +35,12 @@ struct sigscan_status
 #endif
 };
 
+struct vm_region
+{
+    ptr_type start;
+    size_t len;
+};
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -49,11 +55,110 @@ bool stop_memread(struct sigscan_status *st);
 #define OSUMEM_NEW_OSU(x) ((x)->status == 2)
 #define OSUMEM_RUNNING(x) ((x)->status == 1)
 
+#define DEFAULT_LOGIC(st, NEW_FOUND, SUCCESS, LOST_OSU) \
+if (OSUMEM_NOT_FOUND(st)) \
+{ \
+    find_and_set_osu(st); \
+    if (OSUMEM_OK(st)) \
+    { \
+        if (init_memread(st) == -1) \
+        { \
+            fputs("Failed initializing memory reader\n", stderr); \
+        } \
+        else \
+        { \
+            NEW_FOUND; \
+        } \
+    } \
+} \
+else \
+{ \
+    find_and_set_osu(st); \
+    if (OSUMEM_NOT_FOUND(st)) \
+    { \
+        stop_memread(st); \
+        LOST_OSU; \
+    } \
+} \
+if (OSUMEM_OK(st)) \
+{ \
+    SUCCESS; \
+}
+
 void find_and_set_osu(struct sigscan_status *st);
 bool is_osu_alive(struct sigscan_status *st);
 bool readmemory(struct sigscan_status *st, ptr_type address, void *buffer, size_t len);
-ptr_type find_pattern(struct sigscan_status *st, const uint8_t bytearray[], unsigned int pattern_size, const bool mask[]);
 char *get_rootpath(struct sigscan_status *st);
+
+void *start_regionit(struct sigscan_status *st);
+int next_regionit(void *regionit, struct vm_region *res);
+void stop_regionit(void *regionit);
+
+inline ptr_type find_pattern(struct sigscan_status *st, const uint8_t bytearray[], const unsigned int pattern_size, const bool mask[])
+{
+    ptr_type result = NULL;
+    uint8_t *buffer = NULL;
+    unsigned long bufsize = 0;
+
+    void *it = start_regionit(st);
+    if (it == NULL)
+    {
+        return NULL;
+    }
+
+    struct vm_region rg;
+
+    while (next_regionit(it, &rg) > 0)
+    {
+        if (result != NULL) break;
+
+        if (rg.len < pattern_size)
+        {
+            continue;
+        }
+
+        if (rg.len > bufsize)
+        {
+            if (buffer != NULL) free(buffer);
+            buffer = (uint8_t*) malloc(rg.len);
+            if (buffer == NULL)
+            {
+                fputs("Failed allocating memory\n", stderr);
+                break;
+            }
+            bufsize = rg.len;
+        }
+
+        if (!readmemory(st, rg.start, buffer, rg.len))
+        {
+            continue;
+        }
+
+        unsigned long i;
+        for (i = 0; i < rg.len - pattern_size + 1L; i++)
+        {
+            unsigned int e;
+            bool match = true;
+            for (e = 0; e < pattern_size; e++)
+            {
+                if (*(buffer + i + e) != bytearray[e] && (mask == NULL || mask[e] != true))
+                {
+                    match = false;
+                    break;
+                }
+            }
+            if (match)
+            {
+                result = ptr_add(rg.start, i);
+                break;
+            }
+        }
+    }
+
+    stop_regionit(it);
+    free(buffer);
+    return result;
+}
 
 #ifdef __cplusplus
 }

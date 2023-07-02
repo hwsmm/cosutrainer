@@ -37,32 +37,10 @@ void Freader::thread_func(Freader *fr)
             continue;
         }
 
-        if (OSUMEM_NOT_FOUND(sst))
+        DEFAULT_LOGIC(sst,
         {
-            find_and_set_osu(sst);
-            if (OSUMEM_NOT_FOUND(sst))
-            {
-                Sleep(1000);
-                continue;
-            }
-        }
-        else
+        },
         {
-            find_and_set_osu(sst);
-        }
-
-        if (OSUMEM_OK(sst))
-        {
-            if (OSUMEM_NEW_OSU(sst))
-            {
-                if (init_memread(sst) == -1)
-                {
-                    printerr("Failed initializing memory reading!");
-                    Sleep(1000);
-                    continue;
-                }
-            }
-
             if (fr->songf == NULL)
             {
                 fr->songf = get_songsfolder(sst);
@@ -129,19 +107,16 @@ void Freader::thread_func(Freader *fr)
 
             fr->consumed = false;
             Fl::awake();
-            Sleep(1000);
-        }
-        else
+        },
         {
-            // process lost!
-            stop_memread(sst);
             base = NULL;
             if (fr->songf)
             {
                 free(fr->songf);
                 fr->songf = NULL;
             }
-        }
+        })
+        Sleep(1000);
     }
     free_mapinfo(fr->oldinfo);
     free_mapinfo(fr->info);

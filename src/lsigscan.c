@@ -184,95 +184,55 @@ bool readmemory(struct sigscan_status *st, ptr_type address, void *buffer, size_
 }
 #endif
 
-ptr_type find_pattern(struct sigscan_status *st, const uint8_t bytearray[], const unsigned int pattern_size, const bool mask[])
+void *start_regionit(struct sigscan_status *st)
 {
     char mapsfile[32];
     FILE *maps;
-    char line[1024];
-    ptr_type result = NULL;
-
-    uint8_t *buffer = NULL;
-    unsigned long bufsize = 0;
-
     snprintf(mapsfile, sizeof mapsfile, "/proc/%d/maps", st->osu);
 
     maps = fopen(mapsfile, "r");
     if (!maps)
     {
         perror(mapsfile);
-        return NULL;
     }
+    return maps;
+}
 
-    while (fgets(line, sizeof line, maps))
+int next_regionit(void *regionit, struct vm_region *res)
+{
+    char line[1024];
+    if (fgets(line, sizeof line, (FILE*) regionit) == NULL)
     {
-        if (result != NULL) break;
-
-        char *startstr = strtok(line, "-");
-        char *endstr = strtok(NULL, " ");
-        char *permstr = strtok(NULL, " ");
-
-        if (!startstr || !endstr || !permstr) continue;
-
-        if (*permstr != 'r')
+        if (ferror((FILE*) regionit) != 0)
         {
-            continue;
+            fprintf(stderr, "Error while reading memory map: %d\n", ferror((FILE*) regionit));
+            return -1;
         }
-
-        ptr_type startptr = (ptr_type) strtol(startstr, NULL, 16);
-        ptr_type endptr = (ptr_type) strtol(endstr, NULL, 16);
-
-        unsigned long size = (intptr_t) endptr - (intptr_t) startptr + 1L;
-
-        if (size < pattern_size)
-        {
-            continue;
-        }
-
-        if (size > bufsize)
-        {
-            if (buffer != NULL) free(buffer);
-            buffer = (uint8_t*) malloc(size);
-            if (buffer == NULL)
-            {
-                printerr("Failed allocating memory");
-                break;
-            }
-            bufsize = size;
-        }
-
-        if (!readmemory(st, startptr, buffer, size))
-        {
-            continue;
-        }
-
-        unsigned long i;
-        for (i = 0; i < size - pattern_size + 1L; i++)
-        {
-            unsigned int e;
-            bool match = true;
-            for (e = 0; e < pattern_size; e++)
-            {
-                if (*(buffer + i + e) != bytearray[e] && (mask == NULL || mask[e] != true))
-                {
-                    match = false;
-                    break;
-                }
-            }
-            if (match)
-            {
-                result = ptr_add(startptr, i);
-                break;
-            }
-        }
+        return 0;
     }
 
-    if (fclose(maps) == EOF)
+    char *startstr = strtok(line, "-");
+    char *endstr = strtok(NULL, " ");
+    char *permstr = strtok(NULL, " ");
+
+    if (!startstr || !endstr || !permstr || *permstr != 'r')
     {
-        perror(mapsfile);
+        return next_regionit(regionit, res);
     }
-    free(buffer);
 
-    return result;
+    ptr_type startptr = (ptr_type) strtol(startstr, NULL, 16);
+    ptr_type endptr = (ptr_type) strtol(endstr, NULL, 16);
+
+    unsigned long size = (intptr_t) endptr - (intptr_t) startptr + 1L;
+
+    res->start = startptr;
+    res->len = size;
+    return 1;
+}
+
+void stop_regionit(void *regionit)
+{
+    fclose((FILE*) regionit);
 }
 
 char *get_rootpath(struct sigscan_status *st)
