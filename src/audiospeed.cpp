@@ -121,7 +121,7 @@ int change_mp3_speed(const char* source, struct buffers *bufs, double speed, boo
                 }
                 else
                 {
-                    printerr("Error while decoding a mp3");
+                    fprintf(stderr, "Error while decoding a mp3: %d\n", err);
                     throw -99;
                 }
             }
