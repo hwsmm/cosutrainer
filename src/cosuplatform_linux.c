@@ -6,6 +6,7 @@
 #include <dirent.h>
 #include <stdbool.h>
 #include <ctype.h>
+#include <sys/stat.h>
 
 int fork_launch(char* cmd)
 {
@@ -61,9 +62,35 @@ char *read_file(const char *file, int *size)
     return buf;
 }
 
-char *get_realpath(const char *path)
+char *get_realpath(char *path)
 {
-    return realpath(path, NULL);
+    struct stat buf;
+    if (lstat(path, &buf) == 0 && !S_ISLNK(buf.st_mode))
+    {
+        return realpath(path, NULL);
+    }
+
+    // workaround for path that may be a symlink
+    // get a real path for a parent directory, but don't follow file link
+    char *lastspr = strrchr(path, '/');
+    if (lastspr != NULL) *lastspr = '\0';
+
+    char *tmp = (char*) malloc(PATH_MAX);
+    if (tmp != NULL)
+    {
+        char *tmpr = realpath(lastspr == NULL ? "." : path, tmp);
+        if (tmpr == NULL)
+        {
+            free(tmp);
+            return NULL;
+        }
+        if (lastspr != NULL) *lastspr = '/';
+        else strcat(tmpr, "/");
+        strcat(tmpr, lastspr == NULL ? path : lastspr);
+        char *real = (char*) realloc(tmpr, strlen(tmpr) + 1);
+        return real == NULL ? tmpr : real;
+    }
+    return NULL;
 }
 
 char *get_songspath()

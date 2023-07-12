@@ -13,7 +13,7 @@ char *read_file(const char *file, int *size)
     return NULL; // stub;
 }
 
-char *get_realpath(const char *path)
+char *get_realpath(char *path)
 {
     LPWSTR pathbuf = (LPWSTR) calloc(MAX_PATH, sizeof(WCHAR));
     if (pathbuf == NULL)
