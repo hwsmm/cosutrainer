@@ -189,6 +189,12 @@ static int loop_map(char *mapfile, int (*func)(char*, void*, enum SECTION), void
             {
                 // loop again
             }
+            else if (ret == -12345)
+            {
+                // early end
+                ret = 0;
+                break;
+            }
             else if (ret != 0)
             {
                 break;
@@ -204,7 +210,16 @@ static int loop_map(char *mapfile, int (*func)(char*, void*, enum SECTION), void
 static int write_mapinfo(char *line, void *vinfo, enum SECTION sect)
 {
     struct mapinfo *info = (struct mapinfo*) vinfo;
-    if (sect == timingpoints)
+    if (sect != empty && (info->read_sections & (1 << sect)) == 0)
+    {
+        if ((info->read_sections & 0b111101000) == 0b111101000)
+        {
+            return -12345;
+        }
+        info->read_sections |= (1 << sect);
+    }
+
+    if (sect == timingpoints) // 9
     {
         // char *timestr =
         tkn(line);
@@ -217,7 +232,7 @@ static int write_mapinfo(char *line, void *vinfo, enum SECTION sect)
             if (info->minbpm == 0 || bpm > info->minbpm) info->minbpm = bpm;
         }
     }
-    else if (sect == general)
+    else if (sect == general) // 4
     {
         if (CMPSTR(line, "AudioFilename: "))
         {
@@ -230,14 +245,14 @@ static int write_mapinfo(char *line, void *vinfo, enum SECTION sect)
             info->mode = atoi(CUTFIRST(line, "Mode: "));
         }
     }
-    else if (sect == difficulty)
+    else if (sect == difficulty) // 7
     {
         if (CMPSTR(line, "HPDrainRate:"))            info->hp = atof(CUTFIRST(line, "HPDrainRate:"));
         else if (CMPSTR(line, "CircleSize:"))        info->cs = atof(CUTFIRST(line, "CircleSize:"));
         else if (CMPSTR(line, "OverallDifficulty:")) info->od = atof(CUTFIRST(line, "OverallDifficulty:"));
         else if (CMPSTR(line, "ApproachRate:"))      info->arexists = true, info->ar = atof(CUTFIRST(line, "ApproachRate:"));
     }
-    else if (sect == metadata)
+    else if (sect == metadata) // 6
     {
         if (CMPSTR(line, "Version:"))
         {
@@ -257,7 +272,7 @@ static int write_mapinfo(char *line, void *vinfo, enum SECTION sect)
             info->tagexists = true;
         }
     }
-    else if (sect == events)
+    else if (sect == events) // 8
     {
         if (CMPSTR(line, "0,0,"))
         {

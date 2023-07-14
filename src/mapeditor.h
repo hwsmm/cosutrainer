@@ -4,6 +4,7 @@
 
 enum SECTION
 {
+    //1   2       3      4        5       6         7           8       9             10       12          13
     root, header, empty, general, editor, metadata, difficulty, events, timingpoints, colours, hitobjects, unknown
 };
 
@@ -30,6 +31,8 @@ struct mapinfo
     bool arexists;
     bool tagexists;
     bool diffexists;
+
+    int read_sections;
 };
 
 struct editdata // data needed to edit a map
