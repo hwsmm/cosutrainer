@@ -65,9 +65,13 @@ char *read_file(const char *file, int *size)
 char *get_realpath(char *path)
 {
     struct stat buf;
-    if (lstat(path, &buf) == 0 && !S_ISLNK(buf.st_mode))
+    if (lstat(path, &buf) == 0)
     {
-        return realpath(path, NULL);
+        if (!S_ISLNK(buf.st_mode)) return realpath(path, NULL);
+    }
+    else
+    {
+        return NULL;
     }
 
     // workaround for path that may be a symlink
@@ -86,7 +90,7 @@ char *get_realpath(char *path)
         }
         if (lastspr != NULL) *lastspr = '/';
         else strcat(tmpr, "/");
-        strcat(tmpr, lastspr == NULL ? path : lastspr);
+        strncat(tmpr, lastspr == NULL ? path : lastspr, PATH_MAX - strlen(tmpr));
         char *real = (char*) realloc(tmpr, strlen(tmpr) + 1);
         return real == NULL ? tmpr : real;
     }
