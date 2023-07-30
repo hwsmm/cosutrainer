@@ -194,7 +194,7 @@ int change_mp3_speed(const char* source, struct buffers *bufs, double speed, boo
         }
         else
         {
-            printerr("Failed finishing a mp3");
+            printerr("(not fatal) Failed finishing a mp3");
         }
 
         success = 0;
@@ -281,7 +281,7 @@ int change_audio_speed_libsndfile(const char* source, struct buffers *bufs, doub
     while (!flush)
     {
         readcount = sf_read_float(in, buffer, 1024);
-        *progress += (float) (readcount / info.channels) / (float) info.frames;
+        *progress += (float) (readcount / info.channels) / (float) info.frames; // sndfile ogg impl doesn't seem to report frames though
 
         if (readcount != 0) st.putSamples(buffer, readcount / info.channels);
         else
