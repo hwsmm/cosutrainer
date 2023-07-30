@@ -93,19 +93,19 @@ char *get_songspath()
 {
     DWORD sz = 0;
     LPWSTR st = getOsuPath(&sz);
-    if (st == NULL) return 1;
+    if (st == NULL) return NULL;
     LPWSTR rs = getOsuSongsPath(st, sz);
     if (rs == NULL)
     {
         free(st);
-        return 2;
+        return NULL;
     }
     free(st);
 
-    int mbnum = WideCharToMultiByte(CP_UTF8, 0, st, -1, NULL, 0, NULL, NULL);
+    int mbnum = WideCharToMultiByte(CP_UTF8, 0, rs, -1, NULL, 0, NULL, NULL);
     if (mbnum == 0)
     {
-        fputs("Failed converting!\n", stderr);
+        fprintf(stderr, "Failed converting (%d)!\n", GetLastError());
         free(rs);
         return NULL;
     }
@@ -118,13 +118,14 @@ char *get_songspath()
         return NULL;
     }
 
-    if (WideCharToMultiByte(CP_UTF8, 0, st, -1, mbbuf, mbnum, NULL, NULL) == 0)
+    if (WideCharToMultiByte(CP_UTF8, 0, rs, -1, mbbuf, mbnum, NULL, NULL) == 0)
     {
-        fputs("Failed converting!\n", stderr);
+        fprintf(stderr, "Failed converting (%d)!\n", GetLastError());
         free(rs);
         free(mbbuf);
         return NULL;
     }
+    free(rs);
     return mbbuf;
 }
 

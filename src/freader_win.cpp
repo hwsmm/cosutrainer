@@ -39,6 +39,11 @@ void Freader::thread_func(Freader *fr)
 
         DEFAULT_LOGIC(sst,
         {
+            if (fr->songf != NULL)
+            {
+                free(fr->songf);
+                fr->songf = NULL;
+            }
         },
         {
             if (fr->songf == NULL)
