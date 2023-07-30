@@ -42,7 +42,7 @@ You can get it [here](https://software.opensuse.org//download.html?project=home%
 1. Grab `cosu-trainer` and `osumem`
 2. Run osu! and get into song select
 3. Linux: Run `./osumem` (Most systems require root permission to run this)
-4. Linux: Set `OSU_SONG_FOLDER` variable (`export OSU_SONG_FOLDER=/put/osu/Songs/`, I recommend putting it into your .profile), or `echo "<your Songs path>" > ~/.cosu_songsfd`
+4. Linux: Set `OSU_SONG_FOLDER` variable (`export OSU_SONG_FOLDER=/put/osu/Songs/`, I recommend putting it into your .profile), `echo "<your Songs path>" > ~/.cosu_songsfd`, or read [this](#use-registry-to-get-songs-folder)
 5. Now you can use `./cosu-trainer` or `cosu-trainer.exe` (read usage below)
 6. After converting a map with it, press f5 in the game to refresh
 
@@ -75,6 +75,14 @@ I recommend getting [osu-handler](https://aur.archlinux.org/packages/osu-handler
 You can also get DEB/RPM of osu-handler [here](https://software.opensuse.org//download.html?project=home%3Ahwsnemo%3Apackaged-wine-osu&package=osu-handler-wine).
 I package this one, so if there's any problem with it, let me know!
 
+### Use Registry to get Songs folder
+This works out of box on Windows, but it requires some workarounds to implement it on Linux. Run a command below with MinGW cross GCC installed, and move `read_registry.exe` to where `cosu-trainer` is in:
+```x86_64-w64-mingw32-gcc -mconsole -W -Wall -Wextra -o read_registry.exe src/winregread.c -lshlwapi```
+If you don't have `OSU_SONG_FOLDER` or `~/.cosu_songsfd`, `read_registry.exe` will be used as a fallback.
+It tries to use the same environment with the running osu!, but there are some limitations since `cosu-trainer` itself is a Linux native application, and osu! is running on WINE.
+- You need to use `PATH` to specify `wine` executable. `/opt/wine-osu/bin/wine osu\!.exe` won't work well
+- It works well enough for me, but it isn't reliable due to how it works.
+
 ### Experimental Windows support
 Things mostly work but it's kinda flaky. You can use [MSYS2](https://msys2.org) (Note that cosu-trainer only supports UCRT).
 Install MinGW GCC and all dependencies through their package manager and use a following command in `src` to compile cosu-trainer.
@@ -86,8 +94,6 @@ cosuui.cpp cosuwindow.cpp cuimain.c main.cpp tools.c mapeditor.c actualzip.c aud
 
 **Some limitations**
 - cosu-trainer may become unresponsive while converting a map, just wait for a bit, and you will have a converted map.
-- CUI works, but 'auto' doesn't work
-- Custom songs folder doesn't work at the moment
 - `OSZ_HANDLER` doesn't work
 
 ## Thanks a lot to
