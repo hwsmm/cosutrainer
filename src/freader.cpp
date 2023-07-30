@@ -13,6 +13,7 @@ Freader::Freader() : thr(Freader::thread_func, this)
     consumed = true;
     conti = true;
     pause = false;
+    pid = -1;
 }
 
 Freader::~Freader()
@@ -35,6 +36,28 @@ void Freader::thread_func(Freader *fr)
             continue;
         }
 
+        int readbytes = 0;
+        char *new_path = read_file("/tmp/osu_path", &readbytes);
+        if (new_path == NULL)
+        {
+            sleep(1);
+            continue;
+        }
+
+        char *sep = strchr(new_path, ' ');
+        *sep = '\0';
+        int new_pid = atoi(new_path);
+        if (new_pid != fr->pid)
+        {
+            fr->pid = new_pid;
+            if (fr->songf != NULL)
+            {
+                free(fr->songf);
+                fr->songf = NULL;
+            }
+        }
+        *sep = ' ';
+
         if (fr->songf == NULL)
         {
             fr->songf = get_songspath();
@@ -44,14 +67,6 @@ void Freader::thread_func(Freader *fr)
                 sleep(1);
                 continue;
             }
-        }
-
-        int readbytes = 0;
-        char *new_path = read_file("/tmp/osu_path", &readbytes);
-        if (new_path == NULL)
-        {
-            sleep(1);
-            continue;
         }
 
         if (fr->path == NULL)
@@ -67,8 +82,10 @@ void Freader::thread_func(Freader *fr)
         if (fr->path != NULL) free(fr->path);
         fr->path = new_path;
 
+        char *new_osu = sep + 1;
+
         int songflen = strlen(fr->songf);
-        int fullsize = songflen + 1 + readbytes + 1;
+        int fullsize = songflen + 1 + strlen(new_osu) + 1;
         char *fullpath = (char*) malloc(fullsize);
         if (fullpath == NULL)
         {
@@ -78,7 +95,7 @@ void Freader::thread_func(Freader *fr)
 
         strcpy(fullpath, fr->songf);
         *(fullpath + songflen) = '/';
-        strcpy(fullpath + songflen + 1, trim(fr->path, &readbytes));
+        strcpy(fullpath + songflen + 1, new_osu);
 
         if (try_convertwinpath(fullpath, songflen + 1) < 0)
         {

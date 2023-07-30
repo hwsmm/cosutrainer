@@ -120,12 +120,78 @@ char *get_songspath()
         {
             snprintf(fpath, fpathsize, "%s/.cosu_songsfd", homef);
             char *songsf = read_file(fpath, NULL);
-            if (songsf != NULL) remove_newline(songsf);
             free(fpath);
-            return songsf;
+            if (songsf != NULL)
+            {
+                remove_newline(songsf);
+                return songsf;
+            }
         }
     }
-    return NULL;
+
+    int envsize = 0;
+    const char envcmdtp[] = "echo 'export %s WINEDEBUG=-all; echo -n $WINEPREFIX; echo -n /dosdevices/ ; wine %s/read_registry.exe' | bash > /tmp/osu_songsfolder";
+    char *env = read_file("/tmp/osu_wine_env", &envsize);
+    char *ret = NULL;
+    if (env == NULL)
+    {
+        return NULL;
+    }
+
+    char *myexepath = realpath("/proc/self/exe", NULL);
+    if (myexepath == NULL)
+    {
+        free(env);
+        return NULL;
+    }
+    char *exesep = strrchr(myexepath, '/');
+    if (exesep == NULL)
+    {
+        free(env);
+        free(myexepath);
+        return NULL;
+    }
+    if (exesep != myexepath)
+    {
+        *exesep = '\0';
+    }
+
+    int cmdsize = sizeof(envcmdtp) - 2 - 1 + strlen(myexepath) + 1 + envsize + 1;
+    char *cmd = (char*) malloc(cmdsize);
+    if (cmd == NULL)
+    {
+        free(env);
+        free(myexepath);
+        return NULL;
+    }
+    snprintf(cmd, cmdsize, envcmdtp, env, myexepath);
+    free(env);
+    free(myexepath);
+
+    if (system(cmd) == 0)
+    {
+        char *tempsf = read_file("/tmp/osu_songsfolder", NULL);
+        unlink("/tmp/osu_songsfolder");
+        if (tempsf == NULL)
+        {
+            free(cmd);
+            return NULL;
+        }
+        char *winsep = NULL;
+        while ((winsep = strchr(tempsf, '\\')) != NULL)
+        {
+            *winsep = '/';
+        }
+        try_convertwinpath(tempsf, 1);
+        char *rp = realpath(tempsf, NULL);
+        if (rp != NULL)
+        {
+            ret = rp;
+        }
+        free(tempsf);
+    }
+    free(cmd);
+    return ret;
 }
 
 int try_convertwinpath(char *path, int pos)
@@ -134,12 +200,15 @@ int try_convertwinpath(char *path, int pos)
     {
         return 1;
     }
-
     bool last = false;
     char *start = path + pos;
     do
     {
         char *end = strchr(start, '/');
+        while (*(end + 1) != '\0' && *(end + 1) == '/')
+        {
+            end++;
+        }
         last = end == NULL;
         char *tempend = last ? path + strlen(path) - 1 : end - 1;
 
@@ -157,7 +226,7 @@ int try_convertwinpath(char *path, int pos)
         while (tempend > start)
         {
             // Windows path shouldn't end with period or space
-            if (isspace(*tempend) || *tempend == '.')
+            if (isspace(*tempend) || *tempend == '.' || *tempend == '/')
             {
                 if (!trim) trim = true;
                 tempend--;
@@ -191,18 +260,27 @@ int try_convertwinpath(char *path, int pos)
         }
         else // try case insensitive searching through directory
         {
-            char backup = *(start - 1);
-            *(start - 1) = '\0';
+            char backup;
+            if (start - 1 > path)
+            {
+                backup = *(start - 1);
+                *(start - 1) = '\0';
+            }
+            else
+            {
+                backup = *start;
+                *start = '\0';
+            }
 
             DIR *d = opendir(path);
             struct dirent *ent = NULL;
             if (d == NULL)
             {
                 perror(path);
-                *(start - 1) = backup;
+                (start - 1 > path) ? (*(start - 1) = backup) : (*start = backup);
                 return -1;
             }
-            *(start - 1) = backup;
+            (start - 1 > path) ? (*(start - 1) = backup) : (*start = backup);
 
             char *deli = trim ? strchr(start, '/') : end;
             if (deli != NULL) *deli = '\0';

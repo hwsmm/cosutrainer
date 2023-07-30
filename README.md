@@ -80,7 +80,7 @@ Things mostly work but it's kinda flaky. You can use [MSYS2](https://msys2.org) 
 Install MinGW GCC and all dependencies through their package manager and use a following command in `src` to compile cosu-trainer.
 ```
 x86_64-w64-mingw32-g++ -DWIN32 `fltk-config --use-images --cxxflags` \
-cosuui.cpp cosuwindow.cpp  cuimain.c main.cpp tools.c mapeditor.c actualzip.c audiospeed.cpp buffers.c cosumem.c freader_win.cpp wsigscan.c cosuplatform_win.c \
+cosuui.cpp cosuwindow.cpp cuimain.c main.cpp tools.c mapeditor.c actualzip.c audiospeed.cpp buffers.c cosumem.c freader_win.cpp wsigscan.c cosuplatform_win.c winregread.c \
 -o ../cosu-trainer `fltk-config --use-images --ldflags` -lwinpthread -lmpg123 -lmp3lame -lzip -lSoundTouch -lsndfile -lwtsapi32
 ```
 

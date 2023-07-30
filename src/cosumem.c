@@ -8,6 +8,8 @@
 #include <sys/stat.h>
 #include <wchar.h>
 #include <wctype.h>
+#include <stdbool.h>
+#include <locale.h>
 #include "cosumem.h"
 #include "tools.h"
 #include "cosuplatform.h"
@@ -20,6 +22,7 @@ bool match_pattern(struct sigscan_status *st, ptr_type *baseaddr)
     return (baseaddr == NULL || *baseaddr != PTR_NULL);
 }
 
+// deprecated
 char *get_songsfolder(struct sigscan_status *st)
 {
     char *expath = get_rootpath(st);
@@ -165,6 +168,7 @@ void gotquitsig(int sig)
 #ifndef WIN32
 int main()
 {
+    fprintf(stderr, "Current locale: %s\n", setlocale(LC_CTYPE, ""));
     struct sigscan_status st;
     init_sigstatus(&st);
     ptr_type base = PTR_NULL;
@@ -184,21 +188,72 @@ int main()
         return -3;
     }
 
-    puts("memory scanner is starting... open osu! if you didn't");
+    printerr("memory scanner is starting... open osu! if you didn't");
     while (run)
     {
         DEFAULT_LOGIC(&st,
         {
             printerr("osu is found!");
+            char envf[1024];
+            snprintf(envf, 1024, "/proc/%d/environ", st.osu);
+
+            int fpd = open(envf, O_RDONLY);
+            int efd = open("/tmp/osu_wine_env", O_CREAT|O_WRONLY|O_TRUNC, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH);
+            if (fpd == -1 || efd == -1)
+            {
+                perror("env_read");
+            }
+            else
+            {
+                ssize_t rd = 1;
+                char buf;
+                bool firsteq = true;
+                bool last = false;
+                bool again = false;
+                while (again || (rd = read(fpd, &buf, 1)) == 1)
+                {
+                    if (buf == '\0')
+                    {
+                        if (firsteq == false) last = true;
+                        firsteq = true;
+                        buf = '"';
+                    }
+                    if (write(efd, &buf, sizeof(char)) == -1)
+                    {
+                        perror("/tmp/osu_wine_env");
+                        unlink("/tmp/osu_wine_env");
+                        break;
+                    }
+                    if (again) again = false;
+                    if (firsteq && buf == '=')
+                    {
+                        firsteq = false;
+                        buf = '"';
+                        again = true;
+                    }
+                    if (last && buf == '"')
+                    {
+                        last = false;
+                        buf = ' ';
+                        again = true;
+                    }
+                }
+                if (rd < 0)
+                {
+                    perror(envf);
+                }
+            }
+            if (fpd != -1) close(fpd);
+            if (efd != -1) close(efd);
         },
         {
             if (base == PTR_NULL)
             {
-                puts("starting to scan memory...");
+                printerr("starting to scan memory...");
 
                 if (match_pattern(&st, &base))
                 {
-                    puts("scan succeeded. you can now use 'auto' option");
+                    printerr("scan succeeded. you can now use 'auto' option");
                 }
                 else
                 {
@@ -247,27 +302,17 @@ int main()
             }
             else
             {
-                char *mbstr = (char*) malloc(len * MB_CUR_MAX);
-                if (mbstr == NULL)
+                int write = 0;
+                if ((write = dprintf(fd, "%d %ls", st.osu, songpath)) < 0)
                 {
-                    printerr("Failed allocation!");
+                    perror("dprintf");
                 }
                 else
                 {
-                    size_t convbytes = wcstombs(mbstr, songpath, len * MB_CUR_MAX);
-                    if (convbytes != -1)
+                    if (ftruncate(fd, write) == -1)
                     {
-                        ssize_t w = write(fd, mbstr, convbytes);
-                        if (w == -1 || ftruncate(fd, w) == -1)
-                        {
-                            perror("/tmp/osu_path");
-                        }
+                        perror("truncate");
                     }
-                    else
-                    {
-                        printerr("Failed converting!");
-                    }
-                    free(mbstr);
                 }
             }
         },
@@ -279,6 +324,7 @@ contin:
         sleep(1);
     }
     unlink("/tmp/osu_path");
+    unlink("/tmp/osu_wine_env");
     free(oldpath);
     if (songpath != NULL) free(songpath);
     stop_memread(&st);

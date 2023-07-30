@@ -1,4 +1,5 @@
 #include "cosuplatform.h"
+#include "winregread.h"
 #include <stdio.h>
 #include <windows.h>
 #include <strsafe.h>
@@ -90,9 +91,41 @@ char *get_realpath(char *path)
 
 char *get_songspath()
 {
-    return NULL;
-    // if one ever needs to implement it, it needs to be for custom songs folder
-    // as osu! songs folder is normally osu! running folder\Songs, you need process handle we don't have here
+    DWORD sz = 0;
+    LPWSTR st = getOsuPath(&sz);
+    if (st == NULL) return 1;
+    LPWSTR rs = getOsuSongsPath(st, sz);
+    if (rs == NULL)
+    {
+        free(st);
+        return 2;
+    }
+    free(st);
+
+    int mbnum = WideCharToMultiByte(CP_UTF8, 0, st, -1, NULL, 0, NULL, NULL);
+    if (mbnum == 0)
+    {
+        fputs("Failed converting!\n", stderr);
+        free(rs);
+        return NULL;
+    }
+
+    LPSTR mbbuf = (LPSTR) malloc(mbnum);
+    if (mbbuf == NULL)
+    {
+        fputs("Failed allocation\n", stderr);
+        free(rs);
+        return NULL;
+    }
+
+    if (WideCharToMultiByte(CP_UTF8, 0, st, -1, mbbuf, mbnum, NULL, NULL) == 0)
+    {
+        fputs("Failed converting!\n", stderr);
+        free(rs);
+        free(mbbuf);
+        return NULL;
+    }
+    return mbbuf;
 }
 
 // stub, since winapi functions already handle them well enough

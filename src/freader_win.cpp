@@ -43,7 +43,7 @@ void Freader::thread_func(Freader *fr)
         {
             if (fr->songf == NULL)
             {
-                fr->songf = get_songsfolder(sst);
+                fr->songf = get_songspath();
                 if (fr->songf == NULL)
                 {
                     printerr("Song folder not found!");
