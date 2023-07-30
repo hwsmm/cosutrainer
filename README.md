@@ -78,7 +78,7 @@ I package this one, so if there's any problem with it, let me know!
 ### Use Registry to get Songs folder
 This works out of box on Windows, but it requires some workarounds to implement it on Linux. Run a command below with MinGW cross GCC installed, and move `read_registry.exe` to where `cosu-trainer` is in:
 ```
-x86_64-w64-mingw32-gcc -mconsole -W -Wall -Wextra -o read_registry.exe src/winregread.c -lshlwapi
+x86_64-w64-mingw32-gcc -mconsole -W -Wall -Wextra -o read_registry.exe src/winregread.c -lshlwapi -DWINE
 ```
 
 If you don't have `OSU_SONG_FOLDER` or `~/.cosu_songsfd`, `read_registry.exe` will be used as a fallback. You need to use `PATH` to specify `wine` executable. `/opt/wine-osu/bin/wine osu\!.exe` won't work well
