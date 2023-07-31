@@ -54,7 +54,15 @@ int cuimain(int argc, char *argv[])
             return 2;
         }
 
-        int pathsize = songflen + 1 + readbytes + 1;
+        char *osp = strchr(song_path, ' ');
+        if (osp == NULL)
+        {
+            free(song_path);
+            return 2;
+        }
+        osp++;
+
+        int pathsize = songflen + 1 + strlen(osp) + 1;
         path = (char*) malloc(pathsize);
         if (path == NULL)
         {
@@ -65,7 +73,7 @@ int cuimain(int argc, char *argv[])
 
         strcpy(path, song_folder);
         *(path + songflen) = '/';
-        strcpy(path + songflen + 1, trim(song_path, &readbytes));
+        strcpy(path + songflen + 1, osp);
 
         int rets = try_convertwinpath(path, songflen + 1);
         if (rets < 0)
