@@ -91,11 +91,12 @@ Install MinGW GCC and all dependencies through their package manager and use a f
 ```
 x86_64-w64-mingw32-g++ -DWIN32 `fltk-config --use-images --cxxflags` \
 cosuui.cpp cosuwindow.cpp cuimain.c main.cpp tools.c mapeditor.c actualzip.c audiospeed.cpp buffers.c cosumem.c freader_win.cpp wsigscan.c cosuplatform_win.c winregread.c \
--o ../cosu-trainer `fltk-config --use-images --ldflags` -lwinpthread -lmpg123 -lmp3lame -lzip -lSoundTouch -lsndfile -lwtsapi32 -lshlwapi
+-o ../cosu-trainer `fltk-config --use-images --ldflags` -lwinpthread -lmpg123 -lmp3lame -lzip -lSoundTouch -lsndfile -lshlwapi
 ```
 
 **Some limitations**
 - cosu-trainer may become unresponsive while converting a map, just wait for a bit, and you will have a converted map.
+- CLI `auto` doesn't work
 - `OSZ_HANDLER` doesn't work
 
 ## Thanks a lot to

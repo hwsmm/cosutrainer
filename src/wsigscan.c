@@ -2,7 +2,7 @@
 #include <windows.h>
 #include <memoryapi.h>
 #include <string.h>
-#include <wtsapi32.h>
+#include <tlhelp32.h>
 #include <psapi.h>
 #include <tchar.h>
 #include <stdio.h>
@@ -33,29 +33,30 @@ void find_and_set_osu(struct sigscan_status *st)
         return;
     }
 
-    WTS_PROCESS_INFO* pWPIs = NULL;
-    DWORD dwProcCount = 0;
-    DWORD osupid = 0;
-    if (WTSEnumerateProcesses(WTS_CURRENT_SERVER_HANDLE, 0, 1, &pWPIs, &dwProcCount) != 0)
-    {
-        for (DWORD i = 0; i < dwProcCount; i++)
-        {
-            if (_tcscmp((pWPIs + i)->pProcessName, _T("osu!.exe")) == 0)
-            {
-                osupid = (pWPIs + i)->ProcessId;
-                break;
-            }
-        }
-    }
-    else
+    HANDLE snap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+
+    if (snap == INVALID_HANDLE_VALUE)
     {
         fputs("Failed getting process list!\n", stderr);
+        st->status = -1;
+        return;
     }
 
-    if (pWPIs)
+    PROCESSENTRY32W pe;
+    pe.dwSize = sizeof(PROCESSENTRY32W);
+
+    bool first = true;
+    DWORD osupid = 0;
+    while (first ? Process32FirstW(snap, &pe) && !(first = false) : Process32NextW(snap, &pe))
     {
-        WTSFreeMemory(pWPIs);
+        if (lstrcmpiW(pe.szExeFile, L"osu!.exe") == 0)
+        {
+            osupid = pe.th32ProcessID;
+            break;
+        }
     }
+
+    CloseHandle(snap);
 
     if (osupid > 0)
     {
