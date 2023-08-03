@@ -243,6 +243,24 @@ int main()
                     perror(envf);
                 }
             }
+
+            snprintf(envf, 1024, "/proc/%d/exe", st.osu);
+            char *wine_exe = realpath(envf, NULL);
+            if (wine_exe != NULL)
+            {
+                char *name = strrchr(wine_exe, '/');
+                if (name != NULL)
+                {
+                    name++;
+                    if (strcmp(name, "wine-preloader") == 0 || strcmp(name, "wine") == 0)
+                    {
+                        *(name + 4) = '\0';
+                        dprintf(efd, " WINE_EXE=\"%s\"", wine_exe);
+                    }
+                }
+                free(wine_exe);
+            }
+
             if (fpd != -1) close(fpd);
             if (efd != -1) close(efd);
         },

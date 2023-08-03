@@ -130,7 +130,7 @@ char *get_songspath()
     }
 
     int envsize = 0;
-    const char envcmdtp[] = "echo 'export %s WINEDEBUG=-all; echo -n ${WINEPREFIX:-$HOME/.wine}; echo -n /dosdevices/ ; wine %s/read_registry.exe' | bash > /tmp/osu_songsfolder";
+    const char envcmdtp[] = "echo 'export %s WINEDEBUG=-all; echo -n ${WINEPREFIX:-$HOME/.wine}/dosdevices/`${WINE_EXE:-wine} %s/read_registry.exe`' | bash > /tmp/osu_songsfolder";
     char *env = read_file("/tmp/osu_wine_env", &envsize);
     char *ret = NULL;
     if (env == NULL)

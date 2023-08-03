@@ -81,7 +81,7 @@ This works out of box on Windows, but it requires some workarounds to implement 
 x86_64-w64-mingw32-gcc -mconsole -o read_registry.exe src/winregread.c -lshlwapi -DWINE
 ```
 
-If you don't have `OSU_SONG_FOLDER` or `~/.cosu_songsfd`, `read_registry.exe` will be used as a fallback. You need to use `PATH` to specify `wine` executable. `/opt/wine-osu/bin/wine osu\!.exe` won't work well.
+If you don't have `OSU_SONG_FOLDER` or `~/.cosu_songsfd`, `read_registry.exe` will be used as a fallback.
 
 It tries to use the same environment with the running osu!, but it doesn't integrate well since `cosu-trainer` itself is a Linux native application, and osu! is running on WINE.
 
