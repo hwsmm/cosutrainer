@@ -12,7 +12,7 @@ LPWSTR getOsuPath(LPDWORD len)
     LSTATUS ret = RegGetValueW(HKEY_CLASSES_ROOT, L"osu\\shell\\open\\command", L"", RRF_RT_REG_SZ, NULL, NULL, &size);
     if (ret != ERROR_SUCCESS)
     {
-        fprintf(stderr, "Failed reading registry: %d\n", ret);
+        fprintf(stderr, "Failed reading registry: %ld\n", ret);
         return NULL;
     }
 
@@ -26,7 +26,7 @@ LPWSTR getOsuPath(LPDWORD len)
     ret = RegGetValueW(HKEY_CLASSES_ROOT, L"osu\\shell\\open\\command", L"", RRF_RT_REG_SZ, NULL, path, &size);
     if (ret != ERROR_SUCCESS)
     {
-        fprintf(stderr, "Failed reading registry: %d\n", ret);
+        fprintf(stderr, "Failed reading registry: %ld\n", ret);
         free(path);
         return NULL;
     }
@@ -80,7 +80,7 @@ LPWSTR getOsuSongsPath(LPWSTR osupath, DWORD pathsize)
     DWORD size = UNLEN + 1;
     if (GetUserNameW(uname, &size) == 0)
     {
-        fprintf(stderr, "Failed getting user name: %d", GetLastError());
+        fprintf(stderr, "Failed getting user name: %ld", GetLastError());
         return NULL;
     }
 
@@ -94,7 +94,7 @@ LPWSTR getOsuSongsPath(LPWSTR osupath, DWORD pathsize)
 
     StringCchPrintfW(cfgpath, size, L"%ls\\osu!.%ls.cfg", osupath, uname);
 
-    FILE *fp = _wfopen(cfgpath, L"r");
+    FILE *fp = _wfopen(cfgpath, L"rt, ccs=UTF-8");
     if (fp == NULL)
     {
         fprintf(stderr, "Failed opening %ls\n", cfgpath);
@@ -111,8 +111,7 @@ LPWSTR getOsuSongsPath(LPWSTR osupath, DWORD pathsize)
         if (wcsncmp(line, find, sizeof(find)/sizeof(find[0]) - 1) == 0)
         {
             wchar_t *f = wcsrchr(line, L'\n');
-            if (f != NULL && *(f - 1) == '\r') *(f - 1) = '\0';
-            else if (f != NULL) *f = '\0';
+            if (f != NULL) *f = '\0';
 
             path = line + sizeof(find)/sizeof(find[0]) - 1;
             break;
@@ -166,7 +165,8 @@ LPWSTR getOsuSongsPath(LPWSTR osupath, DWORD pathsize)
 #ifdef WINE
 int main(int argc, char *argv[])
 {
-    setlocale(LC_CTYPE, ".UTF-8");
+    fprintf(stderr, "Current Locale: %s\n", setlocale(LC_CTYPE, ""));
+    fprintf(stderr, "Locale set: %s\n", setlocale(LC_CTYPE, ".UTF-8"));
 
     DWORD sz = 0;
     LPWSTR st = getOsuPath(&sz);
