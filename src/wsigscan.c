@@ -4,7 +4,6 @@
 #include <string.h>
 #include <tlhelp32.h>
 #include <psapi.h>
-#include <tchar.h>
 #include <stdio.h>
 
 void init_sigstatus(struct sigscan_status *st)

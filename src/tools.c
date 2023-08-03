@@ -93,9 +93,9 @@ char *replace_string(const char *source, const char *match, const char *replace)
     return result;
 }
 
-char *trim(char *str, int *res_size)
+char *trim(char *str, size_t *res_size)
 {
-    int size = res_size == NULL ? strlen(str) : *res_size;
+    size_t size = res_size == NULL ? strlen(str) : *res_size;
     char *start = str;
     char *end = start + size;
     while (isspace(*start) && *start != '\0')

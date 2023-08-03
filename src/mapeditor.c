@@ -831,6 +831,8 @@ int edit_beatmap(struct editdata *edit, float *progress)
     if (fcmappath == NULL || (edit->mi->audioname && edit->speed != 1 && fcaudpath == NULL))
     {
         printerr("Failed allocating memory");
+        if (fcmappath != NULL) free(fcmappath);
+        if (fcaudpath != NULL) free(fcaudpath);
         buffers_free(&bufs);
         return -99;
     }
