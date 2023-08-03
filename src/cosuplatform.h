@@ -26,6 +26,8 @@ char *get_realpath(char *path);
 char *get_songspath();
 char *get_iconpath();
 int try_convertwinpath(char *path, int pos);
+char *alloc_wcstombs(wchar_t *wide);
+wchar_t *alloc_mbstowcs(char *multi);
 
 #ifdef __cplusplus
 }

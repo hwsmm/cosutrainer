@@ -23,25 +23,10 @@ char *get_realpath(char *path)
         return NULL;
     }
 
-    int wcnum = MultiByteToWideChar(CP_UTF8, 0, path, -1, NULL, 0);
-    if (wcnum == 0)
-    {
-        fputs("Failed converting!\n", stderr);
-        free(pathbuf);
-        return NULL;
-    }
-    LPWSTR wcbuf = (LPWSTR) calloc(wcnum, sizeof(WCHAR));
+    LPWSTR wcbuf = alloc_mbstowcs(path);
     if (wcbuf == NULL)
     {
         fputs("Failed allocating memory for path!\n", stderr);
-        free(pathbuf);
-        return NULL;
-    }
-
-    if (MultiByteToWideChar(CP_UTF8, 0, path, -1, wcbuf, wcnum) == 0)
-    {
-        fputs("Failed converting!\n", stderr);
-        free(wcbuf);
         free(pathbuf);
         return NULL;
     }
@@ -60,32 +45,8 @@ char *get_realpath(char *path)
     }
     free(wcbuf);
 
-    int mbnum = WideCharToMultiByte(CP_UTF8, 0, pathbuf, -1, NULL, 0, NULL, NULL);
-    if (mbnum == 0)
-    {
-        fputs("Failed converting!\n", stderr);
-        free(pathbuf);
-        return NULL;
-    }
-
-    LPSTR mbbuf = (LPSTR) malloc(mbnum);
-    if (mbbuf == NULL)
-    {
-        fputs("Failed allocation\n", stderr);
-        free(pathbuf);
-        return NULL;
-    }
-
-    if (WideCharToMultiByte(CP_UTF8, 0, pathbuf, -1, mbbuf, mbnum, NULL, NULL) == 0)
-    {
-        fputs("Failed converting!\n", stderr);
-        free(pathbuf);
-        free(mbbuf);
-        return NULL;
-    }
-
+    LPSTR mbbuf = alloc_wcstombs(pathbuf);
     free(pathbuf);
-
     return mbbuf;
 }
 
@@ -102,29 +63,7 @@ char *get_songspath()
     }
     free(st);
 
-    int mbnum = WideCharToMultiByte(CP_UTF8, 0, rs, -1, NULL, 0, NULL, NULL);
-    if (mbnum == 0)
-    {
-        fprintf(stderr, "Failed converting (%d)!\n", GetLastError());
-        free(rs);
-        return NULL;
-    }
-
-    LPSTR mbbuf = (LPSTR) malloc(mbnum);
-    if (mbbuf == NULL)
-    {
-        fputs("Failed allocation\n", stderr);
-        free(rs);
-        return NULL;
-    }
-
-    if (WideCharToMultiByte(CP_UTF8, 0, rs, -1, mbbuf, mbnum, NULL, NULL) == 0)
-    {
-        fprintf(stderr, "Failed converting (%d)!\n", GetLastError());
-        free(rs);
-        free(mbbuf);
-        return NULL;
-    }
+    LPSTR mbbuf = alloc_wcstombs(rs);
     free(rs);
     return mbbuf;
 }
@@ -172,11 +111,17 @@ char *get_iconpath()
         err--;
     }
 
-    int mbnum = WideCharToMultiByte(CP_UTF8, 0, pathbuf, -1, NULL, 0, NULL, NULL);
+    LPSTR mbbuf = alloc_wcstombs(pathbuf);
+    free(pathbuf);
+    return mbbuf;
+}
+
+LPSTR alloc_wcstombs(LPWSTR wide)
+{
+    int mbnum = WideCharToMultiByte(CP_UTF8, 0, wide, -1, NULL, 0, NULL, NULL);
     if (mbnum == 0)
     {
         fputs("Failed converting!\n", stderr);
-        free(pathbuf);
         return NULL;
     }
 
@@ -184,18 +129,41 @@ char *get_iconpath()
     if (mbbuf == NULL)
     {
         fputs("Failed allocation\n", stderr);
-        free(pathbuf);
         return NULL;
     }
 
-    if (WideCharToMultiByte(CP_UTF8, 0, pathbuf, -1, mbbuf, mbnum, NULL, NULL) == 0)
+    if (WideCharToMultiByte(CP_UTF8, 0, wide, -1, mbbuf, mbnum, NULL, NULL) == 0)
     {
         fputs("Failed converting!\n", stderr);
-        free(pathbuf);
         free(mbbuf);
         return NULL;
     }
 
-    free(pathbuf);
     return mbbuf;
+}
+
+LPWSTR alloc_mbstowcs(LPSTR multi)
+{
+    int wcnum = MultiByteToWideChar(CP_UTF8, 0, multi, -1, NULL, 0);
+    if (wcnum == 0)
+    {
+        fputs("Failed converting!\n", stderr);
+        return NULL;
+    }
+
+    LPWSTR wcbuf = (LPWSTR) calloc(wcnum, sizeof(WCHAR));
+    if (wcbuf == NULL)
+    {
+        fputs("Failed allocating memory for path!\n", stderr);
+        return NULL;
+    }
+
+    if (MultiByteToWideChar(CP_UTF8, 0, multi, -1, wcbuf, wcnum) == 0)
+    {
+        fputs("Failed converting!\n", stderr);
+        free(wcbuf);
+        return NULL;
+    }
+
+    return wcbuf;
 }

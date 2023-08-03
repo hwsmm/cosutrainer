@@ -352,3 +352,69 @@ char *get_iconpath()
 
     return NULL;
 }
+
+
+char *alloc_wcstombs(wchar_t *wide)
+{
+    char tmp[MB_CUR_MAX];
+    int msize = 0;
+    int wsize = wcslen(wide) + 1;
+
+    for (int i = 0; i < wsize; i++)
+    {
+        int s = wctomb(tmp, *(wide + i));
+        if (s == -1)
+        {
+            perror("wctomb");
+            return NULL;
+        }
+
+        msize += s;
+    }
+
+    char *mb = (char*) malloc(msize);
+    if (wcstombs(mb, wide, msize) == (size_t) -1)
+    {
+        free(mb);
+        perror("wcstombs");
+        return NULL;
+    }
+    return mb;
+}
+
+wchar_t *alloc_mbstowcs(char *multi)
+{
+    mbstate_t ms;
+    memset(&ms, 0, sizeof(ms));
+
+    char *e = multi;
+    size_t ret = 0, wlen = 0;
+    while ((ret = mbrlen(e++, 1, &ms)) != 0)
+    {
+        if (ret == (size_t) -1)
+        {
+            perror("mbrlen");
+            return NULL;
+        }
+        else if (ret != (size_t) -2)
+        {
+            wlen++;
+        }
+    }
+    wlen++; // null character
+
+    wchar_t *wc = (wchar_t*) malloc(wlen * sizeof(wchar_t));
+    if (wc == NULL)
+    {
+        fprintf(stderr, "Failed allocating!\n");
+        return NULL;
+    }
+
+    if (mbstowcs(wc, multi, wlen) == (size_t) -1)
+    {
+        free(wc);
+        perror("mbstowcs");
+        return NULL;
+    }
+    return wc;
+}
