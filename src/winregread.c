@@ -163,10 +163,10 @@ LPWSTR getOsuSongsPath(LPWSTR osupath, DWORD pathsize)
 }
 
 #ifdef WINE
-int main(int argc, char *argv[])
+int main()
 {
-    fprintf(stderr, "Current Locale: %s\n", setlocale(LC_CTYPE, ""));
-    fprintf(stderr, "Locale set: %s\n", setlocale(LC_CTYPE, ".UTF-8"));
+    setlocale(LC_CTYPE, "");
+    setlocale(LC_CTYPE, ".UTF-8");
 
     DWORD sz = 0;
     LPWSTR st = getOsuPath(&sz);

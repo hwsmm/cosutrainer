@@ -76,13 +76,15 @@ You can also get DEB/RPM of osu-handler [here](https://software.opensuse.org//do
 I package this one, so if there's any problem with it, let me know!
 
 ### Use Registry to get Songs folder
-This works out of box on Windows, but it requires some workarounds to implement it on Linux. Run a command below with MinGW cross GCC installed, and move `read_registry.exe` to where `cosu-trainer` is in:
+This works out of box on Windows, but it requires some workarounds to implement it on Linux.
+Run a command below with MinGW cross GCC installed, and move `read_registry.exe` to where `cosu-trainer` is in:
 ```
 x86_64-w64-mingw32-gcc -mconsole -o read_registry.exe src/winregread.c -lshlwapi -DWINE
 ```
 
-If you don't have `OSU_SONG_FOLDER` or `~/.cosu_songsfd`, `read_registry.exe` will be used as a fallback.
+If you downloaded cosu-trainer from Releases, you don't need to do this, by the way. It's included in an AppImage.
 
+If you don't have `OSU_SONG_FOLDER` or `~/.cosu_songsfd`, `read_registry.exe` will be used as a fallback.
 It tries to use the same environment with the running osu!, but it doesn't integrate well since `cosu-trainer` itself is a Linux native application, and osu! is running on WINE.
 
 ### Experimental Windows support
