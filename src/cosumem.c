@@ -135,7 +135,7 @@ wchar_t *get_mappath(struct sigscan_status *st, ptr_type base_address, unsigned 
     {
         uint16_t put;
         if (i < foldersize) put = *(folderstrbuf + i);
-        else if (i == foldersize) put = '/';
+        else if (i == foldersize) put = PATHSEP;
         else put = *(pathstrbuf + (i - foldersize - 1));
 #ifndef WIN32
         if (put == '\\') put = '/'; // workaround: some installation put \ in song folder
