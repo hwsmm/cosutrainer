@@ -14,7 +14,7 @@
 #include "tools.h"
 #include "cosuplatform.h"
 
-extern ptr_type find_pattern(struct sigscan_status *st, const uint8_t bytearray[], const unsigned int pattern_size, const bool mask[]);
+DEFINE_EXTERN_SIGSCAN_FUNCTIONS;
 
 bool match_pattern(struct sigscan_status *st, ptr_type *baseaddr)
 {

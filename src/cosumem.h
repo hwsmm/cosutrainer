@@ -1,5 +1,6 @@
 #pragma once
 #include "sigscan.h"
+#include "osusig_patterns.h"
 
 bool match_pattern(struct sigscan_status *st, ptr_type *baseaddr);
 char *get_songsfolder(struct sigscan_status *st);
