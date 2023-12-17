@@ -12,6 +12,20 @@ using namespace std;
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 
+#ifdef WIN32
+int ui_wait_seconds(double seconds)
+{
+    return Fl::wait(seconds);
+}
+#else
+int ui_wait_seconds(double seconds)
+{
+    usleep(seconds * 1000.0 * 1000.0);
+    Fl::flush();
+    return 1;
+}
+#endif
+
 void CosuWindow::rateradio_callb(Fl_Widget *w, void *data)
 {
     CosuWindow *win = (CosuWindow*) data;
@@ -167,10 +181,9 @@ void CosuWindow::start()
     {
         if (!done)
         {
-            while (1)
+            while (ui_wait_seconds(0.1) > 0)
             {
                 cosuui.progress->value(progress);
-                Fl::flush();
                 if (done)
                 {
                     progress = 0;
@@ -181,7 +194,6 @@ void CosuWindow::start()
                     delete cur;
                     break;
                 }
-                ssleep(100); // using this instead of Fl::wait since wait just waits for long time for no reason, this program should not look for any events at this moment anyway
             }
         }
         if (fr.info != NULL && fr.consumed == false)
