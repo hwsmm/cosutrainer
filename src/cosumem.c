@@ -79,7 +79,7 @@ ptr_type get_beatmap_ptr(struct sigscan_status *st, ptr_type base_address)
 int get_mapid(struct sigscan_status *st, ptr_type base_address)
 {
     int id = 0;
-    if (!readmemory(st, ptr_add(get_beatmap_ptr(st, base_address), 0xCC), &id, 4))
+    if (!readmemory(st, ptr_add(get_beatmap_ptr(st, base_address), 0xC8), &id, 4))
         return -1;
 
     return id;
@@ -101,7 +101,7 @@ wchar_t *get_mappath(struct sigscan_status *st, ptr_type base_address, unsigned 
     if (!readmemory(st, ptr_add(folder_ptr, 4), &foldersize, 4))
         return NULL;
 
-    if (!readmemory(st, ptr_add(beatmap_ptr, 0x94), &path_ptr, PTR_SIZE))
+    if (!readmemory(st, ptr_add(beatmap_ptr, 0x90), &path_ptr, PTR_SIZE))
         return NULL;
 
     if (!readmemory(st, ptr_add(path_ptr, 4), &pathsize, 4))
