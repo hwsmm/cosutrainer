@@ -56,19 +56,3 @@ jobs:
               with:
                   name: cosu-trainer Linux package
                   path: cosu-trainer-bin.tar.xz
-
-    win:
-        runs-on: windows-latest
-        name: Windows Build
-        steps:
-            - name: Checkout
-              uses: actions/checkout@v4
-            
-            - name: Setup MSYS2
-              uses: msys2/setup-msys2@v2
-              with:
-                  update: true
-                  msystem: UCRT64
-                  install: >-
-                      mingw-w64-ucrt-x86_64-gcc
-                      
