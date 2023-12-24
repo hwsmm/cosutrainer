@@ -48,8 +48,9 @@ jobs:
 
             - name: Pack tarball
               run: |
+                  ls -al
                   mkdir package
-                  cp builddir/osumem builddir/cosu-cleanup cosu-trainer-*.AppImage COPYING package
+                  cp builddir/osumem builddir/cosu-cleanup cosu-trainer-*.AppImage package
                   tar cJf cosu-trainer-bin.tar.xz -C package .
 
             - name: Upload a package
@@ -95,10 +96,11 @@ jobs:
             - name: Package
               shell: msys2 {0}
               run: |
+                  ls -al
                   mkdir package && cd package
                   mv ../cosu-trainer.exe .
-                  for lib in $(cat ../deplist); do cp $lib .; done
-                  cp ../COPYING ../docs/cosutrainer.png .
+                  for lib in $(cat ../deplist); do echo $lib && cp $lib .; done
+                  cp ../docs/cosutrainer.png .
                   zip ../cosu-trainer-win-bin.zip *
 
             - name: Upload a package
