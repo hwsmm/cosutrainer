@@ -112,11 +112,11 @@ int change_mp3_speed(const char* source, struct buffers *bufs, double speed, boo
             if (!flush)
             {
                 err = mpg123_read(mh, (unsigned char*) buffer, buffer_size, &done);
-                samplecount = (done/sizeof(float))/channels;
-                *progress += (float) samplecount / (float) fulllength;
 
                 if (err == MPG123_OK || err == MPG123_DONE)
                 {
+                    samplecount = (done/sizeof(float))/channels;
+                    *progress += (float) samplecount / (float) fulllength;
                     st.putSamples(buffer, samplecount);
                 }
                 else
