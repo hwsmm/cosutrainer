@@ -258,7 +258,7 @@ static char *get_song_path(char *wineprefix, char *uid)
 
     if (try_convertwinpath(cfgpath, prefixlen + 1 + (sizeof(dosd)-1) + 1) < 0)
     {
-        printerr("Failed finding osu config path!");
+        fprintf(stderr, "Tried config path but failed: %s\n", cfgpath);
         goto freeq;
     }
 
@@ -292,7 +292,7 @@ static char *get_song_path(char *wineprefix, char *uid)
 
     int foundlen = strlen(found);
     char *sep = strchr(found, ':');
-    bool abs = sep != NULL && sep - line == 1;
+    bool abs = sep != NULL && sep - found == 1;
 
     for (int i = 0; i < foundlen; i++)
     {
@@ -329,7 +329,7 @@ static char *get_song_path(char *wineprefix, char *uid)
 
     if (result != NULL && try_convertwinpath(result, prefixlen + 1 + (sizeof(dosd)-1) + 1) < 0)
     {
-        printerr("Failed finding the final path!");
+        fprintf(stderr, "Tried final path but failed: %s\n", result);
         free(result);
         result = NULL;
     }
