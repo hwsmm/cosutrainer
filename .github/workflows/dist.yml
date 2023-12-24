@@ -13,15 +13,15 @@ jobs:
         steps:
             - name: Add repositories
               env:
-                  ZYPP_ADDREPO: sudo zypper $ZYPP_GLOBAL addrepo -p 90 -G
+                  ZYPP_ADDREPO: zypper $ZYPP_GLOBAL addrepo -p 90 -G
               run: |
                   $ZYPP_ADDREPO https://download.opensuse.org/repositories/devel:libraries:c_c++/15.5/devel:libraries:c_c++.repo
                   $ZYPP_ADDREPO https://download.opensuse.org/repositories/multimedia:libs/15.5/multimedia:libs.repo
                   $ZYPP_ADDREPO https://download.opensuse.org/repositories/home:hwsnemo/15.5/home:hwsnemo.repo
-                  sudo zypper $ZYPP_GLOBAL refresh
+                  zypper $ZYPP_GLOBAL refresh
 
             - name: Install dependencies
-              run: sudo zypper $ZYPP_GLOBAL install -f -y gcc-c++ libmp3lame-devel libsndfile-devel soundtouch-devel libzip-devel fltk-devel meson ninja wget tar xz
+              run: zypper $ZYPP_GLOBAL install -f -y gcc-c++ libmp3lame-devel libsndfile-devel soundtouch-devel libzip-devel fltk-devel meson ninja wget tar xz
 
             - name: Checkout
               uses: actions/checkout@v4
