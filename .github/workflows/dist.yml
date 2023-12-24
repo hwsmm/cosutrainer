@@ -13,7 +13,7 @@ jobs:
         steps:
             - name: Add repositories
               env:
-                  ZYPP_ADDREPO: zypper $ZYPP_GLOBAL addrepo -p 90 -G
+                  ZYPP_ADDREPO: zypper addrepo -p 90 -G
               run: |
                   $ZYPP_ADDREPO https://download.opensuse.org/repositories/devel:libraries:c_c++/15.5/devel:libraries:c_c++.repo
                   $ZYPP_ADDREPO https://download.opensuse.org/repositories/multimedia:libs/15.5/multimedia:libs.repo
