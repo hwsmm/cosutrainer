@@ -21,7 +21,7 @@ jobs:
                   zypper $ZYPP_GLOBAL refresh
 
             - name: Install dependencies
-              run: zypper $ZYPP_GLOBAL install -f -y gcc-c++ mpg123-devel libmp3lame-devel libsndfile-devel soundtouch-devel libzip-devel fltk-devel meson ninja wget tar xz gzip
+              run: zypper $ZYPP_GLOBAL install -f -y gcc-c++ mpg123-devel libmp3lame-devel libsndfile-devel soundtouch-devel libzip-devel fltk-devel meson ninja wget tar xz gzip fuse libfuse2
 
             - name: Checkout
               uses: actions/checkout@v4
