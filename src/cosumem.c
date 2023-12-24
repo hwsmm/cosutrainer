@@ -8,6 +8,7 @@
 #include <sys/stat.h>
 #include <wchar.h>
 #include <wctype.h>
+#include <ctype.h>
 #include <stdbool.h>
 #include <locale.h>
 #include "cosumem.h"
@@ -20,46 +21,6 @@ bool match_pattern(struct sigscan_status *st, ptr_type *baseaddr)
 {
     if (baseaddr != NULL && *baseaddr == PTR_NULL) _osu_find_ptrn(*baseaddr, st, BASE);
     return (baseaddr == NULL || *baseaddr != PTR_NULL);
-}
-
-// deprecated
-char *get_songsfolder(struct sigscan_status *st)
-{
-    char *expath = get_rootpath(st);
-    if (expath == NULL)
-    {
-        printerr("Failed getting process path!");
-        return NULL;
-    }
-
-    int pathsize = strlen(expath) + 1 + 5 + 1;
-    char *songspath = (char*) calloc(pathsize, sizeof(char)); // "/Songs"
-    if (songspath == NULL)
-    {
-        printerr("Failed allocation of wide string of song folder!");
-        return NULL;
-    }
-    snprintf(songspath, pathsize, "%s" STR_PATHSEP "Songs", expath);
-    free(expath);
-
-    struct stat stt;
-    if (stat(songspath, &stt) != 0)
-    {
-        perror("Songs folder");
-        free(songspath);
-        return NULL;
-    }
-
-    if (stt.st_mode & S_IFDIR)
-    {
-        return songspath;
-    }
-    else
-    {
-        printerr("Couldn't find the song folder! Set OSU_SONG_FOLDER");
-        free(songspath);
-        return NULL;
-    }
 }
 
 ptr_type get_beatmap_ptr(struct sigscan_status *st, ptr_type base_address)
@@ -153,7 +114,241 @@ readfail:
     free(folderstrbuf);
     free(pathstrbuf);
     return NULL;
-} // may change it to wchar_t since path may contain unicode characters, but i will just use char here for now to keep things simple
+}
+
+#ifndef WIN32
+static char *get_osu_path(char *wineprefix)
+{
+    const char system_reg[] = "system.reg";
+    int size = strlen(wineprefix) + 1 + sizeof(system_reg);
+    char *regpath = (char*) malloc(size);
+    if (regpath == NULL)
+    {
+        printerr("Failed allocating memory!");
+        return NULL;
+    }
+
+    snprintf(regpath, size, "%s/%s", wineprefix, system_reg);
+
+    FILE *f = fopen(regpath, "r");
+    if (!f)
+    {
+        perror(regpath);
+        return NULL;
+    }
+
+    char line[4096];
+    char *result = NULL;
+
+    while (fgets(line, sizeof(line), f))
+    {
+        if (strstr(line, "osu\\\\shell\\\\open\\\\command") != NULL)
+        {
+            while (fgets(line, sizeof(line), f))
+            {
+                char *find = NULL;
+                if ((find = strstr(line, "osu!.exe")) != NULL)
+                {
+                    *find = '\0';
+
+                    char *first = strstr(line, ":\\\\");
+
+                    if (first != NULL)
+                        first--;
+                    else
+                        goto exit;
+
+                    int len = strlen(first);
+                    result = (char*) malloc(len);
+                    if (result != NULL)
+                        strcpy(result, first);
+
+                    goto exit;
+                }
+            }
+        }
+    }
+
+exit:
+    fclose(f);
+    return result;
+}
+
+static char *get_song_path(char *wineprefix, char *uid)
+{
+    FILE *pw = fopen("/etc/passwd", "r");
+    if (!pw)
+    {
+        perror("/etc/passwd");
+        return NULL;
+    }
+
+    char id[4096];
+    bool uidfound = false;
+    bool prefixnull = wineprefix == NULL;
+
+    while (fgets(id, sizeof(id), pw))
+    {
+        /*char *lid =*/ strtok(id, ":");
+        /*char *lpw =*/ strtok(NULL, ":");
+        char *luid = strtok(NULL, ":");
+
+        if (strcmp(uid, luid) == 0)
+        {
+            uidfound = true;
+
+            if (prefixnull)
+            {
+                /*char *lgid =*/ strtok(NULL, ":");
+                /*char *lgecos =*/ strtok(NULL, ":");
+                char *ldir = strtok(NULL, ":");
+
+                const char winedefp[] = ".wine";
+
+                int defplen = strlen(ldir) + 1 + sizeof(winedefp);
+                wineprefix = (char*) malloc(defplen);
+
+                if (!wineprefix)
+                {
+                    fclose(pw);
+                    return NULL;
+                }
+                else
+                {
+                    snprintf(wineprefix, defplen, "%s/%s", ldir, winedefp);
+                }
+            }
+
+            break;
+        }
+    }
+
+    fclose(pw);
+
+    if (!uidfound)
+        return NULL;
+
+    char *result = NULL;
+
+    int prefixlen = strlen(wineprefix);
+
+    char *osu = get_osu_path(wineprefix);
+    if (osu == NULL)
+        return NULL;
+
+    int osulen = strlen(osu);
+
+    for (int i = 0; i < osulen; i++)
+    {
+        if (*(osu + i) == '\\')
+            *(osu + i) = '/';
+    }
+
+    *osu = tolower(*osu); // device letter
+
+    const char dosd[] = "dosdevices";
+    const char prefix[] = "osu!.";
+    const char suffix[] = ".cfg";
+
+    int idlen = strlen(id);
+    int cfglen = prefixlen + 1 + (sizeof(dosd)-1) + 1 + osulen + 1 + (sizeof(prefix)-1) + idlen + (sizeof(suffix)-1) + 1;
+    char *cfgpath = (char*) malloc(cfglen);
+
+    snprintf(cfgpath, cfglen, "%s/%s/%s/%s%s%s", wineprefix, dosd, osu, prefix, id, suffix);
+
+    if (try_convertwinpath(cfgpath, prefixlen + 1 + (sizeof(dosd)-1) + 1) < 0)
+    {
+        printerr("Failed finding osu config path!");
+        goto freeq;
+    }
+
+    FILE* cfg = fopen(cfgpath, "r");
+    if (!cfg)
+    {
+        perror(cfgpath);
+        goto freeq;
+    }
+
+    char line[4096];
+    char find[] = "BeatmapDirectory = ";
+    char *found = NULL;
+    while (fgets(line, sizeof(line), cfg))
+    {
+        if (strncmp(line, find, sizeof(find) - 1) == 0)
+        {
+            found = line + sizeof(find) - 1;
+            found = trim(found, NULL);
+            break;
+        }
+    }
+
+    fclose(cfg);
+
+    if (found == NULL)
+    {
+        printerr("BeatmapDirectory not found in osu config!");
+        goto freeq;
+    }
+
+    int foundlen = strlen(found);
+    char *sep = strchr(found, ':');
+    bool abs = sep != NULL && sep - line == 1;
+
+    for (int i = 0; i < foundlen; i++)
+    {
+        if (*(found + i) == '\\')
+            *(found + i) = '/';
+    }
+
+    if (abs)
+    {
+        *found = tolower(*found);
+
+        int reslen = prefixlen + 1 + (sizeof(dosd)-1) + 1 + foundlen + 1;
+        result = (char*) malloc(reslen);
+        if (result == NULL)
+        {
+            printerr("Failed allocation!");
+            goto freeq;
+        }
+
+        snprintf(result, reslen, "%s/%s/%s", wineprefix, dosd, found);
+    }
+    else
+    {
+        int reslen = prefixlen + 1 + (sizeof(dosd)-1) + 1 + osulen + 1 + foundlen + 1;
+        result = (char*) malloc(reslen);
+        if (result == NULL)
+        {
+            printerr("Failed allocation!");
+            goto freeq;
+        }
+
+        snprintf(result, reslen, "%s/%s/%s/%s", wineprefix, dosd, osu, found);
+    }
+
+    if (result != NULL && try_convertwinpath(result, prefixlen + 1 + (sizeof(dosd)-1) + 1) < 0)
+    {
+        printerr("Failed finding the final path!");
+        free(result);
+        result = NULL;
+    }
+
+    char *real = realpath(result, NULL);
+    if (real != NULL)
+    {
+        free(result);
+        result = real;
+    }
+
+freeq:
+    if (prefixnull)
+        free(wineprefix);
+
+    free(osu);
+    free(cfgpath);
+    return result;
+}
 
 volatile int run = 1;
 
@@ -165,7 +360,6 @@ void gotquitsig(int sig)
 }
 #pragma GCC diagnostic pop
 
-#ifndef WIN32
 int main()
 {
     fprintf(stderr, "Current locale: %s\n", setlocale(LC_CTYPE, ""));
@@ -176,6 +370,9 @@ int main()
     wchar_t *songpath = NULL;
     wchar_t *oldpath = NULL;
     unsigned int len = 0;
+
+    char *songsfd = NULL;
+    int songsfdlen = 0;
 
     int fd = -1;
 
@@ -188,94 +385,90 @@ int main()
         return -3;
     }
 
-    printerr("memory scanner is starting... open osu! if you didn't");
+    printerr("Memory scanner is now starting... Open osu! and get into song select!");
     while (run)
     {
         DEFAULT_LOGIC(&st,
         {
-            printerr("osu is found!");
+            printerr("osu! is found, Now looking for its song folder...");
             char envf[1024];
             snprintf(envf, 1024, "/proc/%d/environ", st.osu);
 
             int fpd = open(envf, O_RDONLY);
-            int efd = open("/tmp/osu_wine_env", O_CREAT|O_WRONLY|O_TRUNC, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH);
-            if (fpd == -1 || efd == -1)
+            if (fpd == -1)
             {
-                perror("env_read");
+                perror(envf);
             }
             else
             {
                 ssize_t rd = 1;
                 char buf;
-                bool firsteq = true;
-                bool last = false;
-                bool again = false;
-                while (again || (rd = read(fpd, &buf, 1)) == 1)
+                char pfx[2048] = { '\0' };
+                while ((rd = read(fpd, &buf, 1)) == 1)
                 {
-                    if (buf == '\0')
+                    if (buf == 'W')
                     {
-                        if (firsteq == false) last = true;
-                        firsteq = true;
-                        buf = '"';
-                    }
-                    if (write(efd, &buf, sizeof(char)) == -1)
-                    {
-                        perror("/tmp/osu_wine_env");
-                        unlink("/tmp/osu_wine_env");
-                        break;
-                    }
-                    if (again) again = false;
-                    if (firsteq && buf == '=')
-                    {
-                        firsteq = false;
-                        buf = '"';
-                        again = true;
-                    }
-                    if (last && buf == '"')
-                    {
-                        last = false;
-                        buf = ' ';
-                        again = true;
-                    }
-                }
-                if (rd < 0)
-                {
-                    perror(envf);
-                }
-
-                snprintf(envf, 1024, "/proc/%d/exe", st.osu);
-                char *wine_exe = realpath(envf, NULL);
-                if (wine_exe != NULL)
-                {
-                    char *name = strrchr(wine_exe, '/');
-                    if (name != NULL)
-                    {
-                        name++;
-                        if (strcmp(name, "wine-preloader") == 0 || strcmp(name, "wine") == 0)
+                        char cmp[10] = "INEPREFIX=";
+                        char buf2[10];
+                        if ((rd = read(fpd, buf2, sizeof(cmp))) >= (ssize_t)sizeof(cmp) && strncmp(cmp, buf2, sizeof(cmp)-1) == 0)
                         {
-                            *(name + 4) = '\0';
-                            dprintf(efd, " WINE_EXE=\"%s\"", wine_exe);
+                            int idx = 0;
+                            while ((rd = read(fpd, &buf, 1)) == 1)
+                            {
+                                if (idx >= (int)sizeof(pfx))
+                                {
+                                    printerr("WINEPREFIX is too long!");
+                                    break;
+                                }
+
+                                pfx[idx++] = buf;
+                                if (buf == '\0')
+                                    break;
+                            }
                         }
                     }
-                    free(wine_exe);
+                }
+                close(fpd);
+
+                if (pfx[0] != '\0')
+                    fprintf(stderr, "Found WINEPREFIX: %s\n", pfx);
+                else
+                    fprintf(stderr, "WINEPREFIX is not found, falling back to default prefix...\n");
+
+                char uid[128];
+                snprintf(uid, sizeof(uid), "/proc/%d/loginuid", st.osu);
+                int idfd = open(uid, O_RDONLY);
+                ssize_t idlen = 0;
+
+                if (idfd == -1 || (idlen = read(idfd, uid, sizeof(uid) - 1)) <= 0)
+                {
+                    printerr("Failed getting UID that is running osu");
+                }
+                else
+                {
+                    uid[idlen] = '\0';
+                    songsfd = get_song_path(pfx[0] == '/' ? pfx : NULL, uid);
+                    if (songsfd != NULL)
+                    {
+                        fprintf(stderr, "Found Song folder: %s\n", songsfd);
+                        songsfdlen = strlen(songsfd);
+                    }
                 }
             }
-            if (fpd != -1) close(fpd);
-            if (efd != -1) close(efd);
         },
         {
             if (base == PTR_NULL)
             {
-                printerr("starting to scan memory...");
+                printerr("Starting to scan memory...");
 
                 if (match_pattern(&st, &base))
                 {
-                    printerr("scan succeeded. you can now use 'auto' option");
+                    printerr("Scan succeeded. cosu-trainer will now update map information.");
                 }
                 else
                 {
-                    printerr("failed scanning memory: it could be because it's too early");
-                    printerr("will retry in 3 seconds...");
+                    printerr("Failed scanning memory: It could be because it's too early");
+                    printerr("Will retry in 3 seconds...");
                     sleep(3);
                     continue;
                 }
@@ -298,7 +491,7 @@ int main()
             }
             else
             {
-                printerr("failed reading memory: scanning again...");
+                printerr("Failed reading memory: Scanning again...");
                 base = NULL;
                 goto contin;
             }
@@ -319,30 +512,30 @@ int main()
             }
             else
             {
-                int write = 0;
-                if ((write = dprintf(fd, "%d %ls", st.osu, songpath)) < 0)
-                {
+                int write = songsfd != NULL
+                            ? dprintf(fd, "%d %s/%ls", songsfdlen, songsfd, songpath)
+                            : dprintf(fd, "0 %ls", songpath);
+
+                if (write < 0)
                     perror("dprintf");
-                }
-                else
-                {
-                    if (ftruncate(fd, write) == -1)
-                    {
-                        perror("truncate");
-                    }
-                }
+                else if (ftruncate(fd, write) == -1)
+                    perror("truncate");
             }
         },
         {
-            printerr("process lost! waiting for osu...");
+            printerr("Process lost! Waiting for osu...");
             base = NULL;
-        })
+
+            free(songsfd);
+            songsfd = NULL;
+        });
 contin:
         sleep(1);
     }
+
     unlink("/tmp/osu_path");
-    unlink("/tmp/osu_wine_env");
     free(oldpath);
+    free(songsfd);
     if (songpath != NULL) free(songpath);
     stop_memread(&st);
     close(fd);

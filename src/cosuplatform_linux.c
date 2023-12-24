@@ -129,69 +129,7 @@ char *get_songspath()
         }
     }
 
-    int envsize = 0;
-    const char envcmdtp[] = "echo 'export %s WINEDEBUG=-all; echo -n ${WINEPREFIX:-$HOME/.wine}/dosdevices/`${WINE_EXE:-wine} %s/read_registry.exe`' | bash > /tmp/osu_songsfolder";
-    char *env = read_file("/tmp/osu_wine_env", &envsize);
-    char *ret = NULL;
-    if (env == NULL)
-    {
-        return NULL;
-    }
-
-    char *myexepath = realpath("/proc/self/exe", NULL);
-    if (myexepath == NULL)
-    {
-        free(env);
-        return NULL;
-    }
-    char *exesep = strrchr(myexepath, '/');
-    if (exesep == NULL)
-    {
-        free(env);
-        free(myexepath);
-        return NULL;
-    }
-    if (exesep != myexepath)
-    {
-        *exesep = '\0';
-    }
-
-    int cmdsize = sizeof(envcmdtp) - 2 - 1 + strlen(myexepath) + 1 + envsize + 1;
-    char *cmd = (char*) malloc(cmdsize);
-    if (cmd == NULL)
-    {
-        free(env);
-        free(myexepath);
-        return NULL;
-    }
-    snprintf(cmd, cmdsize, envcmdtp, env, myexepath);
-    free(env);
-    free(myexepath);
-
-    if (system(cmd) == 0)
-    {
-        char *tempsf = read_file("/tmp/osu_songsfolder", NULL);
-        unlink("/tmp/osu_songsfolder");
-        if (tempsf == NULL)
-        {
-            free(cmd);
-            return NULL;
-        }
-        char *winsep = NULL;
-        while ((winsep = strchr(tempsf, '\\')) != NULL)
-        {
-            *winsep = '/';
-        }
-        try_convertwinpath(tempsf, 1);
-        char *rp = realpath(tempsf, NULL);
-        if (rp != NULL)
-        {
-            ret = rp;
-        }
-        free(tempsf);
-    }
-    free(cmd);
-    return ret;
+    return NULL;
 }
 
 int try_convertwinpath(char *path, int pos)

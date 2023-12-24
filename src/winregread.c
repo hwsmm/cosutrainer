@@ -161,26 +161,3 @@ LPWSTR getOsuSongsPath(LPWSTR osupath, DWORD pathsize)
     }
     return res;
 }
-
-#ifdef WINE
-int main()
-{
-    setlocale(LC_CTYPE, "");
-    setlocale(LC_CTYPE, ".UTF-8");
-
-    DWORD sz = 0;
-    LPWSTR st = getOsuPath(&sz);
-    if (st == NULL) return 1;
-    LPWSTR rs = getOsuSongsPath(st, sz);
-    if (rs == NULL)
-    {
-        free(st);
-        return 2;
-    }
-
-    printf("%ls", rs);
-    free(st);
-    free(rs);
-    return 0;
-}
-#endif

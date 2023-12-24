@@ -9,8 +9,6 @@ private:
     static void thread_func(Freader *fr);
     char *songf;
     bool conti;
-    bool songf_env;
-    int pid;
 public:
     Freader();
     ~Freader();
