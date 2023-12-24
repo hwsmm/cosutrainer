@@ -276,7 +276,7 @@ char *get_iconpath()
     char *appi = getenv("APPDIR");
     if (appi != NULL)
     {
-        const char suffix[] = "/share/pixmaps/cosutrainer.png";
+        const char suffix[] = "/usr/share/pixmaps/cosutrainer.png";
         char *path = (char*) malloc(strlen(appi) + sizeof(suffix));
         if (path == NULL)
         {
