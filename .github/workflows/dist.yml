@@ -1,0 +1,58 @@
+name: Package
+
+on:
+    workflow_dispatch:
+
+jobs:
+    linux:
+        runs-on: ubuntu-latest
+        name: Linux AppImage Build
+        env:
+            ZYPP_GLOBAL: --no-gpg-checks --gpg-auto-import-keys
+        container: opensuse/leap:latest
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Add repositories
+              env:
+                  ZYPP_ADDREPO: sudo zypper $ZYPP_GLOBAL addrepo -p 90 -G
+              run: |
+                  $ZYPP_ADDREPO https://download.opensuse.org/repositories/devel:libraries:c_c++/15.5/devel:libraries:c_c++.repo
+                  $ZYPP_ADDREPO https://download.opensuse.org/repositories/multimedia:libs/15.5/multimedia:libs.repo
+                  $ZYPP_ADDREPO https://download.opensuse.org/repositories/home:hwsnemo/15.5/home:hwsnemo.repo
+                  sudo zypper $ZYPP_GLOBAL refresh
+
+            - name: Install dependencies
+              run: sudo zypper $ZYPP_GLOBAL install -f -y gcc-c++ libmp3lame-devel libsndfile-devel soundtouch-devel libzip-devel fltk-devel meson ninja wget tar xz
+
+            - name: Configure
+              run: meson . builddir -Dc_args=-Os -Dcpp_args=-Os
+
+            - name: Build
+              run: ninja -C builddir
+
+            - name: Download linuxdeploy
+              run: wget https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+
+            - name: Make AppDir
+              run: |
+                  DESTDIR=$PWD/AppDir meson install -C builddir
+                  rm AppDir/usr/bin/cosu-cleanup AppDir/usr/bin/osumem
+
+            - name: Create AppImage
+              run: |
+                  chmod +x linuxdeploy-x86_64.AppImage
+                  ./linuxdeploy-x86_64.AppImage --appdir=AppDir -d AppDir/usr/share/applications/cosu-trainer.desktop -o appimage
+
+            - name: Pack tarball
+              run: |
+                  mkdir package
+                  cp builddir/osumem builddir/cosu-cleanup cosu-trainer-*.AppImage COPYING package
+                  tar cJf cosu-trainer-bin.tar.xz -C package .
+
+            - name: Upload a package
+              uses: actions/upload-artifact@v4
+              with:
+                  name: cosu-trainer Linux package
+                  path: cosu-trainer-bin.tar.xz
