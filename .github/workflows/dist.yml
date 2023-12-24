@@ -8,7 +8,7 @@ jobs:
         runs-on: ubuntu-latest
         name: Linux AppImage Build
         env:
-            ZYPP_GLOBAL: --no-gpg-checks --gpg-auto-import-keys
+            ZYPP_GLOBAL: --no-gpg-checks --gpg-auto-import-keys --non-interactive
         container: opensuse/leap:latest
         steps:
             - name: Add repositories
