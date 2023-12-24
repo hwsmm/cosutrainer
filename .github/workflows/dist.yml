@@ -44,13 +44,13 @@ jobs:
               run: |
                   chmod +x linuxdeploy-x86_64.AppImage
                   ./linuxdeploy-x86_64.AppImage --appimage-extract
-                  ./squashfs-root/usr/bin/linuxdeploy --appdir=AppDir -d AppDir/usr/share/applications/cosu-trainer.desktop -i AppDir/usr/share/pixmaps/cosutrainer.png -o appimage
+                  ./squashfs-root/usr/bin/linuxdeploy --appdir=AppDir -d AppDir/usr/share/applications/cosu-trainer.desktop -o appimage
 
             - name: Pack tarball
               run: |
                   ls -al
                   mkdir package
-                  cp builddir/osumem builddir/cosu-cleanup cosu-trainer-*.AppImage package
+                  cp builddir/osumem builddir/cosu-cleanup cosu-trainer-*.AppImage COPYING.md package
                   tar cJf cosu-trainer-bin.tar.xz -C package .
 
             - name: Upload a package
@@ -100,7 +100,7 @@ jobs:
                   mkdir package && cd package
                   mv ../cosu-trainer.exe .
                   for lib in $(cat ../deplist); do echo $lib && cp $lib .; done
-                  cp ../docs/cosutrainer.png .
+                  cp ../COPYING.md ../docs/cosutrainer.png .
                   zip ../cosu-trainer-win-bin.zip *
 
             - name: Upload a package
