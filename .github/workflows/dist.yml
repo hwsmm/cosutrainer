@@ -11,9 +11,6 @@ jobs:
             ZYPP_GLOBAL: --no-gpg-checks --gpg-auto-import-keys
         container: opensuse/leap:latest
         steps:
-            - name: Checkout
-              uses: actions/checkout@v4
-
             - name: Add repositories
               env:
                   ZYPP_ADDREPO: sudo zypper $ZYPP_GLOBAL addrepo -p 90 -G
@@ -25,6 +22,9 @@ jobs:
 
             - name: Install dependencies
               run: sudo zypper $ZYPP_GLOBAL install -f -y gcc-c++ libmp3lame-devel libsndfile-devel soundtouch-devel libzip-devel fltk-devel meson ninja wget tar xz
+
+            - name: Checkout
+              uses: actions/checkout@v4
 
             - name: Configure
               run: meson . builddir -Dc_args=-Os -Dcpp_args=-Os
