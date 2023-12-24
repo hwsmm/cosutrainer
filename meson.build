@@ -4,7 +4,7 @@ project('cosu-trainer', 'c', 'cpp',
 
 mainfiles=['src/cosuui.cpp', 'src/cosuwindow.cpp', 'src/freader.cpp', 'src/cuimain.c', 'src/main.cpp', 'src/cosuplatform_linux.c',
            'src/tools.c', 'src/mapeditor.c', 'src/actualzip.c', 'src/audiospeed.cpp', 'src/buffers.c']
-memfiles=['src/tools.c', 'src/lsigscan.c', 'src/cosumem.c', 'src/cosuplatform_linux.c']
+memfiles=['src/tools.c', 'src/lsigscan.c', 'src/cosumem.c', 'src/cosuplatform_linux.c', 'src/winregread.c']
 cleanfiles=['src/tools.c', 'src/cleanup.c', 'src/cosuplatform_linux.c']
 
 inc_dir = include_directories('./src')

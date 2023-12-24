@@ -1,8 +1,10 @@
 #include "winregread.h"
 #include <stdio.h>
+
+#ifdef WIN32
+
 #include <shlwapi.h>
 #include <lmcons.h>
-#include <locale.h>
 #include <strsafe.h>
 #include <wchar.h>
 
@@ -161,3 +163,247 @@ LPWSTR getOsuSongsPath(LPWSTR osupath, DWORD pathsize)
     }
     return res;
 }
+
+#else
+
+#include <stdlib.h>
+#include <ctype.h>
+#include <string.h>
+#include <stdbool.h>
+#include "cosuplatform.h"
+#include "tools.h"
+
+char *get_osu_path(char *wineprefix)
+{
+    const char system_reg[] = "system.reg";
+    int size = strlen(wineprefix) + 1 + sizeof(system_reg);
+    char *regpath = (char*) malloc(size);
+    if (regpath == NULL)
+    {
+        printerr("Failed allocating memory!");
+        return NULL;
+    }
+
+    snprintf(regpath, size, "%s/%s", wineprefix, system_reg);
+
+    FILE *f = fopen(regpath, "r");
+    if (!f)
+    {
+        perror(regpath);
+        return NULL;
+    }
+
+    char line[4096];
+    char *result = NULL;
+
+    while (fgets(line, sizeof(line), f))
+    {
+        if (strstr(line, "osu\\\\shell\\\\open\\\\command") != NULL)
+        {
+            while (fgets(line, sizeof(line), f))
+            {
+                char *find = NULL;
+                if ((find = strstr(line, "osu!.exe")) != NULL)
+                {
+                    *find = '\0';
+
+                    char *first = strstr(line, ":\\\\");
+
+                    if (first != NULL)
+                        first--;
+                    else
+                        goto exit;
+
+                    int len = strlen(first);
+                    result = (char*) malloc(len);
+                    if (result != NULL)
+                        strcpy(result, first);
+
+                    goto exit;
+                }
+            }
+        }
+    }
+
+exit:
+    fclose(f);
+    return result;
+}
+
+char *get_osu_songs_path(char *wineprefix, char *uid)
+{
+    FILE *pw = fopen("/etc/passwd", "r");
+    if (!pw)
+    {
+        perror("/etc/passwd");
+        return NULL;
+    }
+
+    char id[4096];
+    bool uidfound = false;
+    bool prefixnull = wineprefix == NULL;
+
+    while (fgets(id, sizeof(id), pw))
+    {
+        /*char *lid =*/ strtok(id, ":");
+        /*char *lpw =*/ strtok(NULL, ":");
+        char *luid = strtok(NULL, ":");
+
+        if (strcmp(uid, luid) == 0)
+        {
+            uidfound = true;
+
+            if (prefixnull)
+            {
+                /*char *lgid =*/ strtok(NULL, ":");
+                /*char *lgecos =*/ strtok(NULL, ":");
+                char *ldir = strtok(NULL, ":");
+
+                const char winedefp[] = ".wine";
+
+                int defplen = strlen(ldir) + 1 + sizeof(winedefp);
+                wineprefix = (char*) malloc(defplen);
+
+                if (!wineprefix)
+                {
+                    fclose(pw);
+                    return NULL;
+                }
+                else
+                {
+                    snprintf(wineprefix, defplen, "%s/%s", ldir, winedefp);
+                }
+            }
+
+            break;
+        }
+    }
+
+    fclose(pw);
+
+    if (!uidfound)
+        return NULL;
+
+    char *result = NULL;
+
+    int prefixlen = strlen(wineprefix);
+
+    char *osu = get_osu_path(wineprefix);
+    if (osu == NULL)
+        return NULL;
+
+    int osulen = strlen(osu);
+
+    for (int i = 0; i < osulen; i++)
+    {
+        if (*(osu + i) == '\\')
+            *(osu + i) = '/';
+    }
+
+    *osu = tolower(*osu); // device letter
+
+    const char dosd[] = "dosdevices";
+    const char prefix[] = "osu!.";
+    const char suffix[] = ".cfg";
+
+    int idlen = strlen(id);
+    int cfglen = prefixlen + 1 + (sizeof(dosd)-1) + 1 + osulen + 1 + (sizeof(prefix)-1) + idlen + (sizeof(suffix)-1) + 1;
+    char *cfgpath = (char*) malloc(cfglen);
+
+    snprintf(cfgpath, cfglen, "%s/%s/%s/%s%s%s", wineprefix, dosd, osu, prefix, id, suffix);
+
+    if (try_convertwinpath(cfgpath, prefixlen + 1 + (sizeof(dosd)-1) + 1) < 0)
+    {
+        fprintf(stderr, "Tried config path but failed: %s\n", cfgpath);
+        goto freeq;
+    }
+
+    FILE* cfg = fopen(cfgpath, "r");
+    if (!cfg)
+    {
+        perror(cfgpath);
+        goto freeq;
+    }
+
+    char line[4096];
+    char find[] = "BeatmapDirectory = ";
+    char *found = NULL;
+    while (fgets(line, sizeof(line), cfg))
+    {
+        if (strncmp(line, find, sizeof(find) - 1) == 0)
+        {
+            found = line + sizeof(find) - 1;
+            found = trim(found, NULL);
+            break;
+        }
+    }
+
+    fclose(cfg);
+
+    if (found == NULL)
+    {
+        printerr("BeatmapDirectory not found in osu config!");
+        goto freeq;
+    }
+
+    int foundlen = strlen(found);
+    char *sep = strchr(found, ':');
+    bool abs = sep != NULL && sep - found == 1;
+
+    for (int i = 0; i < foundlen; i++)
+    {
+        if (*(found + i) == '\\')
+            *(found + i) = '/';
+    }
+
+    if (abs)
+    {
+        *found = tolower(*found);
+
+        int reslen = prefixlen + 1 + (sizeof(dosd)-1) + 1 + foundlen + 1;
+        result = (char*) malloc(reslen);
+        if (result == NULL)
+        {
+            printerr("Failed allocation!");
+            goto freeq;
+        }
+
+        snprintf(result, reslen, "%s/%s/%s", wineprefix, dosd, found);
+    }
+    else
+    {
+        int reslen = prefixlen + 1 + (sizeof(dosd)-1) + 1 + osulen + 1 + foundlen + 1;
+        result = (char*) malloc(reslen);
+        if (result == NULL)
+        {
+            printerr("Failed allocation!");
+            goto freeq;
+        }
+
+        snprintf(result, reslen, "%s/%s/%s/%s", wineprefix, dosd, osu, found);
+    }
+
+    if (result != NULL && try_convertwinpath(result, prefixlen + 1 + (sizeof(dosd)-1) + 1) < 0)
+    {
+        fprintf(stderr, "Tried final path but failed: %s\n", result);
+        free(result);
+        result = NULL;
+    }
+
+    char *real = realpath(result, NULL);
+    if (real != NULL)
+    {
+        free(result);
+        result = real;
+    }
+
+freeq:
+    if (prefixnull)
+        free(wineprefix);
+
+    free(osu);
+    free(cfgpath);
+    return result;
+}
+
+#endif
