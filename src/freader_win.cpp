@@ -1,25 +1,19 @@
-#include "freader_win.h"
+#include "freader.h"
 #include "tools.h"
 #include "cosuplatform.h"
+#include "cosuwindow.h"
 #include "cosumem.h"
 #include <FL/Fl.H>
 
-Freader::Freader() : thr(Freader::thread_func, this)
+Freader::Freader(CosuWindow *win) : thr(Freader::thread_func, this)
 {
-    info = NULL;
-    oldinfo = NULL;
-    songf = NULL;
-    consumed = true;
-    conti = true;
-    pause = false;
+    init(win);
     init_sigstatus(&st);
 }
 
 Freader::~Freader()
 {
-    this->conti = false;
-    thr.join();
-    if (songf) free(songf);
+    close();
 }
 
 void Freader::thread_func(Freader *fr)
@@ -33,8 +27,9 @@ void Freader::thread_func(Freader *fr)
         struct sigscan_status *sst = &(fr->st);
         if (fr->pause)
         {
-            Sleep(1000);
-            continue;
+            edit_beatmap(&(fr->win->edit), &(fr->win->progress));
+            fr->pause = false;
+            fr->win->done = true;
         }
 
         DEFAULT_LOGIC(sst,

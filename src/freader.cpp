@@ -1,28 +1,19 @@
 #include "freader.h"
 #include "tools.h"
 #include "cosuplatform.h"
+#include "cosuwindow.h"
 #include <unistd.h>
 #include <FL/Fl.H>
 
-Freader::Freader() : thr(Freader::thread_func, this)
+Freader::Freader(CosuWindow *win) : thr(Freader::thread_func, this)
 {
-    path = NULL;
-    info = NULL;
-    oldinfo = NULL;
-    songf = NULL;
-    consumed = true;
-    conti = true;
-    pause = false;
+    init(win);
 }
 
 Freader::~Freader()
 {
-    this->conti = false;
-    thr.join();
-    free_mapinfo(oldinfo);
-    free_mapinfo(info);
+    close();
     if (path != NULL) free(path);
-    if (songf != NULL) free(songf);
 }
 
 void Freader::thread_func(Freader *fr)
@@ -31,8 +22,9 @@ void Freader::thread_func(Freader *fr)
     {
         if (fr->pause)
         {
-            sleep(1);
-            continue;
+            edit_beatmap(&(fr->win->edit), &(fr->win->progress));
+            fr->pause = false;
+            fr->win->done = true;
         }
 
         int readbytes = 0;
