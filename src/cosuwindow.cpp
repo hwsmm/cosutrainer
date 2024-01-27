@@ -1,16 +1,17 @@
 #include "cosuwindow.h"
 #include "tools.h"
-#include "mapeditor.h"
 #include "cosuplatform.h"
 #include <cstdio>
 #include <thread>
+#include <string>
 #include <FL/Fl_JPEG_Image.H>
 #include <FL/Fl_PNG_Image.H>
 
 using namespace std;
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-parameter"
+CosuWindow::CosuWindow() : fr(this)
+{
+}
 
 #ifdef WIN32
 int ui_wait_seconds(double seconds)
@@ -26,6 +27,65 @@ int ui_wait_seconds(double seconds)
 }
 #endif
 
+double CosuWindow::get_relative_speed()
+{
+    if (cosuui.rate->value() >= 1)
+        return cosuui.speedval->value();
+    else if (cosuui.bpm->value() >= 1)
+        return cosuui.speedval->value() / fr.info->maxbpm;
+
+    return 1;
+}
+
+void CosuWindow::update_rate_bpm()
+{
+    if (fr.info == NULL)
+        return;
+
+    double bpm = fr.info->maxbpm * cosuui.speedval->value();
+    string bpmstr = to_string((int)bpm);
+    bpmstr.append("bpm");
+
+    cosuui.ratebpm->copy_label(bpmstr.c_str());
+}
+
+char arstr[] = "Scale AR to xx.x";
+char odstr[] = "Scale OD to xx.x";
+const int offset = 12;
+
+void CosuWindow::update_ar_label()
+{
+    if (fr.info == NULL)
+        return;
+
+    if (fr.info->mode == 1 || fr.info->mode == 3)
+        return;
+
+    double scaled = scale_ar(cosuui.arslider->value(), get_relative_speed(), fr.info->mode);
+    CLAMP(scaled, 0, 11);
+
+    snprintf(arstr + offset, sizeof(arstr) - offset, "%.1lf", scaled);
+    cosuui.scale_ar->label(arstr);
+}
+
+void CosuWindow::update_od_label()
+{
+    if (fr.info == NULL)
+        return;
+
+    if (fr.info->mode == 2)
+        return;
+
+    double scaled = scale_od(cosuui.odslider->value(), get_relative_speed(), fr.info->mode);
+    CLAMP(scaled, 0, 11.11);
+
+    snprintf(odstr + offset, sizeof(odstr) - offset, "%.1lf", scaled);
+    cosuui.scale_od->label(odstr);
+}
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+
 void CosuWindow::rateradio_callb(Fl_Widget *w, void *data)
 {
     CosuWindow *win = (CosuWindow*) data;
@@ -33,9 +93,13 @@ void CosuWindow::rateradio_callb(Fl_Widget *w, void *data)
     if (((Fl_Round_Button*) w)->value() >= 1)
     {
         win->cosuui.bpm->clear();
-        win->cosuui.lock->deactivate();
+        win->cosuui.ratebpm->show();
+        win->cosuui.lock->hide();
         win->cosuui.speedval->value(1);
         win->cosuui.speedval->step(0.1);
+
+        win->update_ar_label();
+        win->update_od_label();
     }
 }
 
@@ -46,7 +110,8 @@ void CosuWindow::bpmradio_callb(Fl_Widget *w, void *data)
     if (((Fl_Round_Button*) w)->value() >= 1)
     {
         win->cosuui.rate->clear();
-        win->cosuui.lock->activate();
+        win->cosuui.lock->show();
+        win->cosuui.ratebpm->hide();
         win->cosuui.speedval->step(1);
         if (win->fr.info != NULL)
         {
@@ -56,7 +121,22 @@ void CosuWindow::bpmradio_callb(Fl_Widget *w, void *data)
         {
             win->cosuui.speedval->value(1);
         }
+
+        win->update_ar_label();
+        win->update_od_label();
     }
+}
+
+void CosuWindow::speedval_callb(Fl_Widget *w, void *data)
+{
+    CosuWindow *win = (CosuWindow*) data;
+    if (win->cosuui.rate->value() >= 1)
+    {
+        win->update_rate_bpm();
+    }
+
+    win->update_ar_label();
+    win->update_od_label();
 }
 
 void CosuWindow::resetbtn_callb(Fl_Widget *w, void *data)
@@ -76,44 +156,6 @@ void CosuWindow::resetbtn_callb(Fl_Widget *w, void *data)
     Fl::awake();
 }
 
-void CosuWindow::thr_convmap(CosuWindow *win)
-{
-    struct editdata edit;
-    edit.mi = win->fr.info;
-    edit.hp = win->cosuui.hpslider->value();
-    edit.cs = win->cosuui.csslider->value();
-    edit.ar = win->cosuui.arslider->value();
-    edit.od = win->cosuui.odslider->value();
-    edit.scale_ar = win->cosuui.scale_ar->value() >= 1;
-    edit.scale_od = win->cosuui.scale_od->value() >= 1;
-    edit.makezip = true;
-
-    edit.speed = win->cosuui.speedval->value();
-    edit.bpmmode = win->cosuui.bpm->value() >= 1 ? bpm : rate;
-    edit.pitch = win->cosuui.pitch->value() >= 1;
-    edit.nospinner = win->cosuui.nospinner->value() >= 1;
-
-    switch (win->cosuui.flipbox->value())
-    {
-    case 1:
-        edit.flip = xflip;
-        break;
-    case 2:
-        edit.flip = yflip;
-        break;
-    case 3:
-        edit.flip = transpose;
-        break;
-    default:
-        edit.flip = none;
-        break;
-    }
-
-    edit_beatmap(&edit, &(win->progress));
-
-    win->done = true;
-}
-
 void CosuWindow::convbtn_callb(Fl_Widget *w, void *data)
 {
     CosuWindow *win = (CosuWindow*) data;
@@ -122,12 +164,41 @@ void CosuWindow::convbtn_callb(Fl_Widget *w, void *data)
         return;
     }
 
-    win->fr.pause = true;
     win->cosuui.mainbox->deactivate();
-    win->done = false;
     Fl::awake();
 
-    win->cur = new std::thread(CosuWindow::thr_convmap, win);
+    win->edit.mi = win->fr.info;
+    win->edit.hp = win->cosuui.hpslider->value();
+    win->edit.cs = win->cosuui.csslider->value();
+    win->edit.ar = win->cosuui.arslider->value();
+    win->edit.od = win->cosuui.odslider->value();
+    win->edit.scale_ar = win->cosuui.scale_ar->value() >= 1;
+    win->edit.scale_od = win->cosuui.scale_od->value() >= 1;
+    win->edit.makezip = true;
+
+    win->edit.speed = win->cosuui.speedval->value();
+    win->edit.bpmmode = win->cosuui.bpm->value() >= 1 ? bpm : rate;
+    win->edit.pitch = win->cosuui.pitch->value() >= 1;
+    win->edit.nospinner = win->cosuui.nospinner->value() >= 1;
+
+    switch (win->cosuui.flipbox->value())
+    {
+    case 1:
+        win->edit.flip = xflip;
+        break;
+    case 2:
+        win->edit.flip = yflip;
+        break;
+    case 3:
+        win->edit.flip = transpose;
+        break;
+    default:
+        win->edit.flip = none;
+        break;
+    }
+
+    win->done = false;
+    win->fr.pause = true;
 }
 
 void CosuWindow::diffch_callb(Fl_Widget *w, void *data)
@@ -138,6 +209,18 @@ void CosuWindow::diffch_callb(Fl_Widget *w, void *data)
 
     int target = changed < 4 /*0,1,2,3 sliders*/ ? changed + 4 : /*4,5,6,7 inputs*/ changed - 4;
     ((Fl_Valuator*) win->cosuui.diffgroup->child(target))->value(((Fl_Valuator*) w)->value());
+
+    switch (target)
+    {
+    case 2:
+    case 6:
+        win->update_ar_label();
+        break;
+    case 3:
+    case 7:
+        win->update_od_label();
+        break;
+    }
 }
 
 #pragma GCC diagnostic pop
@@ -146,15 +229,20 @@ void CosuWindow::start()
 {
     Fl::scheme("plastic");
     Fl_Image::RGB_scaling(FL_RGB_SCALING_BILINEAR);
+
     Fl_Window *window = cosuui.make_window();
+
     Fl_Image emptyimg(0,0,0);
     Fl_Image *img = NULL;
     Fl_RGB_Image *icon = NULL;
+
+    cosuui.lock->hide();
 
     cosuui.rate->callback(rateradio_callb, (void*) this);
     cosuui.bpm->callback(bpmradio_callb, (void*) this);
     cosuui.reset->callback(resetbtn_callb, (void*) this);
     cosuui.convert->callback(convbtn_callb, (void*) this);
+    cosuui.speedval->callback(speedval_callb, (void*) this);
 
     Fl_Widget *const *diffw = cosuui.diffgroup->array();
     for (int gi = cosuui.diffgroup->children() - 1; gi >= 0; gi--)
@@ -189,9 +277,6 @@ void CosuWindow::start()
                     progress = 0;
                     cosuui.progress->value(progress);
                     cosuui.mainbox->activate();
-                    fr.pause = false;
-                    cur->join();
-                    delete cur;
                     break;
                 }
             }
@@ -277,6 +362,48 @@ void CosuWindow::start()
                 (cosuui.arslider)->value(info->ar);
                 (cosuui.arinput)->value(info->ar);
             }
+
+            if (info->mode == 2)
+            {
+                (cosuui.odslider)->deactivate();
+                (cosuui.odinput)->deactivate();
+                (cosuui.odlock)->deactivate();
+
+                (cosuui.scale_od)->label("Scale OD");
+                (cosuui.scale_od)->deactivate();
+            }
+            else
+            {
+                (cosuui.odslider)->activate();
+                (cosuui.odinput)->activate();
+                (cosuui.odlock)->activate();
+                (cosuui.scale_od)->activate();
+            }
+
+            if (info->mode == 1 || info->mode == 3)
+            {
+                (cosuui.arslider)->deactivate();
+                (cosuui.arinput)->deactivate();
+                (cosuui.arlock)->deactivate();
+                (cosuui.csslider)->deactivate();
+                (cosuui.csinput)->deactivate();
+                (cosuui.cslock)->deactivate();
+
+                (cosuui.scale_ar)->label("Scale AR");
+                (cosuui.scale_ar)->deactivate();
+            }
+            else
+            {
+                (cosuui.arslider)->activate();
+                (cosuui.arinput)->activate();
+                (cosuui.arlock)->activate();
+                (cosuui.csslider)->activate();
+                (cosuui.csinput)->activate();
+                (cosuui.cslock)->activate();
+
+                (cosuui.scale_ar)->activate();
+            }
+
             cosuui.songtitlelabel->label(info->songname);
             cosuui.difflabel->label(info->diffname);
             if (bgpath != NULL && tempimg != NULL)
@@ -296,6 +423,13 @@ void CosuWindow::start()
             {
                 cosuui.speedval->value(info->maxbpm);
             }
+            if (cosuui.rate->value() >= 1)
+            {
+                update_rate_bpm();
+            }
+            update_ar_label();
+            update_od_label();
+
             cosuui.infobox->redraw();
             Fl::unlock();
         }
