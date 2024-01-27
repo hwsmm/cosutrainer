@@ -780,6 +780,10 @@ int edit_beatmap(struct editdata *edit, float *progress)
         }
     }
 
+    if (edit->mi->mode == 2) edit->od = 0;
+
+    if (edit->mi->mode == 1 || edit->mi->mode == 3) edit->ar = 0;
+
     if (edit->ar > 10 || edit->od > 10)
     {
         puts("AR/OD is higher than 10. Emulating DT...");
@@ -793,11 +797,9 @@ int edit_beatmap(struct editdata *edit, float *progress)
         ep.emuldt = false;
     }
 
-    if (edit->mi->mode == 2) edit->od = 0;
-    else CLAMP(edit->od, 0.0f, 10.0f);
+    CLAMP(edit->od, 0.0f, 10.0f);
 
-    if (edit->mi->mode == 1 || edit->mi->mode == 3) edit->ar = 0;
-    else CLAMP(edit->ar, 0.0f, 10.0f);
+    CLAMP(edit->ar, 0.0f, 10.0f);
 
     char *fname = strrchr(edit->mi->fullpath, PATHSEP) + 1;
 
