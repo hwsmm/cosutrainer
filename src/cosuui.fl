@@ -1,5 +1,5 @@
 # data file for the Fltk User Interface Designer (fluid)
-version 1.0305
+version 1.0308
 header_name {.h}
 code_name {.cpp}
 class CosuUI {open
@@ -8,7 +8,7 @@ class CosuUI {open
   } {
     Fl_Window window {
       label {cosu-trainer} open
-      xywh {488 136 390 530} type Single resizable size_range {390 530 390 530} visible
+      xywh {515 203 390 530} type Single resizable size_range {390 530 390 530} visible
     } {
       Fl_Group mainbox {open
         xywh {10 10 370 510}
@@ -16,7 +16,7 @@ class CosuUI {open
         Fl_Box infobox {
           xywh {10 10 370 130} align 64
         }
-        Fl_Choice flipbox {open selected
+        Fl_Choice flipbox {open
           xywh {210 220 170 25} down_box BORDER_BOX
         } {
           MenuItem no_flip {
@@ -61,11 +61,11 @@ class CosuUI {open
           xywh {295 375 85 25} down_box ROUND_DOWN_BOX
         }
         Fl_Spinner speedval {
-          xywh {210 405 100 25} type Float minimum 0.1 maximum 99999 step 0.1
+          xywh {210 405 80 25} type Float minimum 0.1 maximum 99999 step 0.1
         }
         Fl_Check_Button lock {
-          label Lock
-          xywh {315 405 65 25} down_box DOWN_BOX deactivate
+          label Lock selected
+          xywh {295 405 85 25} down_box DOWN_BOX
         }
         Fl_Check_Button hplock {
           xywh {20 415 15 15} down_box DOWN_BOX
@@ -126,6 +126,10 @@ class CosuUI {open
           Fl_Value_Input odinput {
             xywh {160 220 40 25} box THIN_DOWN_BOX color 23 maximum 11 step 0.1 value 5
           }
+        }
+        Fl_Box ratebpm {
+          label 0bpm
+          xywh {295 405 85 25} align 20
         }
       }
       Fl_Progress progress {
