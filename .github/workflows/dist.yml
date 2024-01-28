@@ -21,13 +21,13 @@ jobs:
                   zypper $ZYPP_GLOBAL refresh
 
             - name: Install dependencies
-              run: zypper $ZYPP_GLOBAL install -f -y gcc-c++ mpg123-devel libmp3lame-devel libsndfile-devel soundtouch-devel libzip-devel fltk-devel meson ninja wget tar xz gzip file fuse libfuse2
+              run: zypper $ZYPP_GLOBAL install -f -y clang mpg123-devel libmp3lame-devel libsndfile-devel soundtouch-devel libzip-devel fltk-devel meson ninja wget tar xz gzip file fuse libfuse2
 
             - name: Checkout
               uses: actions/checkout@v4
 
             - name: Configure
-              run: meson --prefix=/usr builddir
+              run: CC=clang CXX=clang++ meson --prefix=/usr builddir -Dc_args=-Os -Dcpp_args=-Os
 
             - name: Build
               run: ninja -C builddir
