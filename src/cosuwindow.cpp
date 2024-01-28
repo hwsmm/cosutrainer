@@ -2,8 +2,8 @@
 #include "tools.h"
 #include "cosuplatform.h"
 #include <cstdio>
+#include <cmath>
 #include <thread>
-#include <string>
 #include <FL/Fl_JPEG_Image.H>
 #include <FL/Fl_PNG_Image.H>
 
@@ -37,16 +37,17 @@ double CosuWindow::get_relative_speed()
     return 1;
 }
 
+char bpmstr[] = "xxxxxxxxxxxxxxbpm";
+
 void CosuWindow::update_rate_bpm()
 {
     if (fr.info == NULL)
         return;
 
     double bpm = fr.info->maxbpm * cosuui.speedval->value();
-    string bpmstr = to_string((int)bpm);
-    bpmstr.append("bpm");
+    snprintf(bpmstr, sizeof(bpmstr), "%dbpm", (int)round(bpm));
 
-    cosuui.ratebpm->copy_label(bpmstr.c_str());
+    cosuui.ratebpm->label(bpmstr);
 }
 
 char arstr[] = "Scale AR to xx.x";
@@ -64,7 +65,7 @@ void CosuWindow::update_ar_label()
     double scaled = scale_ar(cosuui.arslider->value(), get_relative_speed(), fr.info->mode);
     CLAMP(scaled, 0, 11);
 
-    snprintf(arstr + offset, sizeof(arstr) - offset, "%.1lf", scaled);
+    snprintf(arstr + offset, sizeof(arstr) - offset, "%.1f", scaled);
     cosuui.scale_ar->label(arstr);
 }
 
@@ -79,7 +80,7 @@ void CosuWindow::update_od_label()
     double scaled = scale_od(cosuui.odslider->value(), get_relative_speed(), fr.info->mode);
     CLAMP(scaled, 0, 11.11);
 
-    snprintf(odstr + offset, sizeof(odstr) - offset, "%.1lf", scaled);
+    snprintf(odstr + offset, sizeof(odstr) - offset, "%.1f", scaled);
     cosuui.scale_od->label(odstr);
 }
 

@@ -600,27 +600,27 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
             ret = -20;
             ep->arexists = true;
             edited = true;
-            snpedit("ApproachRate:%.1f\r\n", ep->ed->ar);
+            snpedit("ApproachRate:%.1lf\r\n", ep->ed->ar);
         }
         else if (CMPSTR(line, "HPDrainRate:"))
         {
             edited = true;
-            snpedit("HPDrainRate:%.1f\r\n", ep->ed->hp);
+            snpedit("HPDrainRate:%.1lf\r\n", ep->ed->hp);
         }
         else if (CMPSTR(line, "CircleSize:"))
         {
             edited = true;
-            snpedit("CircleSize:%.1f\r\n", ep->ed->cs);
+            snpedit("CircleSize:%.1lf\r\n", ep->ed->cs);
         }
         else if (CMPSTR(line, "OverallDifficulty:"))
         {
             edited = true;
-            snpedit("OverallDifficulty:%.1f\r\n", ep->ed->od);
+            snpedit("OverallDifficulty:%.1lf\r\n", ep->ed->od);
         }
         else if (CMPSTR(line, "ApproachRate:"))
         {
             edited = true;
-            snpedit("ApproachRate:%.1f\r\n", ep->ed->ar);
+            snpedit("ApproachRate:%.1lf\r\n", ep->ed->ar);
         }
     }
     else if (sect == metadata)
@@ -650,25 +650,25 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
 
             if (!ep->emuldt)
             {
-                snpedit("%.2fx", speed);
+                snpedit("%.2lfx", speed);
             }
             else
             {
-                snpedit("%.2fx(DT)", speed * 1.5);
+                snpedit("%.2lfx(DT)", speed * 1.5);
             }
 
-            if (ep->ed->mi->hp != ep->ed->hp) snpedit(" HP%.1f", ep->ed->hp);
-            if ((ep->ed->mi->mode != 1 && ep->ed->mi->mode != 3) && ep->ed->mi->cs != ep->ed->cs) snpedit(" CS%.1f", ep->ed->cs);
+            if (ep->ed->mi->hp != ep->ed->hp) snpedit(" HP%.1lf", ep->ed->hp);
+            if ((ep->ed->mi->mode != 1 && ep->ed->mi->mode != 3) && ep->ed->mi->cs != ep->ed->cs) snpedit(" CS%.1lf", ep->ed->cs);
 
             if (ep->emuldt)
             {
-                if (ep->ed->mi->mode != 2) snpedit(" OD%.1f", scale_od(ep->ed->od, 1.5, ep->ed->mi->mode));
-                if (ep->ed->mi->mode != 1 && ep->ed->mi->mode != 3) snpedit(" AR%.1f", scale_ar(ep->ed->ar, 1.5, ep->ed->mi->mode));
+                if (ep->ed->mi->mode != 2) snpedit(" OD%.1lf", scale_od(ep->ed->od, 1.5, ep->ed->mi->mode));
+                if (ep->ed->mi->mode != 1 && ep->ed->mi->mode != 3) snpedit(" AR%.1lf", scale_ar(ep->ed->ar, 1.5, ep->ed->mi->mode));
             }
             else
             {
-                if (ep->ed->mi->mode != 2 && ep->ed->mi->od != ep->ed->od) snpedit(" OD%.1f", ep->ed->od);
-                if ((ep->ed->mi->mode != 1 && ep->ed->mi->mode != 3) && ep->ed->mi->ar != ep->ed->ar) snpedit(" AR%.1f", ep->ed->ar);
+                if (ep->ed->mi->mode != 2 && ep->ed->mi->od != ep->ed->od) snpedit(" OD%.1lf", ep->ed->od);
+                if ((ep->ed->mi->mode != 1 && ep->ed->mi->mode != 3) && ep->ed->mi->ar != ep->ed->ar) snpedit(" AR%.1lf", ep->ed->ar);
             }
 
             switch (ep->ed->flip)
@@ -754,8 +754,8 @@ int edit_beatmap(struct editdata *edit, float *progress)
 
     if (edit->scale_ar)
     {
-        float origar = fabs(edit->ar);
-        float tempar = scale_ar(origar, edit->speed, edit->mi->mode);
+        double origar = abs(edit->ar);
+        double tempar = scale_ar(origar, edit->speed, edit->mi->mode);
         if (edit->ar < 0) // capping
         {
             edit->ar = tempar > origar ? origar : tempar;
@@ -768,8 +768,8 @@ int edit_beatmap(struct editdata *edit, float *progress)
 
     if (edit->scale_od)
     {
-        float origod = fabs(edit->od);
-        float tempod = scale_ar(origod, edit->speed, edit->mi->mode);
+        double origod = abs(edit->od);
+        double tempod = scale_ar(origod, edit->speed, edit->mi->mode);
         if (edit->od < 0) // capping
         {
             edit->od = tempod > origod ? origod : tempod;
@@ -789,17 +789,17 @@ int edit_beatmap(struct editdata *edit, float *progress)
         puts("AR/OD is higher than 10. Emulating DT...");
         ep.emuldt = true;
         edit->speed /= 1.5;
-        edit->ar = scale_ar(edit->ar, 1/1.5, edit->mi->mode);
-        edit->od = scale_od(edit->od, 1/1.5, edit->mi->mode);
+        edit->ar = scale_ar(edit->ar, 1.0/1.5, edit->mi->mode);
+        edit->od = scale_od(edit->od, 1.0/1.5, edit->mi->mode);
     }
     else
     {
         ep.emuldt = false;
     }
 
-    CLAMP(edit->od, 0.0f, 10.0f);
+    CLAMP(edit->od, 0.0, 10.0);
 
-    CLAMP(edit->ar, 0.0f, 10.0f);
+    CLAMP(edit->ar, 0.0, 10.0);
 
     char *fname = strrchr(edit->mi->fullpath, PATHSEP) + 1;
 

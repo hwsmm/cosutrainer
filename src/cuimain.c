@@ -134,7 +134,7 @@ int cuimain(int argc, char *argv[])
         int i;
         for (i = 3; i < argc; i++)
         {
-            float *diffv = NULL;
+            double *diffv = NULL;
             char *curarg = argv[i];
             switch (*curarg)
             {

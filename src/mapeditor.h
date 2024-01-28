@@ -38,7 +38,7 @@ struct mapinfo
 struct editdata // data needed to edit a map
 {
     const struct mapinfo *mi;
-    float hp, cs, ar, od;
+    double hp, cs, ar, od;
     bool scale_ar, scale_od;
     bool makezip;
 
