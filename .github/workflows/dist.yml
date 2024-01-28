@@ -27,7 +27,7 @@ jobs:
               uses: actions/checkout@v4
 
             - name: Configure
-              run: meson --prefix=/usr builddir -Dc_args=-O2 -Dcpp_args=-O2
+              run: meson --prefix=/usr builddir
 
             - name: Build
               run: ninja -C builddir
