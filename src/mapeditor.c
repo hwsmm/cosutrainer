@@ -769,7 +769,7 @@ int edit_beatmap(struct editdata *edit, float *progress)
     if (edit->scale_od)
     {
         double origod = abs(edit->od);
-        double tempod = scale_ar(origod, edit->speed, edit->mi->mode);
+        double tempod = scale_od(origod, edit->speed, edit->mi->mode);
         if (edit->od < 0) // capping
         {
             edit->od = tempod > origod ? origod : tempod;
