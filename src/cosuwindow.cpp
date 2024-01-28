@@ -65,7 +65,7 @@ void CosuWindow::update_ar_label()
     double scaled = scale_ar(cosuui.arslider->value(), get_relative_speed(), fr.info->mode);
     CLAMP(scaled, 0, 11);
 
-    snprintf(arstr + offset, sizeof(arstr) - offset, "%.1f", scaled);
+    snprintf(arstr + offset, sizeof(arstr) - offset, "%.1lf", scaled);
     cosuui.scale_ar->label(arstr);
 }
 
@@ -80,7 +80,7 @@ void CosuWindow::update_od_label()
     double scaled = scale_od(cosuui.odslider->value(), get_relative_speed(), fr.info->mode);
     CLAMP(scaled, 0, 11.11);
 
-    snprintf(odstr + offset, sizeof(odstr) - offset, "%.1f", scaled);
+    snprintf(odstr + offset, sizeof(odstr) - offset, "%.1lf", scaled);
     cosuui.scale_od->label(odstr);
 }
 
