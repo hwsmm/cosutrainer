@@ -56,7 +56,7 @@ jobs:
             - name: Upload a package
               uses: actions/upload-artifact@v4
               with:
-                  name: cosu-trainer Linux package
+                  name: cosu-trainer-bin
                   path: cosu-trainer-bin.tar.xz
 
     win:
@@ -79,7 +79,6 @@ jobs:
                       mingw-w64-ucrt-x86_64-soundtouch
                       mingw-w64-ucrt-x86_64-libzip
                       mingw-w64-ucrt-x86_64-fltk
-                      zip
 
             - name: Compile
               shell: msys2 {0}
@@ -101,10 +100,10 @@ jobs:
                   mv ../cosu-trainer.exe .
                   for lib in $(cat ../deplist); do echo $lib && cp $lib .; done
                   cp ../COPYING.md ../docs/cosutrainer.png .
-                  zip ../cosu-trainer-win-bin.zip *
 
             - name: Upload a package
               uses: actions/upload-artifact@v4
               with:
-                  name: cosu-trainer Windows package
-                  path: cosu-trainer-win-bin.zip
+                  name: cosu-trainer-win-bin
+                  path: package/*
+                  compression-level: 9
