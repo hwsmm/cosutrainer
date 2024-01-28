@@ -18,6 +18,9 @@ Freader::~Freader()
 
 void Freader::thread_func(Freader *fr)
 {
+    fr->conti = true;
+    fr->pause = false;
+    
     while (fr->conti)
     {
         if (fr->pause)
@@ -94,7 +97,7 @@ void Freader::thread_func(Freader *fr)
             if (try_convertwinpath(fullpath, songflen + 1) < 0)
             {
                 printerr("Failed finding path!");
-                free(fullpath);
+                sleep(1);
                 continue;
             }
         }
@@ -106,7 +109,7 @@ void Freader::thread_func(Freader *fr)
         if (fr->info == NULL)
         {
             printerr("Failed reading!");
-            free(fullpath);
+            if (fullpath != new_osu) free(fullpath);
             continue;
         }
 

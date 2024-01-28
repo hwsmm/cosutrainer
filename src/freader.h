@@ -27,8 +27,6 @@ private:
         oldinfo = NULL;
         songf = NULL;
         consumed = true;
-        conti = true;
-        pause = false;
         this->win = win;
     }
 

@@ -18,6 +18,9 @@ Freader::~Freader()
 
 void Freader::thread_func(Freader *fr)
 {
+    fr->conti = true;
+    fr->pause = false;
+    
     ptr_type base = NULL;
     wchar_t *songpath = NULL;
     wchar_t *oldpath = NULL;
