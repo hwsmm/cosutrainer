@@ -264,6 +264,7 @@ void CosuWindow::start()
     window->show();
 
     done = true;
+    progress = 0;
 
     while (Fl::wait() > 0)
     {
