@@ -1,6 +1,7 @@
 #pragma once
 #include "mapeditor.h"
 #include <thread>
+#include <cstdlib>
 
 #ifdef WIN32
 #include "sigscan.h"
