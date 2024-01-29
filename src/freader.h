@@ -21,16 +21,13 @@ private:
     struct songpath_status st;
 #endif
     static void thread_func(Freader *fr);
-    char *songf;
     bool conti;
     CosuWindow *win;
 
     void init(CosuWindow *win)
     {
-        path = NULL;
         info = NULL;
         oldinfo = NULL;
-        songf = NULL;
         consumed = true;
         this->win = win;
     }
@@ -42,12 +39,10 @@ private:
 
         free_mapinfo(oldinfo);
         free_mapinfo(info);
-        if (songf) free(songf);
     }
 public:
     Freader(CosuWindow *win);
     ~Freader();
-    char *path;
     struct mapinfo *info;
     struct mapinfo *oldinfo;
     bool consumed;

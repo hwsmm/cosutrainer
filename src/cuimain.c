@@ -38,8 +38,9 @@ int cuimain(int argc, char *argv[])
 
     char *path = NULL;
     bool osumem = (strcmp(argv[1], "auto") == 0);
-    struct songpath_status st;
 
+#ifndef WIN32
+    struct songpath_status st;
     if (osumem)
     {
         songpath_init(&st);
@@ -51,12 +52,13 @@ int cuimain(int argc, char *argv[])
         }
     }
     else
-    {
+#endif
         path = argv[1];
-    }
 
     struct mapinfo *mi = read_beatmap(path);
+#ifndef WIN32
     if (osumem) songpath_free(&st); // no longer needed since mi has fullpath
+#endif
     if (mi == NULL)
     {
         printerr("Failed reading a map!");
