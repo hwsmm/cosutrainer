@@ -3,7 +3,7 @@ project('cosu-trainer', 'c', 'cpp',
         license : 'GPL-3.0-only')
 
 mainfiles=['src/cosuui.cpp', 'src/cosuwindow.cpp', 'src/freader.cpp', 'src/cuimain.c', 'src/main.cpp', 'src/cosuplatform_linux.c',
-           'src/tools.c', 'src/mapeditor.c', 'src/actualzip.c', 'src/audiospeed.cpp', 'src/buffers.c']
+           'src/tools.c', 'src/mapeditor.c', 'src/actualzip.c', 'src/audiospeed.cpp', 'src/buffers.c', 'src/lsongpathparser.c']
 memfiles=['src/tools.c', 'src/lsigscan.c', 'src/cosumem.c', 'src/cosuplatform_linux.c', 'src/winregread.c']
 cleanfiles=['src/tools.c', 'src/cleanup.c', 'src/cosuplatform_linux.c']
 

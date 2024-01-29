@@ -5,6 +5,8 @@
 
 #ifdef WIN32
 #include "sigscan.h"
+#else
+#include "lsongpathparser.h"
 #endif
 
 class CosuWindow;
@@ -15,6 +17,8 @@ private:
     std::thread thr;
 #ifdef WIN32
     struct sigscan_status st;
+#else
+    struct songpath_status st;
 #endif
     static void thread_func(Freader *fr);
     char *songf;

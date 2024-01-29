@@ -8,6 +8,7 @@
 #include "tools.h"
 #include "cuimain.h"
 #include "cosuplatform.h"
+#include "lsongpathparser.h"
 
 static void *showprog(void *arg)
 {
@@ -37,54 +38,17 @@ int cuimain(int argc, char *argv[])
 
     char *path = NULL;
     bool osumem = (strcmp(argv[1], "auto") == 0);
+    struct songpath_status st;
+
     if (osumem)
     {
-        char *song_folder = get_songspath();
-        if (song_folder == NULL)
+        songpath_init(&st);
+
+        if (!songpath_get(&st, &path))
         {
-            printerr("Set OSU_SONG_FOLDER variable to use 'auto' option.");
-            return 2;
+            songpath_free(&st);
+            return 5;
         }
-        int songflen = strlen(song_folder);
-
-        int readbytes = 0;
-        char *song_path = read_file("/tmp/osu_path", &readbytes);
-        if (song_path == NULL)
-        {
-            return 2;
-        }
-
-        char *osp = strchr(song_path, ' ');
-        if (osp == NULL)
-        {
-            free(song_path);
-            return 2;
-        }
-        osp++;
-
-        int pathsize = songflen + 1 + strlen(osp) + 1;
-        path = (char*) malloc(pathsize);
-        if (path == NULL)
-        {
-            printerr("Failed allocating memory");
-            free(song_path);
-            return 3;
-        }
-
-        strcpy(path, song_folder);
-        *(path + songflen) = '/';
-        strcpy(path + songflen + 1, osp);
-
-        int rets = try_convertwinpath(path, songflen + 1);
-        if (rets < 0)
-        {
-            printerr("Failed converting path!");
-            free(path);
-        }
-        free(song_folder);
-        free(song_path);
-
-        if (rets < 0) return 5;
     }
     else
     {
@@ -92,7 +56,7 @@ int cuimain(int argc, char *argv[])
     }
 
     struct mapinfo *mi = read_beatmap(path);
-    if (osumem) free(path); // no longer needed since mi has fullpath
+    if (osumem) songpath_free(&st); // no longer needed since mi has fullpath
     if (mi == NULL)
     {
         printerr("Failed reading a map!");
