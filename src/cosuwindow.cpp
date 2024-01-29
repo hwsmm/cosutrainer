@@ -166,7 +166,6 @@ void CosuWindow::convbtn_callb(Fl_Widget *w, void *data)
     }
 
     win->cosuui.mainbox->deactivate();
-    Fl::awake();
 
     win->edit.mi = win->fr.info;
     win->edit.hp = win->cosuui.hpslider->value();

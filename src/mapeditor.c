@@ -99,25 +99,38 @@ double scale_ar(double ar, double speed, int mode)
 {
     if (mode == 1 || mode == 3) return ar;
 
-    double ar_ms = ar <= 5 ? 1200 + 600 * (5 - ar) / 5 : 1200 - 750 * (ar - 5) / 5;
+    double ar_ms = ar <= 5.0 ? 1200.0 + 600.0 * (5.0 - ar) / 5.0 : 1200.0 - 750.0 * (ar - 5.0) / 5.0;
     ar_ms /= speed;
-    return ar_ms >= 1200 ? 15 - ar_ms / 120 : (1200 / 150) - (ar_ms / 150) + 5;
+    return ar_ms >= 1200.0 ? 15.0 - ar_ms / 120.0 : (1200.0 / 150.0) - (ar_ms / 150.0) + 5.0;
 }
 
 // fix mania od
 double scale_od(double od, double speed, int mode)
 {
+    double base;
+    double multiplier;
+
     switch (mode)
     {
     case 0:
-        return (80 - (80 - 6 * od) / speed) / 6;
+        base = 80;
+        multiplier = 6;
+        break;
     case 1:
-        return (50 - (50 - 3 * od) / speed) / 3;
+        base = 50;
+        multiplier = 6;
+        break;
     case 3:
-        return (64 - (64 - 3 * od) / speed) / 3;
+        base = 64;
+        multiplier = 3;
+        break;
     default:
         return od;
     }
+
+    double ms = base - multiplier * od;
+    ms /= speed;
+    return (base - ms) / multiplier;
 }
 
 static int loop_map(char *mapfile, int (*func)(char*, void*, enum SECTION), void *pass)
@@ -754,7 +767,7 @@ int edit_beatmap(struct editdata *edit, float *progress)
 
     if (edit->scale_ar)
     {
-        double origar = abs(edit->ar);
+        double origar = fabs(edit->ar);
         double tempar = scale_ar(origar, edit->speed, edit->mi->mode);
         if (edit->ar < 0) // capping
         {
@@ -768,7 +781,7 @@ int edit_beatmap(struct editdata *edit, float *progress)
 
     if (edit->scale_od)
     {
-        double origod = abs(edit->od);
+        double origod = fabs(edit->od);
         double tempod = scale_od(origod, edit->speed, edit->mi->mode);
         if (edit->od < 0) // capping
         {
