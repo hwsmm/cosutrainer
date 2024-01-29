@@ -17,6 +17,7 @@ private:
     std::thread thr;
 #ifdef WIN32
     struct sigscan_status st;
+    char *songf;
 #else
     struct songpath_status st;
 #endif

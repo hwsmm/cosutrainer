@@ -9,11 +9,13 @@ Freader::Freader(CosuWindow *win) : thr(Freader::thread_func, this)
 {
     init(win);
     init_sigstatus(&st);
+    songf = NULL;
 }
 
 Freader::~Freader()
 {
     close();
+    free(songf);
 }
 
 void Freader::thread_func(Freader *fr)
