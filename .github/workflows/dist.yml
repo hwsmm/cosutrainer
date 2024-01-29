@@ -16,18 +16,19 @@ jobs:
                   ZYPP_ADDREPO: zypper addrepo -p 90 -G
               run: |
                   $ZYPP_ADDREPO https://download.opensuse.org/repositories/devel:libraries:c_c++/15.5/devel:libraries:c_c++.repo
+                  $ZYPP_ADDREPO https://download.opensuse.org/repositories/devel:tools:building/15.5/devel:tools:building.repo
                   $ZYPP_ADDREPO https://download.opensuse.org/repositories/multimedia:libs/15.5/multimedia:libs.repo
                   $ZYPP_ADDREPO https://download.opensuse.org/repositories/home:hwsnemo/15.5/home:hwsnemo.repo
                   zypper $ZYPP_GLOBAL refresh
 
             - name: Install dependencies
-              run: zypper $ZYPP_GLOBAL install -f -y gcc-c++ mpg123-devel libmp3lame-devel libsndfile-devel soundtouch-devel libzip-devel fltk-devel meson ninja wget tar xz gzip file fuse libfuse2
+              run: zypper $ZYPP_GLOBAL install -f -y gcc12-c++ mpg123-devel libmp3lame-devel libsndfile-devel soundtouch-devel libzip-devel fltk-devel meson ninja wget tar xz gzip file fuse libfuse2
 
             - name: Checkout
               uses: actions/checkout@v4
 
             - name: Configure
-              run: meson --prefix=/usr builddir -Dc_args=-Os -Dcpp_args=-Os
+              run: CC=gcc-12 CXX=g++-12 meson --prefix=/usr builddir -Dc_args=-Os -Dcpp_args=-Os
 
             - name: Build
               run: ninja -C builddir
