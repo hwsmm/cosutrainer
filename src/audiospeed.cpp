@@ -122,7 +122,7 @@ int change_mp3_speed(const char* source, struct buffers *bufs, double speed, boo
                 else
                 {
                     fprintf(stderr, "Error while decoding a mp3: %d\n", err);
-                    throw -99;
+                    err = MPG123_DONE; // miraizu mp3 causes NEED_MORE or ERR, just print the error and mark it as done as a workaround.
                 }
             }
             else
