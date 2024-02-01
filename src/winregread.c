@@ -190,8 +190,11 @@ char *get_osu_path(char *wineprefix)
     if (!f)
     {
         perror(regpath);
+        free(regpath);
         return NULL;
     }
+
+    free(regpath);
 
     char line[4096];
     char *result = NULL;
@@ -309,6 +312,8 @@ char *get_osu_songs_path(char *wineprefix, char *uid)
     int idlen = strlen(id);
     int cfglen = prefixlen + 1 + (sizeof(dosd)-1) + 1 + osulen + 1 + (sizeof(prefix)-1) + idlen + (sizeof(suffix)-1) + 1;
     char *cfgpath = (char*) malloc(cfglen);
+    if (cfgpath == NULL)
+        return NULL;
 
     snprintf(cfgpath, cfglen, "%s/%s/%s/%s%s%s", wineprefix, dosd, osu, prefix, id, suffix);
 
