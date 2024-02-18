@@ -53,11 +53,10 @@ bool songpath_get(struct songpath_status *st, char **path)
 
     char *new_osu = sep + 1;
     st->path = new_osu;
+    st->within = true; // to prevent wrong free when song folder is not found
 
     if (*new_osu != '/')
     {
-        st->within = false;
-
         if (st->songf == NULL)
         {
             st->songf = get_songspath();
@@ -78,6 +77,8 @@ bool songpath_get(struct songpath_status *st, char **path)
             return false;
         }
 
+        st->within = false;
+
         strcpy(st->path, st->songf);
         *(st->path + songflen) = '/';
         strcpy(st->path + songflen + 1, new_osu);
@@ -92,8 +93,6 @@ bool songpath_get(struct songpath_status *st, char **path)
     }
     else
     {
-        st->within = true;
-
         if (try_convertwinpath(st->path, songflen + 1) < 0)
         {
             printerr("Failed finding path!");

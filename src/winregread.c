@@ -63,7 +63,7 @@ LPWSTR getOsuPath(LPDWORD len)
         }
     }
 
-    LPWSTR tmp = (LPWSTR) realloc(path, i * sizeof(WCHAR));
+    LPWSTR tmp = (LPWSTR) realloc(path, ++i * sizeof(WCHAR));
     if (tmp == NULL)
     {
         fprintf(stderr, "Failed reallocation\n");
@@ -217,7 +217,7 @@ char *get_osu_path(char *wineprefix)
                     else
                         goto exit;
 
-                    int len = strlen(first);
+                    int len = strlen(first) + 1;
                     result = (char*) malloc(len);
                     if (result != NULL)
                         strcpy(result, first);
