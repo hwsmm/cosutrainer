@@ -157,6 +157,13 @@ int main()
     {
         DEFAULT_LOGIC(&st,
         {
+            char *disable_env = getenv("OSUMEM_DISABLE_FOLDER_DETECT");
+            if (disable_env != NULL && *disable_env == 'y')
+            {
+                printerr("osu! is found! Skipping song folder detection...");
+                goto skip;
+            }
+
             printerr("osu! is found, Now looking for its song folder...");
             char envf[1024];
             snprintf(envf, 1024, "/proc/%d/environ", st.osu);
@@ -224,6 +231,7 @@ int main()
             }
         },
         {
+skip:
             if (base == PTR_NULL)
             {
                 printerr("Starting to scan memory...");
