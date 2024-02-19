@@ -1,5 +1,5 @@
 project('cosu-trainer', 'c', 'cpp',
-        version : '0.11',
+        version : '0.12',
         license : 'GPL-3.0-only')
 
 mainfiles=['src/cosuui.cpp', 'src/cosuwindow.cpp', 'src/freader.cpp', 'src/cuimain.c', 'src/main.cpp', 'src/tools.c', 'src/mapeditor.c',
