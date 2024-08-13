@@ -11,17 +11,10 @@
 #include <wchar.h>
 #include <stdio.h>
 
-#ifdef WIN32
-typedef LPVOID ptr_type;
-#else
 typedef void* ptr_type;
-#endif
 #define PTR_SIZE 4 // sizeof(ptr_type) is not used since osu is a 32bit game, but requires 64bit pointers to function normally for some reason?
 #define PTR_NULL NULL
 #define ptr_add(x, offset) ((ptr_type) ((intptr_t) x + offset)) // to fix pointer_arith warnings
-
-#define DEFINE_EXTERN_SIGSCAN_FUNCTIONS \
-extern ptr_type find_pattern(struct sigscan_status *st, const uint8_t bytearray[], const unsigned int pattern_size, const bool mask[]);
 
 struct sigscan_status
 {
@@ -97,7 +90,7 @@ void *start_regionit(struct sigscan_status *st);
 int next_regionit(void *regionit, struct vm_region *res);
 void stop_regionit(void *regionit);
 
-inline ptr_type find_pattern(struct sigscan_status *st, const uint8_t bytearray[], const unsigned int pattern_size, const bool mask[])
+static ptr_type find_pattern(struct sigscan_status *st, const uint8_t bytearray[], const unsigned int pattern_size, const bool mask[])
 {
     ptr_type result = NULL;
     uint8_t *buffer = NULL;

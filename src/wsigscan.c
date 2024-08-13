@@ -125,21 +125,25 @@ int next_regionit(void *regionit, struct vm_region *res)
 {
     struct winmemit *it = (struct winmemit*) regionit;
     MEMORY_BASIC_INFORMATION info;
-    if (VirtualQueryEx(it->st->osuproc, it->curaddr, &info, sizeof(info)) != sizeof(info))
+    
+    while (1)
     {
-        return 0;
+        if (VirtualQueryEx(it->st->osuproc, it->curaddr, &info, sizeof(info)) != sizeof(info))
+        {
+            return 0;
+        }
+    
+        it->curaddr = ptr_add(info.BaseAddress, info.RegionSize);
+    
+        if ((info.State & 0x1000) == 0 || (info.Protect & 0x100) != 0)
+        {
+            continue;
+        }
+    
+        res->start = info.BaseAddress;
+        res->len = info.RegionSize;
+        return 1;
     }
-
-    it->curaddr = ptr_add(info.BaseAddress, info.RegionSize);
-
-    if ((info.State & 0x1000) == 0 || (info.Protect & 0x100) != 0)
-    {
-        return next_regionit(regionit, res);
-    }
-
-    res->start = info.BaseAddress;
-    res->len = info.RegionSize;
-    return 1;
 }
 
 void stop_regionit(void *regionit)

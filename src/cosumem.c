@@ -15,11 +15,13 @@
 #include "cosuplatform.h"
 #include "winregread.h"
 
-DEFINE_EXTERN_SIGSCAN_FUNCTIONS;
-
 bool match_pattern(struct sigscan_status *st, ptr_type *baseaddr)
 {
-    if (baseaddr != NULL && *baseaddr == PTR_NULL) _osu_find_ptrn(*baseaddr, st, BASE);
+    if (baseaddr != NULL && *baseaddr == PTR_NULL)
+    {
+        const uint8_t ptrn[] = OSU_BASE_SIG;
+        *baseaddr = find_pattern(st, ptrn, OSU_BASE_SIZE, NULL);
+    }
     return (baseaddr == NULL || *baseaddr != PTR_NULL);
 }
 

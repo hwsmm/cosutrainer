@@ -201,33 +201,37 @@ void *start_regionit(struct sigscan_status *st)
 int next_regionit(void *regionit, struct vm_region *res)
 {
     char line[1024];
-    if (fgets(line, sizeof line, (FILE*) regionit) == NULL)
+    
+    while (1)
     {
-        if (ferror((FILE*) regionit) != 0)
+        if (fgets(line, sizeof line, (FILE*)regionit) == NULL)
         {
-            fprintf(stderr, "Error while reading memory map: %d\n", ferror((FILE*) regionit));
-            return -1;
+            if (ferror((FILE*)regionit) != 0)
+            {
+                fprintf(stderr, "Error while reading memory map: %d\n", ferror((FILE*) regionit));
+                return -1;
+            }
+            return 0;
         }
-        return 0;
+    
+        char *startstr = strtok(line, "-");
+        char *endstr = strtok(NULL, " ");
+        char *permstr = strtok(NULL, " ");
+    
+        if (!startstr || !endstr || !permstr || *permstr != 'r')
+        {
+            continue;
+        }
+    
+        ptr_type startptr = (ptr_type)strtol(startstr, NULL, 16);
+        ptr_type endptr = (ptr_type)strtol(endstr, NULL, 16);
+    
+        size_t size = (intptr_t)endptr - (intptr_t)startptr;
+    
+        res->start = startptr;
+        res->len = size;
+        return 1;
     }
-
-    char *startstr = strtok(line, "-");
-    char *endstr = strtok(NULL, " ");
-    char *permstr = strtok(NULL, " ");
-
-    if (!startstr || !endstr || !permstr || *permstr != 'r')
-    {
-        return next_regionit(regionit, res);
-    }
-
-    ptr_type startptr = (ptr_type) strtol(startstr, NULL, 16);
-    ptr_type endptr = (ptr_type) strtol(endstr, NULL, 16);
-
-    unsigned long size = (intptr_t) endptr - (intptr_t) startptr + 1L;
-
-    res->start = startptr;
-    res->len = size;
-    return 1;
 }
 
 void stop_regionit(void *regionit)
