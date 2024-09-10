@@ -4,6 +4,8 @@
 #include <errno.h>
 #include <stdbool.h>
 #include <pthread.h>
+#include <limits.h>
+#include <math.h>
 #include "mapeditor.h"
 #include "tools.h"
 #include "cuimain.h"
@@ -77,7 +79,7 @@ int cuimain(int argc, char *argv[])
     edit.makezip = osumem;
 
     char *identifier = NULL;
-    edit.speed = strtof(argv[2], &identifier);
+    edit.speed = strtod(argv[2], &identifier);
     edit.bpmmode = guess;
     if (identifier != NULL)
     {
@@ -94,6 +96,9 @@ int cuimain(int argc, char *argv[])
     edit.pitch = false;
     edit.flip = none;
     edit.nospinner = false;
+    
+    edit.cut_start = 0;
+    edit.cut_end = LONG_MAX;
 
     if (argc >= 4)
     {
@@ -132,7 +137,57 @@ int cuimain(int argc, char *argv[])
                 edit.nospinner = true;
                 continue;
             default:
-                continue;
+                break;
+            }
+            
+            if (*curarg == 'e')
+            {
+                char *time = curarg + 1;
+                char *temp;
+                
+                if (*time == '\0')
+                    continue;
+                    
+                double start = 0, end = INFINITY;
+                    
+                if (*time != '-')
+                {
+                    start = strtod(time, &temp);
+                    if (*temp == ':')
+                    {
+                        start *= 60.0;
+                        start += strtod(++temp, &time);
+                    }
+                    else
+                    {
+                        time = temp;
+                    }
+                }
+                
+                if (*time == '-' && *(++time) != '\0')
+                {
+                    end = strtod(time, &temp);
+                    if (*temp == ':')
+                    {
+                        end *= 60.0;
+                        end += strtod(++temp, NULL);
+                    }
+                }
+                
+                if (start >= end)
+                {
+                    printerr("Cut time is invalid, ignoring this parameter");
+                    continue;
+                }
+                
+                start *= 1000.0;
+                edit.cut_start = (long)start;
+                
+                if (!isinf(end)) 
+                {
+                    end *= 1000.0;
+                    edit.cut_end = (long)end;
+                }
             }
 
             if (diffv != NULL)
@@ -158,6 +213,8 @@ int cuimain(int argc, char *argv[])
                     else
                         edit.scale_od = false;
                 }
+                
+                diffv = NULL;
             }
         }
     }

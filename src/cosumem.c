@@ -14,6 +14,7 @@
 #include "tools.h"
 #include "cosuplatform.h"
 #include "winregread.h"
+#include "sigscan.h"
 
 bool match_pattern(struct sigscan_status *st, ptr_type *baseaddr)
 {

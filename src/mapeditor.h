@@ -47,6 +47,9 @@ struct editdata // data needed to edit a map
     bool pitch;
     bool nospinner;
     enum FLIP flip;
+    
+    long cut_start;
+    long cut_end;
 };
 
 struct editpass // temporary data that's only needed in editing (only passed within edit_beatmap)

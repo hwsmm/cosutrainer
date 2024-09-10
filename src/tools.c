@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <ctype.h>
+#include <strings.h>
 
 #ifdef WIN32
 #include <windows.h>
@@ -38,6 +39,7 @@ void remove_newline(char* line)
     }
 }
 
+// this is case insensitive since it's mostly used to compare extension
 int endswith(const char *str, const char *suffix)
 {
     size_t lenstr = strlen(str);
@@ -45,7 +47,7 @@ int endswith(const char *str, const char *suffix)
     if (lensuffix > lenstr)
         return 0;
 
-    return strncmp(str + lenstr - lensuffix, suffix, lensuffix) == 0;
+    return strncasecmp(str + lenstr - lensuffix, suffix, lensuffix) == 0;
 }
 
 char *replace_string(const char *source, const char *match, const char *replace)

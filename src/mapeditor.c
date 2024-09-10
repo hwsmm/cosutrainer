@@ -467,7 +467,8 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
 
         int x = atoi(xstr);
         int y = atoi(ystr);
-        long time = atol(timestr) / speed;
+        long origtime = atol(timestr);
+        long time = origtime / speed;
 
         char *typestr;
         fail_nulltkn(typestr);
@@ -479,6 +480,10 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
         if (type & (1<<3) && ep->ed->nospinner)
         {
             // do nothing to remove spinner lines
+        }
+        else if (origtime < ep->ed->cut_start || origtime > ep->ed->cut_end)
+        {
+            // do nothing to create a practice diff
         }
         else if (type & (1<<3) || type & (1<<7))
         {
@@ -682,6 +687,23 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
             {
                 if (ep->ed->mi->mode != 2 && ep->ed->mi->od != ep->ed->od) snpedit(" OD%.1lf", ep->ed->od);
                 if ((ep->ed->mi->mode != 1 && ep->ed->mi->mode != 3) && ep->ed->mi->ar != ep->ed->ar) snpedit(" AR%.1lf", ep->ed->ar);
+            }
+            
+            if (ep->ed->cut_start > 0 || ep->ed->cut_end < LONG_MAX)
+            {
+                putsstr(" Cut:");
+                if (ep->ed->cut_start > 0)
+                {
+                    long t = ep->ed->cut_start / 1000;
+                    snpedit("%ld:%02ld", t / 60, t % 60);
+                }
+                
+                if (ep->ed->cut_end == LONG_MAX) { putsstr("-"); }
+                else if (ep->ed->cut_end < LONG_MAX)
+                {
+                    long t = ep->ed->cut_end / 1000;
+                    snpedit("-%ld:%02ld", t / 60, t % 60);
+                }
             }
 
             switch (ep->ed->flip)

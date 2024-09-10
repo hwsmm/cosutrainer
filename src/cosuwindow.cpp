@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <cmath>
 #include <thread>
+#include <climits>
 #include <FL/Fl_JPEG_Image.H>
 #include <FL/Fl_PNG_Image.H>
 
@@ -180,6 +181,10 @@ void CosuWindow::convbtn_callb(Fl_Widget *w, void *data)
     win->edit.bpmmode = win->cosuui.bpm->value() >= 1 ? bpm : rate;
     win->edit.pitch = win->cosuui.pitch->value() >= 1;
     win->edit.nospinner = win->cosuui.nospinner->value() >= 1;
+    
+    // not supported yet
+    win->edit.cut_start = 0;
+    win->edit.cut_end = LONG_MAX;
 
     switch (win->cosuui.flipbox->value())
     {

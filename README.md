@@ -19,6 +19,7 @@ It's very destructive and experimental, so don't use unless you desperately need
 - Scales AR/OD, but you can cap so that it won't scale over the value you put
 - Adds osutrainer tag like osu-trainer
 - Can flip/transpose a map
+- Can generate a practice difficulty by cutting
 - Generates an osz file for easier import
 - An user-defined osz handler can be set for seamless integration with osu!
 - Supports MP3 and [all formats that libsndfile supports](https://libsndfile.github.io/libsndfile/formats.html). (though osu! only accepts ogg and mp3 as rankable formats)
@@ -53,7 +54,7 @@ Run `cosu-trainer` with no arguments to launch GUI. You can use below arguments 
 
 ### `cosu-trainer` command usage
 ```
-./cosu-trainer <filename|auto> <rate|bpm> [a/o/h/c] [p] [x/y/t]
+./cosu-trainer <filename|auto> <rate|bpm> [a/o/h/c] [p] [x/y/t] [eMM:SS-MM:SS]
 <> are requirements, [] are optional
 <filename|auto> : specify file name like 'songfolder/diff.osu' or just put 'auto' if you are running `osumem`
 <rate|bpm> : '1.2x' if you want to use rate, '220bpm' if you want to use bpm (it uses max bpm of map to calculate, so be careful)
@@ -63,8 +64,11 @@ Run `cosu-trainer` with no arguments to launch GUI. You can use below arguments 
             you can add 'c' at the end to cap the value, it still scales, but won't scale over the value you put
 [p] : if you want daycore/nightcore
 [x/y/t] : xflip, yflip and transpose respectively.
+[eMM:SS-MM:SS] : extracts specified section from the map, [e-MM:SS] removes all hitobjects after the specified time,
+                 either [eMM:SS] or [eMM:SS-] removes all hitobjects before the time. you can omit MM, so you can do eSS
+                 note that time you give should be in pre-rate-adjusted time.
 
-example: ./cosu-trainer auto 220bpm a7.2c c7.2 h7 p
+example: ./cosu-trainer auto 220bpm a7.2c c7.2 h7 p e27-
 ```
 
 ### How to open a converted map automatically
@@ -86,7 +90,7 @@ Things mostly work but it's kinda flaky. You can use [MSYS2](https://msys2.org) 
 Install MinGW GCC and all dependencies through their package manager and use a following command in `src` to compile cosu-trainer.
 ```
 x86_64-w64-mingw32-g++ -DWIN32 `fltk-config --use-images --cxxflags` \
-cosuui.cpp cosuwindow.cpp cuimain.c main.cpp tools.c mapeditor.c actualzip.c audiospeed.cpp buffers.c cosumem.c freader_win.cpp wsigscan.c cosuplatform_win.c winregread.c \
+cosuui.cpp cosuwindow.cpp cuimain.c main.cpp tools.c mapeditor.c actualzip.c audiospeed.cpp buffers.c cosumem.c freader_win.cpp sigscan.c wsigscan.c cosuplatform_win.c winregread.c \
 -o ../cosu-trainer `fltk-config --use-images --ldflags` -lwinpthread -lmpg123 -lmp3lame -lzip -lSoundTouch -lsndfile -lshlwapi
 ```
 
