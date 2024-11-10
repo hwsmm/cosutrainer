@@ -23,7 +23,6 @@ public:
     CosuWindow();
     void start();
 
-    struct editdata edit;
-    float progress;
+    volatile float progress;
     bool done;
 };

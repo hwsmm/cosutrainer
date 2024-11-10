@@ -14,7 +14,7 @@
 using namespace soundtouch;
 using namespace std;
 
-int change_mp3_speed(const char* source, struct buffers *bufs, double speed, bool pitch, float *progress)
+int change_mp3_speed(const char* source, struct buffers *bufs, double speed, bool pitch, volatile float *progress)
 {
     *progress = 0;
     mpg123_handle *mh = NULL;
@@ -248,7 +248,7 @@ sf_count_t sfvio_tell(void *vbufs)
     return bufs->audcur;
 }
 
-int change_audio_speed_libsndfile(const char* source, struct buffers *bufs, double speed, bool pitch, float *progress)
+int change_audio_speed_libsndfile(const char* source, struct buffers *bufs, double speed, bool pitch, volatile float *progress)
 {
     *progress = 0;
     int success = 1;
@@ -306,7 +306,7 @@ sndfclose:
     return success;
 }
 
-int change_audio_speed(const char* source, struct buffers *bufs, double speed, bool pitch, float *progress)
+int change_audio_speed(const char* source, struct buffers *bufs, double speed, bool pitch, volatile float *progress)
 {
     try
     {

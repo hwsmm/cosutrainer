@@ -26,38 +26,33 @@ char *read_file(const char *file, int *size)
         perror(file);
         return NULL;
     }
-
-    int cursize = 0;
-    char *buf = NULL;
-    ssize_t rb = 0;
-    ssize_t curpoint = 0;
-    do
+    
+    struct stat stat;
+    if (fstat(fd, &stat) == -1)
     {
-        char *rebuf = (char*) realloc(buf, (cursize += 1024));
-        if (rebuf == NULL)
-        {
-            printerr("Failed allocating memory while reading a file");
-            free(buf);
-            close(fd);
-            return NULL;
-        }
-
-        buf = rebuf;
-        rb = read(fd, buf + curpoint, 1024 - 1);
-        if (rb == -1)
-        {
-            printerr("Failed reading a file");
-            free(buf);
-            close(fd);
-            return NULL;
-        }
-
-        curpoint += rb;
+        perror(file);
+        return NULL;
     }
-    while (rb >= 1024 - 1);
-
-    *(buf + curpoint) = '\0';
-    if (size != NULL) *size = curpoint;
+    
+    char *buf = (char*) malloc(stat.st_size + 1);
+    if (buf == NULL)
+    {
+        printerr("Out of memory.");
+        close(fd);
+        return NULL;
+    }
+    
+    ssize_t r = read(fd, buf, stat.st_size);
+    if (r == -1)
+    {
+        perror(file);
+        close(fd);
+        free(buf);
+        return NULL;
+    }
+    
+    *(buf + r) = '\0';
+    if (size != NULL) *size = r;
     close(fd);
     return buf;
 }

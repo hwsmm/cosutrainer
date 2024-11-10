@@ -6,7 +6,7 @@ extern "C"
 {
 #endif
 
-int change_audio_speed(const char* source, struct buffers *bufs, double speed, bool pitch, float *progress);
+int change_audio_speed(const char* source, struct buffers *bufs, double speed, bool pitch, volatile float *progress);
 
 #ifdef __cplusplus
 }

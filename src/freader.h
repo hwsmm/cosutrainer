@@ -1,7 +1,12 @@
 #pragma once
 #include "mapeditor.h"
+#include "tools.h"
 #include <thread>
 #include <cstdlib>
+#include <cstring>
+#include <chrono>
+#include <mutex>
+#include <condition_variable>
 
 #ifdef WIN32
 #include "sigscan.h"
@@ -36,16 +41,39 @@ private:
     void close()
     {
         conti = false;
+        cnd.notify_one();
         thr.join();
 
         free_mapinfo(oldinfo);
         free_mapinfo(info);
+    }
+    
+    struct editdata edit;
+    
+    std::mutex mtx;
+    std::condition_variable_any cnd;
+    volatile bool pause;
+    
+    void sleep()
+    {
+        cnd.wait_for(mtx, std::chrono::milliseconds(500));
     }
 public:
     Freader(CosuWindow *win);
     ~Freader();
     struct mapinfo *info;
     struct mapinfo *oldinfo;
-    bool consumed;
-    bool pause;
+    volatile bool consumed;
+    
+    void wakeup(struct editdata *data)
+    {
+        std::lock_guard<std::mutex> lck(mtx);
+            
+        if (data != NULL)
+            memcpy(&edit, data, sizeof(edit));
+        
+        pause = true;
+        
+        cnd.notify_one();
+    }
 };

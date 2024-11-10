@@ -167,43 +167,46 @@ void CosuWindow::convbtn_callb(Fl_Widget *w, void *data)
     }
 
     win->cosuui.mainbox->deactivate();
+    
+    struct editdata edit;
 
-    win->edit.mi = win->fr.info;
-    win->edit.hp = win->cosuui.hpslider->value();
-    win->edit.cs = win->cosuui.csslider->value();
-    win->edit.ar = win->cosuui.arslider->value();
-    win->edit.od = win->cosuui.odslider->value();
-    win->edit.scale_ar = win->cosuui.scale_ar->value() >= 1;
-    win->edit.scale_od = win->cosuui.scale_od->value() >= 1;
-    win->edit.makezip = true;
+    edit.mi = win->fr.info;
+    edit.hp = win->cosuui.hpslider->value();
+    edit.cs = win->cosuui.csslider->value();
+    edit.ar = win->cosuui.arslider->value();
+    edit.od = win->cosuui.odslider->value();
+    edit.scale_ar = win->cosuui.scale_ar->value() >= 1;
+    edit.scale_od = win->cosuui.scale_od->value() >= 1;
+    edit.makezip = true;
 
-    win->edit.speed = win->cosuui.speedval->value();
-    win->edit.bpmmode = win->cosuui.bpm->value() >= 1 ? bpm : rate;
-    win->edit.pitch = win->cosuui.pitch->value() >= 1;
-    win->edit.nospinner = win->cosuui.nospinner->value() >= 1;
+    edit.speed = win->cosuui.speedval->value();
+    edit.bpmmode = win->cosuui.bpm->value() >= 1 ? bpm : rate;
+    edit.pitch = win->cosuui.pitch->value() >= 1;
+    edit.nospinner = win->cosuui.nospinner->value() >= 1;
     
     // not supported yet
-    win->edit.cut_start = 0;
-    win->edit.cut_end = LONG_MAX;
+    edit.cut_start = 0;
+    edit.cut_end = LONG_MAX;
 
     switch (win->cosuui.flipbox->value())
     {
     case 1:
-        win->edit.flip = xflip;
+        edit.flip = xflip;
         break;
     case 2:
-        win->edit.flip = yflip;
+        edit.flip = yflip;
         break;
     case 3:
-        win->edit.flip = transpose;
+        edit.flip = transpose;
         break;
     default:
-        win->edit.flip = none;
+        edit.flip = none;
         break;
     }
 
     win->done = false;
-    win->fr.pause = true;
+    
+    win->fr.wakeup(&edit);
 }
 
 void CosuWindow::diffch_callb(Fl_Widget *w, void *data)

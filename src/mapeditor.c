@@ -364,7 +364,7 @@ static int convert_vaildpath(struct mapinfo *mi)
 
 struct mapinfo *read_beatmap(char *mapfile)
 {
-    struct mapinfo *info = (struct mapinfo*) calloc(sizeof(struct mapinfo), 1);
+    struct mapinfo *info = (struct mapinfo*) calloc(1, sizeof(struct mapinfo));
     int ret = loop_map(mapfile, &write_mapinfo, info);
     if (ret == 0)
     {
@@ -698,11 +698,12 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
                     snpedit("%ld:%02ld", t / 60, t % 60);
                 }
                 
-                if (ep->ed->cut_end == LONG_MAX) { putsstr("-"); }
-                else if (ep->ed->cut_end < LONG_MAX)
+                putsstr("~");
+
+                if (ep->ed->cut_end < LONG_MAX)
                 {
                     long t = ep->ed->cut_end / 1000;
-                    snpedit("-%ld:%02ld", t / 60, t % 60);
+                    snpedit("%ld:%02ld", t / 60, t % 60);
                 }
             }
 
@@ -745,7 +746,7 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
     return ret;
 }
 
-int edit_beatmap(struct editdata *edit, float *progress)
+int edit_beatmap(struct editdata *edit, volatile float *progress)
 {
     int ret = 0;
     struct buffers bufs;

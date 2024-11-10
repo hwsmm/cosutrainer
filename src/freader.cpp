@@ -21,12 +21,14 @@ void Freader::thread_func(Freader *fr)
 {
     fr->conti = true;
     fr->pause = false;
-
+    
     while (fr->conti)
     {
+        std::lock_guard<std::mutex> lck(fr->mtx);
+        
         if (fr->pause)
         {
-            edit_beatmap(&(fr->win->edit), &(fr->win->progress));
+            edit_beatmap(&(fr->edit), &(fr->win->progress));
             fr->pause = false;
             fr->win->done = true;
         }
@@ -34,7 +36,7 @@ void Freader::thread_func(Freader *fr)
         char *fullpath;
         if (!songpath_get(&(fr->st), &fullpath))
         {
-            sleep(1);
+            fr->sleep();
             continue;
         }
 
@@ -45,11 +47,13 @@ void Freader::thread_func(Freader *fr)
         if (fr->info == NULL)
         {
             printerr("Failed reading!");
-            continue;
+        }
+        else
+        {
+            fr->consumed = false;
+            Fl::awake();
         }
 
-        fr->consumed = false;
-        Fl::awake();
-        sleep(1);
+        fr->sleep();
     }
 }

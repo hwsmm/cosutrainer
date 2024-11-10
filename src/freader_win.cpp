@@ -29,10 +29,12 @@ void Freader::thread_func(Freader *fr)
     unsigned int len = 0;
     while (fr->conti)
     {
+        std::lock_guard<std::mutex> lck(fr->mtx);
+        
         struct sigscan_status *sst = &(fr->st);
         if (fr->pause)
         {
-            edit_beatmap(&(fr->win->edit), &(fr->win->progress));
+            edit_beatmap(&(fr->edit), &(fr->win->progress));
             fr->pause = false;
             fr->win->done = true;
         }
@@ -52,7 +54,7 @@ void Freader::thread_func(Freader *fr)
                 if (fr->songf == NULL)
                 {
                     printerr("Song folder not found!");
-                    Sleep(1000);
+                    fr->sleep();
                     continue;
                 }
             }
@@ -62,7 +64,7 @@ void Freader::thread_func(Freader *fr)
                 if (!match_pattern(sst, &base) || base == PTR_NULL)
                 {
                     printerr("Failed scanning memory!");
-                    Sleep(1000);
+                    fr->sleep();
                     continue;
                 }
             }
@@ -73,7 +75,7 @@ void Freader::thread_func(Freader *fr)
                 if (oldpath != NULL && wcscmp(songpath, oldpath) == 0)
                 {
                     free(songpath);
-                    Sleep(1000);
+                    fr->sleep();
                     continue;
                 }
                 else
@@ -121,7 +123,7 @@ void Freader::thread_func(Freader *fr)
                 fr->songf = NULL;
             }
         })
-        Sleep(1000);
+        fr->sleep();
     }
     free_mapinfo(fr->oldinfo);
     free_mapinfo(fr->info);
