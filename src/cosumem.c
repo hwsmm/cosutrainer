@@ -10,6 +10,7 @@
 #include <wctype.h>
 #include <stdbool.h>
 #include <locale.h>
+#include <ctype.h>
 #include "cosumem.h"
 #include "tools.h"
 #include "cosuplatform.h"
@@ -130,6 +131,94 @@ void gotquitsig(int sig)
 }
 #pragma GCC diagnostic pop
 
+static char *read_proc_environ(pid_t pid, size_t *size)
+{
+    char cmd[256];
+    snprintf(cmd, sizeof(cmd), "ps e -p %d", pid); // use ps instead of /proc/environ to avoid null byte parsing headaches
+
+    FILE *pipe = popen(cmd, "r");
+    if (!pipe)
+    {
+        perror("popen");
+        return NULL;
+    }
+
+    char line[16384]; // big buffer
+    if (!fgets(line, sizeof(line), pipe))
+    {
+        pclose(pipe);
+        return NULL;
+    }
+
+    if (!fgets(line, sizeof(line), pipe))
+    {
+        pclose(pipe);
+        return NULL;
+    }
+
+    pclose(pipe);
+
+    char *env_start = strchr(line, ' ');
+    if (!env_start)
+    {
+        return NULL;
+    }
+
+    while (*env_start == ' ')
+        env_start++;
+
+    char *newline = strchr(env_start, '\n');
+    if (newline)
+        *newline = '\0';
+
+    *size = strlen(env_start) + 1;
+    return strdup(env_start);
+}
+
+static char *extract_wineprefix(const char *env, size_t size)
+{
+    static const char prefix[] = "WINEPREFIX=";
+    const size_t prefix_len = sizeof(prefix) - 1;
+
+    const char *curr = env;
+    const char *end = env + size;
+
+    while (curr < end)
+    {
+        while (curr < end && isspace(*curr))
+            curr++;
+        if (curr >= end)
+            break;
+
+        if (strncmp(curr, prefix, prefix_len) == 0)
+        {
+            curr += prefix_len;
+
+            const char *value_end = curr;
+            while (value_end < end && !isspace(*value_end))
+                value_end++;
+
+            size_t value_len = value_end - curr;
+            if (value_len > 4096) // reasonable path length
+                return NULL;
+
+            char *result = malloc(value_len + 1);
+            if (!result)
+                return NULL;
+
+            memcpy(result, curr, value_len);
+            result[value_len] = '\0';
+
+            return result;
+        }
+
+        while (curr < end && !isspace(*curr))
+            curr++;
+    }
+
+    return NULL;
+}
+
 int main()
 {
     fprintf(stderr, "Current locale: %s\n", setlocale(LC_CTYPE, ""));
@@ -168,70 +257,45 @@ int main()
             }
 
             printerr("osu! is found, Now looking for its song folder...");
-            char envf[1024];
-            snprintf(envf, 1024, "/proc/%d/environ", st.osu);
 
-            int fpd = open(envf, O_RDONLY);
-            if (fpd == -1)
+            size_t env_size;
+            char *env_block = read_proc_environ(st.osu, &env_size);
+            char *wineprefix = NULL;
+
+            if (env_block)
             {
-                perror(envf);
+                wineprefix = extract_wineprefix(env_block, env_size);
+                free(env_block);
+            }
+
+            if (wineprefix)
+                fprintf(stderr, "Found WINEPREFIX: %s\n", wineprefix);
+            else
+                fprintf(stderr, "WINEPREFIX is not found, falling back to default prefix...\n");
+
+            char uid[128];
+            snprintf(uid, sizeof(uid), "/proc/%d/loginuid", st.osu);
+            int idfd = open(uid, O_RDONLY);
+            ssize_t idlen = 0;
+
+            if (idfd == -1 || (idlen = read(idfd, uid, sizeof(uid) - 1)) <= 0)
+            {
+                printerr("Failed getting UID that is running osu");
             }
             else
             {
-                ssize_t rd = 1;
-                char buf;
-                char pfx[2048] = { '\0' };
-                while ((rd = read(fpd, &buf, 1)) == 1)
+                uid[idlen] = '\0';
+                songsfd = get_osu_songs_path(wineprefix && wineprefix[0] == '/' ? wineprefix : NULL, uid);
+                if (songsfd != NULL)
                 {
-                    if (buf == 'W')
-                    {
-                        char cmp[10] = "INEPREFIX=";
-                        char buf2[10];
-                        if ((rd = read(fpd, buf2, sizeof(cmp))) >= (ssize_t)sizeof(cmp) && strncmp(cmp, buf2, sizeof(cmp)-1) == 0)
-                        {
-                            int idx = 0;
-                            while ((rd = read(fpd, &buf, 1)) == 1)
-                            {
-                                if (idx >= (int)sizeof(pfx))
-                                {
-                                    printerr("WINEPREFIX is too long!");
-                                    break;
-                                }
-
-                                pfx[idx++] = buf;
-                                if (buf == '\0')
-                                    break;
-                            }
-                        }
-                    }
-                }
-                close(fpd);
-
-                if (pfx[0] != '\0')
-                    fprintf(stderr, "Found WINEPREFIX: %s\n", pfx);
-                else
-                    fprintf(stderr, "WINEPREFIX is not found, falling back to default prefix...\n");
-
-                char uid[128];
-                snprintf(uid, sizeof(uid), "/proc/%d/loginuid", st.osu);
-                int idfd = open(uid, O_RDONLY);
-                ssize_t idlen = 0;
-
-                if (idfd == -1 || (idlen = read(idfd, uid, sizeof(uid) - 1)) <= 0)
-                {
-                    printerr("Failed getting UID that is running osu");
-                }
-                else
-                {
-                    uid[idlen] = '\0';
-                    songsfd = get_osu_songs_path(pfx[0] == '/' ? pfx : NULL, uid);
-                    if (songsfd != NULL)
-                    {
-                        fprintf(stderr, "Found Song folder: %s\n", songsfd);
-                        songsfdlen = strlen(songsfd);
-                    }
+                    fprintf(stderr, "Found Song folder: %s\n", songsfd);
+                    songsfdlen = strlen(songsfd);
                 }
             }
+
+            if (idfd != -1)
+                close(idfd);
+            free(wineprefix);
         },
         {
 skip:
