@@ -668,11 +668,12 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
 
             if (!ep->emuldt)
             {
-                snpedit("%.2lfx", speed);
+                snpedit("%.2lfx %.0lfbpm", speed, ep->ed->mi->maxbpm * speed);
             }
             else
             {
-                snpedit("%.2lfx(DT)", speed * 1.5);
+                double dtspeed = speed * 1.5;
+                snpedit("%.2lfx %.0lfbpm (DT)", dtspeed, ep->ed->mi->maxbpm * dtspeed);
             }
 
             if (ep->ed->mi->hp != ep->ed->hp) snpedit(" HP%.1lf", ep->ed->hp);
