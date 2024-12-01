@@ -18,6 +18,43 @@ int fork_launch(char* cmd)
     return ret;
 }
 
+static char *read_file_fallback(int fd, int *size)
+{
+    int cursize = 0;
+    char *buf = NULL;
+    ssize_t rb = 0;
+    ssize_t curpoint = 0;
+    do
+    {
+        char *rebuf = (char*) realloc(buf, (cursize += 1024));
+        if (rebuf == NULL)
+        {
+            printerr("Failed allocating memory while reading a file");
+            free(buf);
+            close(fd);
+            return NULL;
+        }
+
+        buf = rebuf;
+        rb = read(fd, buf + curpoint, 1024 - 1);
+        if (rb == -1)
+        {
+            printerr("Failed reading a file");
+            free(buf);
+            close(fd);
+            return NULL;
+        }
+
+        curpoint += rb;
+    }
+    while (rb >= 1024 - 1);
+
+    *(buf + curpoint) = '\0';
+    if (size != NULL) *size = curpoint;
+    close(fd);
+    return buf;
+}
+
 char *read_file(const char *file, int *size)
 {
     int fd = open(file, O_RDONLY);
@@ -28,10 +65,9 @@ char *read_file(const char *file, int *size)
     }
     
     struct stat stat;
-    if (fstat(fd, &stat) == -1)
+    if (fstat(fd, &stat) == -1 || stat.st_size <= 0)
     {
-        perror(file);
-        return NULL;
+        return read_file_fallback(fd, size);
     }
     
     char *buf = (char*) malloc(stat.st_size + 1);

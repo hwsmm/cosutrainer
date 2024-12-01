@@ -170,68 +170,55 @@ int main()
             printerr("osu! is found, Now looking for its song folder...");
             char envf[1024];
             snprintf(envf, 1024, "/proc/%d/environ", st.osu);
-
-            int fpd = open(envf, O_RDONLY);
-            if (fpd == -1)
+            
+            int size = 0;
+            char *envs = read_file(envf, &size);
+            char *pfx = NULL;
+            const char name[] = "WINEPREFIX=";
+            
+            if (envs != NULL)
             {
-                perror(envf);
+                char *current = envs;
+                while ((intptr_t)current - (intptr_t)envs < size)
+                {
+                    if (strncmp(current, name, sizeof(name) - 1) != 0)
+                    {
+                        current += strlen(current) + 1;
+                        continue;
+                    }
+                    
+                    current += sizeof(name) - 1;
+                    pfx = current;
+                    break;
+                }
+            }
+
+            if (pfx != NULL)
+                fprintf(stderr, "Found WINEPREFIX: %s\n", pfx);
+            else
+                fprintf(stderr, "WINEPREFIX is not found, falling back to default prefix...\n");
+
+            char uid[128];
+            snprintf(uid, sizeof(uid), "/proc/%d/loginuid", st.osu);
+            int idfd = open(uid, O_RDONLY);
+            ssize_t idlen = 0;
+
+            if (idfd == -1 || (idlen = read(idfd, uid, sizeof(uid) - 1)) <= 0)
+            {
+                printerr("Failed getting UID that is running osu");
             }
             else
             {
-                ssize_t rd = 1;
-                char buf;
-                char pfx[2048] = { '\0' };
-                while ((rd = read(fpd, &buf, 1)) == 1)
+                uid[idlen] = '\0';
+                songsfd = get_osu_songs_path(pfx, uid);
+                if (songsfd != NULL)
                 {
-                    if (buf == 'W')
-                    {
-                        char cmp[10] = "INEPREFIX=";
-                        char buf2[10];
-                        if ((rd = read(fpd, buf2, sizeof(cmp))) >= (ssize_t)sizeof(cmp) && strncmp(cmp, buf2, sizeof(cmp)-1) == 0)
-                        {
-                            int idx = 0;
-                            while ((rd = read(fpd, &buf, 1)) == 1)
-                            {
-                                if (idx >= (int)sizeof(pfx))
-                                {
-                                    printerr("WINEPREFIX is too long!");
-                                    break;
-                                }
-
-                                pfx[idx++] = buf;
-                                if (buf == '\0')
-                                    break;
-                            }
-                        }
-                    }
-                }
-                close(fpd);
-
-                if (pfx[0] != '\0')
-                    fprintf(stderr, "Found WINEPREFIX: %s\n", pfx);
-                else
-                    fprintf(stderr, "WINEPREFIX is not found, falling back to default prefix...\n");
-
-                char uid[128];
-                snprintf(uid, sizeof(uid), "/proc/%d/loginuid", st.osu);
-                int idfd = open(uid, O_RDONLY);
-                ssize_t idlen = 0;
-
-                if (idfd == -1 || (idlen = read(idfd, uid, sizeof(uid) - 1)) <= 0)
-                {
-                    printerr("Failed getting UID that is running osu");
-                }
-                else
-                {
-                    uid[idlen] = '\0';
-                    songsfd = get_osu_songs_path(pfx[0] == '/' ? pfx : NULL, uid);
-                    if (songsfd != NULL)
-                    {
-                        fprintf(stderr, "Found Song folder: %s\n", songsfd);
-                        songsfdlen = strlen(songsfd);
-                    }
+                    fprintf(stderr, "Found Song folder: %s\n", songsfd);
+                    songsfdlen = strlen(songsfd);
                 }
             }
+            
+            free(envs);
         },
         {
 skip:
