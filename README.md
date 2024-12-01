@@ -24,31 +24,31 @@ It's very destructive and experimental, so don't use unless you desperately need
 - An user-defined osz handler can be set for seamless integration with osu!
 - Supports MP3 and [all formats that libsndfile supports](https://libsndfile.github.io/libsndfile/formats.html). (though osu! only accepts ogg and mp3 as rankable formats)
 
-### Requirements
+### Linux requirements
 - osu! must run on WINE with dotnet 4.5+ for proper memory scanning
-- libmpg123, libmp3lame, libsndfile and libsoundtouch to adjust audio speed
-- libzip to make an osz file
-- libfltk1.3 for GUI
+
+### `cosu-trainer` GUI screenshot
+![Screenshot](docs/cosu.png)
+
+### How to use
+1. Download `cosu-trainer-bin.tar.zst` (Linux) or `cosu-trainer-win-bin.zip` (Windows) from [Releases](https://github.com/hwsmm/cosutrainer/releases) and extract
+2. Run osu! and get into song select
+3. Linux: Run `./osumem` (Most systems require root permission to run this)
+4. (Not necessary) Linux: Set `OSU_SONG_FOLDER` variable (`export OSU_SONG_FOLDER=/put/osu/Songs/`, I recommend putting it into your .profile), `echo "<your Songs path>" > ~/.cosu_songsfd` if `osumem` doesn't detect your song folder. Please report if this is the case.
+5. Now you can use `./cosu-trainer` or `cosu-trainer.exe` (read usage below)
+6. After converting a map with it, press f5 in the game to refresh
 
 ### DEB/RPM/Arch repository
 My [wine-osu repository](https://build.opensuse.org/project/show/home:hwsnemo:packaged-wine-osu) also provides cosu-trainer.
 You can get it [here](https://software.opensuse.org//download.html?project=home%3Ahwsnemo%3Apackaged-wine-osu&package=cosu-trainer)!
 
+### Build dependencies
+- libmpg123, libmp3lame, libsndfile, libsoundtouch, libzip, libfltk1.3
+
 ### How to build
 1. Install header packages of dependencies
 2. Run `meson build && ninja -C build`
 3. Binaries should be in 'build' folder.
-
-### How to use
-1. Grab `cosu-trainer` and `osumem`
-2. Run osu! and get into song select
-3. Linux: Run `./osumem` (Most systems require root permission to run this)
-4. Linux: Set `OSU_SONG_FOLDER` variable (`export OSU_SONG_FOLDER=/put/osu/Songs/`, I recommend putting it into your .profile), `echo "<your Songs path>" > ~/.cosu_songsfd`, or read [this](#use-registry-to-get-songs-folder)
-5. Now you can use `./cosu-trainer` or `cosu-trainer.exe` (read usage below)
-6. After converting a map with it, press f5 in the game to refresh
-
-### `cosu-trainer` GUI screenshot
-![Screenshot](docs/cosu.png)
 
 Run `cosu-trainer` with no arguments to launch GUI. You can use below arguments if you don't want GUI.
 
