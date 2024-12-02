@@ -7,21 +7,10 @@ jobs:
     linux:
         runs-on: ubuntu-latest
         name: Linux AppImage Build
-        env:
-            ZYPP_GLOBAL: --no-gpg-checks --gpg-auto-import-keys --non-interactive
-        container: opensuse/leap:latest
+        container: debian:oldstable-backports
         steps:
-            - name: Add repositories
-              env:
-                  ZYPP_ADDREPO: zypper addrepo -p 90 -G
-              run: |
-                  $ZYPP_ADDREPO https://download.opensuse.org/repositories/devel:tools:building/15.5/devel:tools:building.repo
-                  $ZYPP_ADDREPO https://download.opensuse.org/repositories/multimedia:libs/15.5/multimedia:libs.repo
-                  $ZYPP_ADDREPO https://download.opensuse.org/repositories/home:hwsnemo/15.5/home:hwsnemo.repo
-                  zypper $ZYPP_GLOBAL refresh
-
             - name: Install dependencies
-              run: zypper $ZYPP_GLOBAL install -f -y gcc-c++ mpg123-devel libmp3lame-devel libsndfile-devel soundtouch-devel libzip-devel fltk-devel meson ninja wget tar zstd gzip file fuse libfuse2
+              run: apt install -f g++ libmpg123-dev libmp3lame-dev libsndfile1-dev libsoundtouch-dev libzip-dev libfltk1.3-dev meson ninja wget tar zstd gzip file fuse libfuse2
 
             - name: Checkout
               uses: actions/checkout@v4
