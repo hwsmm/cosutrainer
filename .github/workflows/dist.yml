@@ -10,7 +10,9 @@ jobs:
         container: debian:oldstable-backports
         steps:
             - name: Install dependencies
-              run: apt install -f g++ libmpg123-dev libmp3lame-dev libsndfile1-dev libsoundtouch-dev libzip-dev libfltk1.3-dev meson ninja wget tar zstd gzip file fuse libfuse2
+              run: |
+                  apt update -y
+                  apt install -y g++ libmpg123-dev libmp3lame-dev libsndfile1-dev libsoundtouch-dev libzip-dev libfltk1.3-dev meson ninja wget tar zstd gzip file fuse libfuse2
 
             - name: Checkout
               uses: actions/checkout@v4
