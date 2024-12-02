@@ -1,5 +1,6 @@
 #include "cosuwindow.h"
 #include "cuimain.h"
+#include <locale.h>
 
 #ifdef WIN32
 #define UTF8LOC ".UTF-8"
