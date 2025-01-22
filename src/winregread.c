@@ -8,10 +8,10 @@
 #include <strsafe.h>
 #include <wchar.h>
 
-LPWSTR getOsuPath(LPDWORD len)
+static LPWSTR getRegistryValue(HKEY hkey, LPCWSTR subKey, LPDWORD len)
 {
     DWORD size = 0;
-    LSTATUS ret = RegGetValueW(HKEY_CLASSES_ROOT, L"osu\\shell\\open\\command", L"", RRF_RT_REG_SZ, NULL, NULL, &size);
+    LSTATUS ret = RegGetValueW(hkey, subKey, L"", RRF_RT_REG_SZ, NULL, NULL, &size);
     if (ret != ERROR_SUCCESS)
     {
         fprintf(stderr, "Failed reading registry: %ld\n", ret);
@@ -25,11 +25,31 @@ LPWSTR getOsuPath(LPDWORD len)
         return NULL;
     }
 
-    ret = RegGetValueW(HKEY_CLASSES_ROOT, L"osu\\shell\\open\\command", L"", RRF_RT_REG_SZ, NULL, path, &size);
+    ret = RegGetValueW(hkey, subKey, L"", RRF_RT_REG_SZ, NULL, path, &size);
     if (ret != ERROR_SUCCESS)
     {
         fprintf(stderr, "Failed reading registry: %ld\n", ret);
         free(path);
+        return NULL;
+    }
+
+    *len = size;
+    return path;
+}
+
+LPWSTR getOsuPath(LPDWORD len)
+{
+    DWORD size = 0;
+    LPWSTR path = getRegistryValue(HKEY_CLASSES_ROOT, L"osustable.File.osz\\shell\\open\\command", &size);
+
+    if (path == NULL)
+    {
+        path = getRegistryValue(HKEY_CLASSES_ROOT, L"osu\\shell\\open\\command", &size);
+    }
+
+    if (path == NULL)
+    {
+        fprintf(stderr, "Failed getting path\n");
         return NULL;
     }
 
@@ -166,6 +186,7 @@ LPWSTR getOsuSongsPath(LPWSTR osupath, DWORD pathsize)
 
 #else
 
+#define _GNU_SOURCE
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
@@ -201,7 +222,8 @@ char *get_osu_path(char *wineprefix)
 
     while (fgets(line, sizeof(line), f))
     {
-        if (strstr(line, "osu\\\\shell\\\\open\\\\command") != NULL)
+        if (strcasestr(line, "osu\\\\shell\\\\open\\\\command") != NULL
+            || strcasestr(line, "osustable.File.osz\\\\shell\\\\open\\\\command") != NULL)
         {
             while (fgets(line, sizeof(line), f))
             {
