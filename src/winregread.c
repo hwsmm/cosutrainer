@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include "winregread.h"
 #include <stdio.h>
 
@@ -186,7 +187,6 @@ LPWSTR getOsuSongsPath(LPWSTR osupath, DWORD pathsize)
 
 #else
 
-#define _GNU_SOURCE
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
