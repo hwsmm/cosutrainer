@@ -40,12 +40,12 @@ static LPWSTR getRegistryValue(HKEY hkey, LPCWSTR subKey, LPDWORD len)
 LPWSTR getOsuPath(LPDWORD len)
 {
     DWORD size = 0;
-    LPWSTR path = getRegistryValue(HKEY_CLASSES_ROOT, L"osustable.File.osz\\shell\\open\\command", &size);
+    LPWSTR path = NULL;
 
-    if (path == NULL)
-    {
-        path = getRegistryValue(HKEY_CLASSES_ROOT, L"osu\\shell\\open\\command", &size);
-    }
+    if (path == NULL) path = getRegistryValue(HKEY_CURRENT_USER, L"Software\\Classes\\osustable.File.osz\\Shell\\Open\\Command", &size);
+    if (path == NULL) path = getRegistryValue(HKEY_CURRENT_USER, L"Software\\Classes\\osu\\Shell\\Open\\Command", &size);
+    if (path == NULL) path = getRegistryValue(HKEY_CLASSES_ROOT, L"osustable.File.osz\\Shell\\Open\\Command", &size);
+    if (path == NULL) path = getRegistryValue(HKEY_CLASSES_ROOT, L"osu\\Shell\\Open\\Command", &size);;
 
     if (path == NULL)
     {
