@@ -194,10 +194,9 @@ LPWSTR getOsuSongsPath(LPWSTR osupath, DWORD pathsize)
 #include "cosuplatform.h"
 #include "tools.h"
 
-char *get_osu_path(char *wineprefix)
+static char *try_get_osu_path(char *wineprefix, char *reg_file, const char **subkeys)
 {
-    const char system_reg[] = "system.reg";
-    int size = strlen(wineprefix) + 1 + sizeof(system_reg);
+    int size = strlen(wineprefix) + 1 + strlen(reg_file) + 1;
     char *regpath = (char*) malloc(size);
     if (regpath == NULL)
     {
@@ -205,7 +204,7 @@ char *get_osu_path(char *wineprefix)
         return NULL;
     }
 
-    snprintf(regpath, size, "%s/%s", wineprefix, system_reg);
+    snprintf(regpath, size, "%s/%s", wineprefix, reg_file);
 
     FILE *f = fopen(regpath, "r");
     if (!f)
@@ -222,37 +221,59 @@ char *get_osu_path(char *wineprefix)
 
     while (fgets(line, sizeof(line), f))
     {
-        if (strcasestr(line, "osu\\\\shell\\\\open\\\\command") != NULL
-            || strcasestr(line, "osustable.File.osz\\\\shell\\\\open\\\\command") != NULL)
+        for (const char **temp = subkeys; *temp != NULL; temp++)
         {
-            while (fgets(line, sizeof(line), f))
+            const char *subkey = *temp;
+            if (strcasestr(line, subkey) != NULL)
             {
-                char *find = NULL;
-                if ((find = strstr(line, "osu!.exe")) != NULL)
+                while (fgets(line, sizeof(line), f))
                 {
-                    *find = '\0';
+                    char *find = NULL;
+                    if ((find = strstr(line, "osu!.exe")) != NULL)
+                    {
+                        *find = '\0';
 
-                    char *first = strstr(line, ":\\\\");
+                        char *first = strstr(line, ":\\\\");
 
-                    if (first != NULL)
-                        first--;
-                    else
+                        if (first != NULL)
+                            first--;
+                        else
+                            goto exit;
+
+                        int len = strlen(first) + 1;
+                        result = (char*) malloc(len);
+                        if (result != NULL)
+                            strcpy(result, first);
+
                         goto exit;
-
-                    int len = strlen(first) + 1;
-                    result = (char*) malloc(len);
-                    if (result != NULL)
-                        strcpy(result, first);
-
-                    goto exit;
+                    }
                 }
             }
         }
     }
 
+    if (result == NULL)
+        printerr("Couldn't find song folder!");
+
 exit:
     fclose(f);
     return result;
+}
+
+char *get_osu_path(char *wineprefix)
+{
+    static const char *list[] =
+    {
+        "osu\\\\shell\\\\open\\\\command",
+        "osustable.File.osz\\\\shell\\\\open\\\\command",
+        NULL
+    };
+
+    char *res = try_get_osu_path(wineprefix, "system.reg", list);
+    if (res == NULL)
+        res = try_get_osu_path(wineprefix, "user.reg", list);
+
+    return res;
 }
 
 char *get_osu_songs_path(char *wineprefix, char *uid)
