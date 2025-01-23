@@ -27,7 +27,7 @@ private:
     struct songpath_status st;
 #endif
     static void thread_func(Freader *fr);
-    bool conti;
+    volatile bool conti;
     CosuWindow *win;
 
     void init(CosuWindow *win)
@@ -48,11 +48,8 @@ private:
         free_mapinfo(info);
     }
     
-    struct editdata edit;
-    
     std::mutex mtx;
     std::condition_variable_any cnd;
-    volatile bool pause;
     
     void sleep()
     {
@@ -64,16 +61,4 @@ public:
     struct mapinfo *info;
     struct mapinfo *oldinfo;
     volatile bool consumed;
-    
-    void wakeup(struct editdata *data)
-    {
-        std::lock_guard<std::mutex> lck(mtx);
-            
-        if (data != NULL)
-            memcpy(&edit, data, sizeof(edit));
-        
-        pause = true;
-        
-        cnd.notify_one();
-    }
 };

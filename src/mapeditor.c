@@ -1,7 +1,6 @@
 #include "mapeditor.h"
 #include "tools.h"
 #include "cosuplatform.h"
-#include "audiospeed.h"
 #include "actualzip.h"
 #include <stdlib.h>
 #include <limits.h>
@@ -747,7 +746,7 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
     return ret;
 }
 
-int edit_beatmap(struct editdata *edit, volatile float *progress)
+int edit_beatmap(struct editdata *edit)
 {
     int ret = 0;
     struct buffers bufs;
@@ -932,7 +931,7 @@ int edit_beatmap(struct editdata *edit, volatile float *progress)
             buffers_free(&bufs);
             return -99;
         }
-        ret = change_audio_speed(audp, &bufs, edit->speed, edit->pitch, progress);
+        ret = change_audio_speed(audp, &bufs, edit->speed, edit->pitch, edit->data, edit->progress_callback);
         if (ret != 0)
         {
             printerr("Failed converting audio!");

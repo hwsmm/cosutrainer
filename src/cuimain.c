@@ -12,17 +12,9 @@
 #include "cosuplatform.h"
 #include "lsongpathparser.h"
 
-static void *showprog(void *arg)
+static void showprog(void *data, float progress)
 {
-    float *progress = (float*) arg;
-    do
-    {
-        printf("\r%d%%", (int) (*progress * 100));
-        usleep(1000);
-    }
-    while (*progress < 1);
-    puts("\r100%");
-    return 0;
+    if (progress > 0) printf("\r%d%%", (int) (progress * 100));
 }
 
 #ifdef DISABLE_GUI
@@ -218,17 +210,12 @@ int cuimain(int argc, char *argv[])
             }
         }
     }
-
-    float progress = 0;
-
-    pthread_t thr;
-    int threrr = pthread_create(&thr, NULL, showprog, &progress);
-    ret = edit_beatmap(&edit, &progress);
-    progress = 1;
-    if (!threrr)
-    {
-        pthread_join(thr, NULL);
-    }
+    
+    edit.data = NULL;
+    edit.progress_callback = showprog;
+    ret = edit_beatmap(&edit);
+    
+    puts("\r100%");
 
     free_mapinfo(mi);
 

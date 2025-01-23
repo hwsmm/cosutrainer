@@ -1,6 +1,7 @@
 #pragma once
 #include <stdbool.h>
 #include "buffers.h"
+#include "audiospeed.h"
 
 enum SECTION
 {
@@ -50,6 +51,9 @@ struct editdata // data needed to edit a map
     
     long cut_start;
     long cut_end;
+    
+    update_progress_cb progress_callback;
+    void *data;
 };
 
 struct editpass // temporary data that's only needed in editing (only passed within edit_beatmap)
@@ -74,7 +78,7 @@ double scale_ar(double ar, double speed, int mode);
 double scale_od(double od, double speed, int mode);
 struct mapinfo *read_beatmap(char *mapfile);
 void free_mapinfo(struct mapinfo *info);
-int edit_beatmap(struct editdata *edit, volatile float *progress);
+int edit_beatmap(struct editdata *edit);
 
 #ifdef __cplusplus
 }

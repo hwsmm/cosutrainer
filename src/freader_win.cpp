@@ -21,7 +21,6 @@ Freader::~Freader()
 void Freader::thread_func(Freader *fr)
 {
     fr->conti = true;
-    fr->pause = false;
 
     ptr_type base = NULL;
     wchar_t *songpath = NULL;
@@ -32,12 +31,6 @@ void Freader::thread_func(Freader *fr)
         std::lock_guard<std::mutex> lck(fr->mtx);
         
         struct sigscan_status *sst = &(fr->st);
-        if (fr->pause)
-        {
-            edit_beatmap(&(fr->edit), &(fr->win->progress));
-            fr->pause = false;
-            fr->win->done = true;
-        }
 
         DEFAULT_LOGIC(sst,
         {

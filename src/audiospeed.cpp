@@ -10,13 +10,13 @@
 #include "buffers.h"
 #include "audiospeed.h"
 #include "cosuplatform.h"
+#include "cosuwindow.h"
 
 using namespace soundtouch;
 using namespace std;
 
-int change_mp3_speed(const char* source, struct buffers *bufs, double speed, bool pitch, volatile float *progress)
+int change_mp3_speed(const char* source, struct buffers *bufs, double speed, bool pitch, void *data, update_progress_cb callback)
 {
-    *progress = 0;
     mpg123_handle *mh = NULL;
     struct mpg123_frameinfo fi;
     SoundTouch st;
@@ -104,6 +104,8 @@ int change_mp3_speed(const char* source, struct buffers *bufs, double speed, boo
         }
 
         bufsizesample = convbuf_size / sizeof(float) / channels;
+        
+        float progress = 0;
 
         while (1)
         {
@@ -116,7 +118,11 @@ int change_mp3_speed(const char* source, struct buffers *bufs, double speed, boo
                 if (err == MPG123_OK || err == MPG123_DONE)
                 {
                     samplecount = (done/sizeof(float))/channels;
-                    *progress += (float) samplecount / (float) fulllength;
+                    if (callback != NULL)
+                    {
+                        progress += (float) samplecount / (float) fulllength;
+                        callback(data, progress);
+                    }
                     st.putSamples(buffer, samplecount);
                 }
                 else
@@ -198,7 +204,6 @@ int change_mp3_speed(const char* source, struct buffers *bufs, double speed, boo
         }
 
         success = 0;
-        *progress = 1;
     }
     catch (int i)
     {
@@ -248,9 +253,8 @@ sf_count_t sfvio_tell(void *vbufs)
     return bufs->audcur;
 }
 
-int change_audio_speed_libsndfile(const char* source, struct buffers *bufs, double speed, bool pitch, volatile float *progress)
+int change_audio_speed_libsndfile(const char* source, struct buffers *bufs, double speed, bool pitch, void *data, update_progress_cb callback)
 {
-    *progress = 0;
     int success = 1;
     SNDFILE *in = NULL, *out = NULL;
     SF_INFO info = { 0, 0, 0, 0, 0, 0 };
@@ -262,6 +266,8 @@ int change_audio_speed_libsndfile(const char* source, struct buffers *bufs, doub
 
     sf_count_t readcount = 0;
     unsigned int convcount = 0;
+    
+    float progress = 0;
 
     SoundTouch st;
     bool flush = false;
@@ -282,8 +288,11 @@ int change_audio_speed_libsndfile(const char* source, struct buffers *bufs, doub
     {
         readcount = sf_read_float(in, buffer, 1024);
         
-        if (info.frames >= 0)
-            *progress += (float) (readcount / info.channels) / (float) info.frames; // sndfile ogg impl doesn't seem to report frames though
+        if (info.frames >= 0 && callback != NULL)
+        {
+            progress += (float) (readcount / info.channels) / (float) info.frames; // sndfile ogg impl doesn't seem to report frames though
+            callback(data, progress);
+        }
 
         if (readcount != 0) st.putSamples(buffer, readcount / info.channels);
         else
@@ -300,7 +309,6 @@ int change_audio_speed_libsndfile(const char* source, struct buffers *bufs, doub
         while (convcount != 0);
     }
 
-    *progress = 1;
     success = 0;
 sndfclose:
     if (in != NULL)  sf_close(in);
@@ -308,18 +316,18 @@ sndfclose:
     return success;
 }
 
-int change_audio_speed(const char* source, struct buffers *bufs, double speed, bool pitch, volatile float *progress)
+int change_audio_speed(const char* source, struct buffers *bufs, double speed, bool pitch, void *data, update_progress_cb callback)
 {
     try
     {
         if (endswith(source, ".mp3"))
         {
-            return change_mp3_speed(source, bufs, speed, pitch, progress);
+            return change_mp3_speed(source, bufs, speed, pitch, data, callback);
             // using mpg123/lame backend exclusively to make bug fixing easier
             // and there are some distros that has libsndfile without mp3 support since it's only released recently
             // libsndfile also uses mpg123/lame anyway
         }
-        else return change_audio_speed_libsndfile(source, bufs, speed, pitch, progress);
+        else return change_audio_speed_libsndfile(source, bufs, speed, pitch, data, callback);
     }
     catch (const std::runtime_error &e)
     {

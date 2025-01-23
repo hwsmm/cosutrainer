@@ -13,6 +13,7 @@ private:
 
     void update_ar_label();
     void update_od_label();
+    static void update_progress(void *data, float progress);
     static void bpmradio_callb(Fl_Widget *w, void *data);
     static void rateradio_callb(Fl_Widget *w, void *data);
     static void resetbtn_callb(Fl_Widget *w, void *data);
@@ -22,7 +23,5 @@ private:
 public:
     CosuWindow();
     void start();
-
-    volatile float progress;
-    bool done;
+    void update_progress(float progress);
 };

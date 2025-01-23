@@ -14,20 +14,6 @@ CosuWindow::CosuWindow() : fr(this)
 {
 }
 
-#ifdef WIN32
-int ui_wait_seconds(double seconds)
-{
-    return Fl::wait(seconds);
-}
-#else
-int ui_wait_seconds(double seconds)
-{
-    usleep(seconds * 1000.0 * 1000.0);
-    Fl::flush();
-    return 1;
-}
-#endif
-
 double CosuWindow::get_relative_speed()
 {
     if (cosuui.rate->value() >= 1)
@@ -158,6 +144,16 @@ void CosuWindow::resetbtn_callb(Fl_Widget *w, void *data)
     Fl::awake();
 }
 
+void CosuWindow::update_progress(void *data, float progress)
+{
+    CosuWindow *win = (CosuWindow*) data;
+    if (progress > 0 && progress - win->cosuui.progress->value() > 0.001)
+    {
+        win->cosuui.progress->value(progress);
+        Fl::flush();
+    }
+}
+
 void CosuWindow::convbtn_callb(Fl_Widget *w, void *data)
 {
     CosuWindow *win = (CosuWindow*) data;
@@ -203,10 +199,14 @@ void CosuWindow::convbtn_callb(Fl_Widget *w, void *data)
         edit.flip = none;
         break;
     }
-
-    win->done = false;
     
-    win->fr.wakeup(&edit);
+    edit.data = data;
+    edit.progress_callback = update_progress;
+
+    edit_beatmap(&edit);
+    
+    win->cosuui.mainbox->activate();
+    win->cosuui.progress->value(0);
 }
 
 void CosuWindow::diffch_callb(Fl_Widget *w, void *data)
@@ -271,25 +271,8 @@ void CosuWindow::start()
 
     window->show();
 
-    done = true;
-    progress = 0;
-
     while (Fl::wait() > 0)
     {
-        if (!done)
-        {
-            while (ui_wait_seconds(0.1) > 0)
-            {
-                cosuui.progress->value(progress);
-                if (done)
-                {
-                    progress = 0;
-                    cosuui.progress->value(progress);
-                    cosuui.mainbox->activate();
-                    break;
-                }
-            }
-        }
         if (fr.info != NULL && fr.consumed == false)
         {
             struct mapinfo *info = fr.info;

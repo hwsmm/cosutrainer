@@ -20,18 +20,10 @@ Freader::~Freader()
 void Freader::thread_func(Freader *fr)
 {
     fr->conti = true;
-    fr->pause = false;
     
     while (fr->conti)
     {
         std::lock_guard<std::mutex> lck(fr->mtx);
-        
-        if (fr->pause)
-        {
-            edit_beatmap(&(fr->edit), &(fr->win->progress));
-            fr->pause = false;
-            fr->win->done = true;
-        }
 
         char *fullpath;
         if (!songpath_get(&(fr->st), &fullpath))
