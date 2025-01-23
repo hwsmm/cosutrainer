@@ -288,7 +288,7 @@ int change_audio_speed_libsndfile(const char* source, struct buffers *bufs, doub
     {
         readcount = sf_read_float(in, buffer, 1024);
         
-        if (info.frames >= 0 && callback != NULL)
+        if (info.frames > 0 && callback != NULL)
         {
             progress += (float) (readcount / info.channels) / (float) info.frames; // sndfile ogg impl doesn't seem to report frames though
             callback(data, progress);
