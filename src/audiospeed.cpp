@@ -261,8 +261,8 @@ int change_audio_speed_libsndfile(const char* source, struct buffers *bufs, doub
     SF_INFO info = { 0, 0, 0, 0, 0, 0 };
     SF_VIRTUAL_IO sfvio = { &sfvio_get_filelen, &sfvio_seek, &sfvio_read, &sfvio_write, &sfvio_tell };
 
-    float buffer[1024] = { 0.0 };
-    float convbuf[1024] = { 0.0 };
+    float buffer[256] = { 0.0 };
+    float convbuf[256] = { 0.0 };
     int bufsamples = 0;
 
     sf_count_t readcount = 0;
@@ -278,7 +278,7 @@ int change_audio_speed_libsndfile(const char* source, struct buffers *bufs, doub
         goto sndfclose;
     }
 
-    bufsamples = 1024 / info.channels;
+    bufsamples = sizeof(buffer) / sizeof(float) / info.channels;
 
     st.setSetting(SETTING_USE_QUICKSEEK, 1);
     st.setSampleRate(info.samplerate);
@@ -288,17 +288,17 @@ int change_audio_speed_libsndfile(const char* source, struct buffers *bufs, doub
 
     while (!flush)
     {
-        readcount = sf_read_float(in, buffer, 1024);
+        readcount = sf_readf_float(in, buffer, bufsamples);
         
         if (callback != NULL)
         {
             if (info.frames > 0) // sndfile ogg impl doesn't seem to report frames though
-                progress += (float) (readcount / info.channels) / (float) info.frames;
+                progress += (float) readcount / (float) info.frames;
 
             callback(data, progress);
         }
 
-        if (readcount != 0) st.putSamples(buffer, readcount / info.channels);
+        if (readcount != 0) st.putSamples(buffer, readcount);
         else
         {
             st.flush();
