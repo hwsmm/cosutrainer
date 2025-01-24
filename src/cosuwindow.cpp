@@ -147,10 +147,15 @@ void CosuWindow::resetbtn_callb(Fl_Widget *w, void *data)
 void CosuWindow::update_progress(void *data, float progress)
 {
     CosuWindow *win = (CosuWindow*) data;
-    if (progress > 0 && progress - win->cosuui.progress->value() > 0.001)
+    float current = win->cosuui.progress->value();
+    if (progress > 0 && progress - current > 0.001)
     {
         win->cosuui.progress->value(progress);
-        Fl::flush();
+        Fl::check();
+    }
+    else if (progress == 0 && current == 0)
+    { // audio didn't provide its size, just update ui in this case.
+        Fl::check();
     }
 }
 
