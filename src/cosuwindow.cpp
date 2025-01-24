@@ -148,7 +148,7 @@ void CosuWindow::update_progress(void *data, float progress)
 {
     CosuWindow *win = (CosuWindow*) data;
     float current = win->cosuui.progress->value();
-    if (progress > 0 && progress - current > 0.001)
+    if (progress > 0 && progress - current > 0.005)
     {
         win->cosuui.progress->value(progress);
         Fl::check();

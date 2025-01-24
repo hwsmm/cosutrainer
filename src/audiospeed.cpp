@@ -71,6 +71,7 @@ int change_mp3_speed(const char* source, struct buffers *bufs, double speed, boo
         convbuf = (float*) malloc((convbuf_size = buffer_size));
         if (buffer == NULL || convbuf == NULL) throw -99;
 
+        st.setSetting(SETTING_USE_QUICKSEEK, 1);
         st.setSampleRate(rate);
         st.setChannels(channels);
         if (!pitch) st.setTempoChange((speed - 1.0) * 100.0);
@@ -279,6 +280,7 @@ int change_audio_speed_libsndfile(const char* source, struct buffers *bufs, doub
 
     bufsamples = 1024 / info.channels;
 
+    st.setSetting(SETTING_USE_QUICKSEEK, 1);
     st.setSampleRate(info.samplerate);
     st.setChannels(info.channels);
     if (!pitch) st.setTempoChange((speed - 1.0) * 100.0);
