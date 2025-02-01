@@ -1059,6 +1059,7 @@ int edit_beatmap(struct editdata *edit)
         else
         {
             printerr("Invert is only available on osu!mania!");
+            ep.prior_read = false;
             edit->flip = none;
         }
     }
