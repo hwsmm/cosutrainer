@@ -1049,6 +1049,12 @@ int edit_beatmap(struct editdata *edit)
                 goto tryfree;
             }
             ep.done_saving = true;
+
+            if (ep.hitobjects_num == 0 || ep.timingpoints_num == 0)
+            {
+                ret = -80;
+                goto tryfree;
+            }
         }
         else
         {
