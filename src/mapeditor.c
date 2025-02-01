@@ -560,7 +560,7 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
                                     afnul = find_null(orig_len);
                                 }
 
-                                snpedit("%d,%d,%ld,%d,%s,%ld:%s", x, y, time, 1<<7, hitsoundstr, end_time, afnul);
+                                snpedit("%d,%d,%ld,128,%s,%ld:%s", x, y, time, hitsoundstr, end_time, afnul);
 
                                 used = true;
                             }
