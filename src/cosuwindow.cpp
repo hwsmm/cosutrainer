@@ -411,6 +411,9 @@ void CosuWindow::start()
             }
             else
             {
+                if ((cosuui.flipbox)->value() == 4)
+                    (cosuui.flipbox)->value(0);
+
                 (cosuui.invert)->deactivate();
             }
 
