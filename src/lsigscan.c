@@ -201,7 +201,7 @@ void *start_regionit(struct sigscan_status *st)
 int next_regionit(void *regionit, struct vm_region *res)
 {
     char line[1024];
-    
+
     while (1)
     {
         if (fgets(line, sizeof line, (FILE*)regionit) == NULL)
@@ -213,21 +213,21 @@ int next_regionit(void *regionit, struct vm_region *res)
             }
             return 0;
         }
-    
+
         char *startstr = strtok(line, "-");
         char *endstr = strtok(NULL, " ");
         char *permstr = strtok(NULL, " ");
-    
+
         if (!startstr || !endstr || !permstr || *permstr != 'r')
         {
             continue;
         }
-    
+
         ptr_type startptr = (ptr_type)strtol(startstr, NULL, 16);
         ptr_type endptr = (ptr_type)strtol(endstr, NULL, 16);
-    
+
         size_t size = (intptr_t)endptr - (intptr_t)startptr;
-    
+
         res->start = startptr;
         res->len = size;
         return 1;

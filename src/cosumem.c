@@ -170,12 +170,12 @@ int main()
             printerr("osu! is found, Now looking for its song folder...");
             char envf[1024];
             snprintf(envf, 1024, "/proc/%d/environ", st.osu);
-            
+
             int size = 0;
             char *envs = read_file(envf, &size);
             char *pfx = NULL;
             const char name[] = "WINEPREFIX=";
-            
+
             if (envs != NULL)
             {
                 char *current = envs;
@@ -186,7 +186,7 @@ int main()
                         current += strlen(current) + 1;
                         continue;
                     }
-                    
+
                     current += sizeof(name) - 1;
                     pfx = current;
                     break;
@@ -217,7 +217,7 @@ int main()
                     songsfdlen = strlen(songsfd);
                 }
             }
-            
+
             free(envs);
         },
         {

@@ -63,13 +63,13 @@ char *read_file(const char *file, int *size)
         perror(file);
         return NULL;
     }
-    
+
     struct stat stat;
     if (fstat(fd, &stat) == -1 || stat.st_size <= 0)
     {
         return read_file_fallback(fd, size);
     }
-    
+
     char *buf = (char*) malloc(stat.st_size + 1);
     if (buf == NULL)
     {
@@ -77,7 +77,7 @@ char *read_file(const char *file, int *size)
         close(fd);
         return NULL;
     }
-    
+
     ssize_t r = read(fd, buf, stat.st_size);
     if (r == -1)
     {
@@ -86,7 +86,7 @@ char *read_file(const char *file, int *size)
         free(buf);
         return NULL;
     }
-    
+
     *(buf + r) = '\0';
     if (size != NULL) *size = r;
     close(fd);
