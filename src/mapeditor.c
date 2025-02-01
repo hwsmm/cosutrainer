@@ -412,8 +412,9 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
     bool edited = false;
     unsigned int ecur = 0;
     double speed = ep->ed->speed;
+    bool prior_read = ep->prior_read && !ep->done_saving;
 
-    if (sect == root)
+    if (!prior_read && sect == root)
     {
         // https://osu.ppy.sh/beatmapsets/134151#osu/336571
         // some insane map files put weird characters at first
@@ -423,17 +424,20 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
             putsstr("osu file format v14\r\n");
         }
     }
-    else if (sect == events)
+    else if (!prior_read && sect == events)
     {
         if (*line == '2' || CMPSTR(line, "Break"))
         {
             edited = true;
-            tkn(line);
-            char *start;
-            fail_nulltkn(start);
-            char *end;
-            fail_nulltkn(end);
-            snpedit("2,%ld,%ld\r\n", (long) (atol(start) / speed), (long) (atol(end) / speed));
+            if (ep->ed->flip != invert)
+            {
+                tkn(line);
+                char *start;
+                fail_nulltkn(start);
+                char *end;
+                fail_nulltkn(end);
+                snpedit("2,%ld,%ld\r\n", (long) (atol(start) / speed), (long) (atol(end) / speed));
+            }
         }
         else if (*line == '0')
         {
@@ -447,13 +451,35 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
         char *btlenstr = nexttkn(); // most likely it won't fail if reading succeeded
         if (*btlenstr != '-')
         {
-            snpedit("%ld,%.12lf,", time, atof(btlenstr) / speed);
+            double btlen = atof(btlenstr) / speed;
+            if (!prior_read)
+            {
+                snpedit("%ld,%.12lf,%s", time, btlen, find_null(btlenstr));
+            }
+            else
+            {
+                if (ep->timingpoints == NULL || ep->timingpoints_size < ep->timingpoints_num + 1)
+                {
+                    struct timingpoint *newarr = (struct timingpoint*)realloc(ep->timingpoints, (ep->timingpoints_size + 5) * sizeof(struct timingpoint));
+                    if (newarr == NULL)
+                    {
+                        printerr("Failed timingpoint allocation");
+                        return 3;
+                    }
+
+                    ep->timingpoints = newarr;
+                    ep->timingpoints_size += 5;
+                }
+
+                ep->timingpoints[ep->timingpoints_num].time = time;
+                ep->timingpoints[ep->timingpoints_num].beatlength = btlen;
+                ep->timingpoints_num++;
+            }
         }
-        else
+        else if (!prior_read)
         {
-            snpedit("%ld,%s,", time, btlenstr);
+            snpedit("%ld,%s,%s", time, btlenstr, find_null(btlenstr));
         }
-        putdstr(find_null(btlenstr));
     }
     else if (sect == hitobjects)
     {
@@ -484,87 +510,154 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
         {
             // do nothing to create a practice diff
         }
-        else if (type & (1<<3) || type & (1<<7))
+        else if (prior_read)
         {
-            const char spinnertoken[] = { (type & (1<<7)) ? ':' : ',', '\0' };
-            char *hitsoundstr;
-            fail_nulltkn(hitsoundstr);
-            char *spinnerstr = strtok(NULL, spinnertoken);
-            if (spinnerstr == NULL)
+            // this is run prior to main edit when hitobject data is needed for further processing (e.g. mania full LN)
+            if (ep->hitobjects == NULL || ep->hitobjects_size < ep->hitobjects_num + 1)
             {
-                printerr("Failed parsing spinner!");
-                return 1;
+                struct hitobject *newarr = (struct hitobject*)realloc(ep->hitobjects, (ep->hitobjects_size + 300) * sizeof(struct hitobject));
+                if (newarr == NULL)
+                {
+                    printerr("Failed hitobject allocation");
+                    return 3;
+                }
+
+                ep->hitobjects = newarr;
+                ep->hitobjects_size += 300;
             }
-            char *afnul = find_null(spinnerstr);
 
-            long spinnerlen = atol(spinnerstr) / speed;
-
-            snpedit("%d,%d,%ld,%s,%s,%ld", x, y, time, typestr, hitsoundstr, spinnerlen);
-
-            if (*(afnul - 2) == '\r' || *(afnul - 2) == '\n')
+            ep->hitobjects[ep->hitobjects_num].x = x;
+            ep->hitobjects[ep->hitobjects_num].y = y;
+            ep->hitobjects[ep->hitobjects_num].time = time;
+            ep->hitobjects[ep->hitobjects_num].type = type;
+            ep->hitobjects_num++;
+        }
+        else // does something
+        {
+            if (ep->ed->flip == invert)
             {
-                putsstr("\r\n");
+                ep->hitobjects_idx++;
+                bool used = false;
+                if (type & (1<<7 | 1))
+                {
+                    for (int i = ep->hitobjects_idx; i < ep->hitobjects_num; i++)
+                    {
+                        int c1 = (int)(x * ep->ed->mi->cs / 512.0);
+                        int c2 = (int)(ep->hitobjects[i].x * ep->ed->mi->cs / 512.0);
+                        if (c1 == c2 && (ep->hitobjects[i].type & (1<<7 | 1)) && ep->hitobjects[i].time > time)
+                        {
+                            if (ep->timingpoints_idx + 1 < ep->timingpoints_num && time >= ep->timingpoints[ep->timingpoints_idx + 1].time)
+                                ep->timingpoints_idx++;
+
+                            long end_time = ep->hitobjects[i].time - (long)(ep->timingpoints[ep->timingpoints_idx].beatlength / 4.0);
+                            if (end_time > time)
+                            {
+                                char *hitsoundstr = nexttkn();
+                                char *afnul = find_null(hitsoundstr);
+                                if (type & (1<<7))
+                                {
+                                    char *orig_len = strtok(NULL, ":");
+                                    afnul = find_null(orig_len);
+                                }
+
+                                snpedit("%d,%d,%ld,%d,%s,%ld:%s", x, y, time, 1<<7, hitsoundstr, end_time, afnul);
+
+                                used = true;
+                            }
+                            break;
+                        }
+                    }
+                }
+
+                if (!used)
+                {
+                    // this can be the last note of a column, not a note, or gap was too small between the next note.
+                    char *afnul = find_null(typestr);
+                    snpedit("%d,%d,%ld,%s,%s", x, y, time, typestr, afnul);
+                }
+            }
+            else if (type & (1<<3 | 1<<7))
+            {
+                const char spinnertoken[] = { (type & (1<<7)) ? ':' : ',', '\0' };
+                char *hitsoundstr;
+                fail_nulltkn(hitsoundstr);
+                char *spinnerstr = strtok(NULL, spinnertoken);
+                if (spinnerstr == NULL)
+                {
+                    printerr("Failed parsing spinner!");
+                    return 1;
+                }
+                char *afnul = find_null(spinnerstr);
+
+                long spinnerlen = atol(spinnerstr) / speed;
+
+                snpedit("%d,%d,%ld,%s,%s,%ld", x, y, time, typestr, hitsoundstr, spinnerlen);
+
+                if (*(afnul - 2) == '\r' || *(afnul - 2) == '\n')
+                {
+                    putsstr("\r\n");
+                }
+                else
+                {
+                    putsstr(spinnertoken);
+                    putdstr(afnul);
+                }
+            }
+            else if (type & (1<<1) && ep->ed->flip != none)
+            {
+                char *hitsoundstr;
+                fail_nulltkn(hitsoundstr);
+                char *curvetype = strtok(NULL, "|");
+                if (curvetype == NULL)
+                {
+                    printerr("Failed parsing slider!");
+                    return 1;
+                }
+                char *afnul = find_null(curvetype);
+
+                snpedit("%d,%d,%ld,%s,%s,%s|", x, y, time, typestr, hitsoundstr, curvetype);
+
+                bool done = false;
+                while (!done)
+                {
+                    char *slxc = afnul;
+                    while (*(afnul++) != ':') {}
+                    char *slyc = afnul;
+                    while (*(afnul++))
+                    {
+                        if (*afnul == '|')
+                        {
+                            *afnul = '\0';
+                            break;
+                        }
+                        else if (*afnul == ',')
+                        {
+                            done = true;
+                            break;
+                        }
+                    }
+
+                    int slx = atoi(slxc);
+                    int sly = atoi(slyc);
+                    if (ep->ed->flip == xflip || ep->ed->flip == transpose) slx = 512 - slx;
+                    if (ep->ed->flip == yflip || ep->ed->flip == transpose) sly = 384 - sly;
+                    snpedit("%d:%d", slx, sly);
+                    if (!done)
+                    {
+                        putsstr("|");
+                        afnul++;
+                    }
+                }
+                putdstr(afnul);
             }
             else
             {
-                putsstr(spinnertoken);
-                putdstr(afnul);
+                char *afnul = find_null(typestr);
+                snpedit("%d,%d,%ld,%s,%s", x, y, time, typestr, afnul);
             }
-        }
-        else if (type & (1<<1) && ep->ed->flip != none)
-        {
-            char *hitsoundstr;
-            fail_nulltkn(hitsoundstr);
-            char *curvetype = strtok(NULL, "|");
-            if (curvetype == NULL)
-            {
-                printerr("Failed parsing slider!");
-                return 1;
-            }
-            char *afnul = find_null(curvetype);
-
-            snpedit("%d,%d,%ld,%s,%s,%s|", x, y, time, typestr, hitsoundstr, curvetype);
-
-            bool done = false;
-            while (!done)
-            {
-                char *slxc = afnul;
-                while (*(afnul++) != ':') {}
-                char *slyc = afnul;
-                while (*(afnul++))
-                {
-                    if (*afnul == '|')
-                    {
-                        *afnul = '\0';
-                        break;
-                    }
-                    else if (*afnul == ',')
-                    {
-                        done = true;
-                        break;
-                    }
-                }
-
-                int slx = atoi(slxc);
-                int sly = atoi(slyc);
-                if (ep->ed->flip == xflip || ep->ed->flip == transpose) slx = 512 - slx;
-                if (ep->ed->flip == yflip || ep->ed->flip == transpose) sly = 384 - sly;
-                snpedit("%d:%d", slx, sly);
-                if (!done)
-                {
-                    putsstr("|");
-                    afnul++;
-                }
-            }
-            putdstr(afnul);
-        }
-        else
-        {
-            char *afnul = find_null(typestr);
-            snpedit("%d,%d,%ld,%s,%s", x, y, time, typestr, afnul);
         }
     }
-    else if (sect == editor)
+    else if (!prior_read && sect == editor)
     {
         if (CMPSTR(line, "Bookmarks: "))
         {
@@ -588,7 +681,7 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
             }
         }
     }
-    else if (sect == general)
+    else if (!prior_read && sect == general)
     {
         if (CMPSTR(line, "AudioFilename: ") && speed != 1)
         {
@@ -610,7 +703,7 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
             snpedit("PreviewTime: %ld\r\n", time);
         }
     }
-    else if (sect == difficulty)
+    else if (!prior_read && sect == difficulty)
     {
         if (!(ep->arexists))
         {
@@ -640,7 +733,7 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
             snpedit("ApproachRate:%.1lf\r\n", ep->ed->ar);
         }
     }
-    else if (sect == metadata)
+    else if (!prior_read && sect == metadata)
     {
         if (!ep->tagexists)
         {
@@ -688,7 +781,7 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
                 if (ep->ed->mi->mode != 2 && ep->ed->mi->od != ep->ed->od) snpedit(" OD%.1lf", ep->ed->od);
                 if ((ep->ed->mi->mode != 1 && ep->ed->mi->mode != 3) && ep->ed->mi->ar != ep->ed->ar) snpedit(" AR%.1lf", ep->ed->ar);
             }
-            
+
             if (ep->ed->cut_start > 0 || ep->ed->cut_end < LONG_MAX)
             {
                 putsstr(" Cut:");
@@ -697,7 +790,7 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
                     long t = ep->ed->cut_start / 1000;
                     snpedit("%ld:%02ld", t / 60, t % 60);
                 }
-                
+
                 putsstr("~");
 
                 if (ep->ed->cut_end < LONG_MAX)
@@ -718,6 +811,9 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
             case transpose:
                 putsstr(" TRANSPOSE");
                 break;
+            case invert:
+                putsstr(" INVERT");
+                break;
             default:
                 break;
             }
@@ -734,6 +830,9 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
             edited = true;
         }
     }
+
+    if (prior_read)
+        return ret;
 
     if (edited && ecur == 0) return 0;
     if (ret == -20)
@@ -869,10 +968,8 @@ int edit_beatmap(struct editdata *edit)
     if (fcmappath == NULL || (edit->mi->audioname && edit->speed != 1 && fcaudpath == NULL))
     {
         printerr("Failed allocating memory");
-        if (fcmappath != NULL) free(fcmappath);
-        if (fcaudpath != NULL) free(fcaudpath);
-        buffers_free(&bufs);
-        return -99;
+        ret = -99;
+        goto tryfree;
     }
 
     snprintf(fcmappath, mapnlen, "%s" STR_PATHSEP "xxxxxxx_%s", folderpath, fname);
@@ -893,11 +990,8 @@ int edit_beatmap(struct editdata *edit)
     if (bufs.mapname == NULL)
     {
         printerr("Failed allocation!");
-        free(folderpath);
-        free(fcmappath);
-        if (fcaudpath) free(fcaudpath);
-        buffers_free(&bufs);
-        return -99;
+        ret = -99;
+        goto tryfree;
     }
     strcpy(bufs.mapname, fcmappath + folderlen);
 
@@ -907,11 +1001,8 @@ int edit_beatmap(struct editdata *edit)
         if (bufs.audname == NULL)
         {
             printerr("Failed allocation!");
-            free(folderpath);
-            free(fcmappath);
-            if (fcaudpath) free(fcaudpath);
-            buffers_free(&bufs);
-            return -99;
+            ret = -99;
+            goto tryfree;
         }
         strcpy(bufs.audname, fcaudpath + folderlen);
 
@@ -925,34 +1016,57 @@ int edit_beatmap(struct editdata *edit)
         else
         {
             printerr("Failed allocating!");
-            free(folderpath);
-            free(fcmappath);
-            if (fcaudpath) free(fcaudpath);
-            buffers_free(&bufs);
-            return -99;
+            ret = -99;
+            goto tryfree;
         }
         ret = change_audio_speed(audp, &bufs, edit->speed, edit->pitch, edit->data, edit->progress_callback);
         if (ret != 0)
         {
             printerr("Failed converting audio!");
-            free(folderpath);
             free(audp);
-            buffers_free(&bufs);
-            return -80;
+            ret = -80;
+            goto tryfree;
         }
         free(audp);
     }
 
+    ep.hitobjects = NULL;
+    ep.hitobjects_num = ep.hitobjects_size = ep.hitobjects_idx = 0;
+    ep.timingpoints = NULL;
+    ep.timingpoints_num = ep.timingpoints_size = ep.timingpoints_idx = 0;
+    ep.done_saving = false;
+
+    if (edit->flip == invert)
+    {
+        if (edit->mi->mode == 3)
+        {
+            ep.prior_read = true;
+            ret = loop_map(edit->mi->fullpath, &convert_map, &ep);
+            if (ret != 0)
+            {
+                printerr("Failed reading hitobjects!");
+                ret = -70;
+                goto tryfree;
+            }
+            ep.done_saving = true;
+        }
+        else
+        {
+            printerr("Invert is only available on osu!mania!");
+            edit->flip = none;
+        }
+    }
+    else
+    {
+        ep.prior_read = false;
+    }
+
     ret = loop_map(edit->mi->fullpath, &convert_map, &ep);
-    free(ep.editline);
     if (ret != 0)
     {
         printerr("Failed converting map!");
-        free(folderpath);
-        free(fcmappath);
-        if (fcaudpath) free(fcaudpath);
-        buffers_free(&bufs);
-        return -70;
+        ret = -70;
+        goto tryfree;
     }
 
     if (edit->makezip)
@@ -992,9 +1106,14 @@ int edit_beatmap(struct editdata *edit)
         }
         fclose(mapfd);
     }
+
+tryfree:
     free(folderpath);
     free(fcmappath);
     if (fcaudpath) free(fcaudpath);
+    free(ep.editline);
+    free(ep.hitobjects);
+    free(ep.timingpoints);
     buffers_free(&bufs);
     return ret;
 }

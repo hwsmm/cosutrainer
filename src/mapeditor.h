@@ -11,7 +11,7 @@ enum SECTION
 
 enum FLIP
 {
-    none, xflip, yflip, transpose
+    none, xflip, yflip, transpose, invert
 };
 
 enum SPEED_MODE
@@ -48,12 +48,24 @@ struct editdata // data needed to edit a map
     bool pitch;
     bool nospinner;
     enum FLIP flip;
-    
+
     long cut_start;
     long cut_end;
-    
+
     update_progress_cb progress_callback;
     void *data;
+};
+
+struct timingpoint
+{
+    long time;
+    double beatlength;
+};
+
+struct hitobject
+{
+    int x, y, type;
+    long time;
 };
 
 struct editpass // temporary data that's only needed in editing (only passed within edit_beatmap)
@@ -67,6 +79,19 @@ struct editpass // temporary data that's only needed in editing (only passed wit
 
     struct buffers *bufs;
     struct editdata *ed;
+
+    bool prior_read;
+    bool done_saving;
+
+    struct hitobject *hitobjects;
+    int hitobjects_num;
+    int hitobjects_size;
+    int hitobjects_idx;
+
+    struct timingpoint *timingpoints;
+    int timingpoints_num;
+    int timingpoints_size;
+    int timingpoints_idx;
 };
 
 #ifdef __cplusplus

@@ -88,7 +88,7 @@ int cuimain(int argc, char *argv[])
     edit.pitch = false;
     edit.flip = none;
     edit.nospinner = false;
-    
+
     edit.cut_start = 0;
     edit.cut_end = LONG_MAX;
 
@@ -113,6 +113,9 @@ int cuimain(int argc, char *argv[])
             case 't':
                 edit.flip = transpose;
                 continue;
+            case 'i':
+                edit.flip = invert;
+                continue;
             case 'h':
                 diffv = &(edit.hp);
                 break;
@@ -131,17 +134,17 @@ int cuimain(int argc, char *argv[])
             default:
                 break;
             }
-            
+
             if (*curarg == 'e')
             {
                 char *time = curarg + 1;
                 char *temp;
-                
+
                 if (*time == '\0')
                     continue;
-                    
+
                 double start = 0, end = INFINITY;
-                    
+
                 if (*time != '-')
                 {
                     start = strtod(time, &temp);
@@ -155,7 +158,7 @@ int cuimain(int argc, char *argv[])
                         time = temp;
                     }
                 }
-                
+
                 if (*time == '-' && *(++time) != '\0')
                 {
                     end = strtod(time, &temp);
@@ -165,17 +168,17 @@ int cuimain(int argc, char *argv[])
                         end += strtod(++temp, NULL);
                     }
                 }
-                
+
                 if (start >= end)
                 {
                     printerr("Cut time is invalid, ignoring this parameter");
                     continue;
                 }
-                
+
                 start *= 1000.0;
                 edit.cut_start = (long)start;
-                
-                if (!isinf(end)) 
+
+                if (!isinf(end))
                 {
                     end *= 1000.0;
                     edit.cut_end = (long)end;
@@ -205,16 +208,16 @@ int cuimain(int argc, char *argv[])
                     else
                         edit.scale_od = false;
                 }
-                
+
                 diffv = NULL;
             }
         }
     }
-    
+
     edit.data = NULL;
     edit.progress_callback = showprog;
     ret = edit_beatmap(&edit);
-    
+
     puts("\r100%");
 
     free_mapinfo(mi);
