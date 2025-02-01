@@ -19,6 +19,7 @@ It's very destructive and experimental, so don't use unless you desperately need
 - Scales AR/OD, but you can cap so that it won't scale over the value you put
 - Adds osutrainer tag like osu-trainer
 - Can flip/transpose a map
+- Can generate a full LN difficulty for noodle enjoyers
 - Can generate a practice difficulty by cutting
 - Generates an osz file for easier import
 - An user-defined osz handler can be set for seamless integration with osu!
@@ -63,7 +64,7 @@ Run `cosu-trainer` with no arguments to launch GUI. You can use below arguments 
             cosu-trainer scales ar/od by default. use af/of to fix them
             you can add 'c' at the end to cap the value, it still scales, but won't scale over the value you put
 [p] : if you want daycore/nightcore
-[x/y/t] : xflip, yflip and transpose respectively.
+[x/y/t/i] : xflip, yflip, transpose and invert(mania-only full LN) respectively.
 [eMM:SS-MM:SS] : extracts specified section from the map, [e-MM:SS] removes all hitobjects after the specified time,
                  either [eMM:SS] or [eMM:SS-] removes all hitobjects before the time. you can omit MM, so you can do eSS
                  note that time you give should be in pre-rate-adjusted time.
