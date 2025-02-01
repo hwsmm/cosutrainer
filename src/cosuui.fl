@@ -8,7 +8,7 @@ class CosuUI {open
   } {
     Fl_Window window {
       label {cosu-trainer} open
-      xywh {225 222 390 530} type Single resizable size_range {390 530 390 530} visible
+      xywh {1286 57 390 530} type Single size_range {390 530 390 530} visible
     } {
       Fl_Group mainbox {open
         xywh {10 10 370 510}
@@ -16,7 +16,7 @@ class CosuUI {open
         Fl_Box infobox {
           xywh {10 10 370 130} align 64
         }
-        Fl_Choice flipbox {open selected
+        Fl_Choice flipbox {open
           xywh {210 220 170 25} down_box BORDER_BOX
         } {
           MenuItem no_flip {
@@ -92,7 +92,7 @@ class CosuUI {open
           xywh {120 455 260 65}
         }
         Fl_Box songtitlelabel {
-          label {Song Title}
+          label {Song Title} selected
           xywh {10 155 370 25} labelsize 25 align 20
         }
         Fl_Box difflabel {

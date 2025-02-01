@@ -181,7 +181,6 @@ Fl_Window* CosuUI::make_window()
         } // Fl_Progress* progress
         window->size_range(390, 530, 390, 530);
         window->end();
-        window->resizable(window);
     } // Fl_Window* window
     return window;
 }
