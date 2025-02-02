@@ -154,7 +154,8 @@ void CosuWindow::update_progress(void *data, float progress)
         Fl::check();
     }
     else if (progress == 0 && current == 0)
-    { // audio didn't provide its size, just update ui in this case.
+    {
+        // audio didn't provide its size, just update ui in this case.
         Fl::check();
     }
 }
@@ -168,7 +169,7 @@ void CosuWindow::convbtn_callb(Fl_Widget *w, void *data)
     }
 
     win->cosuui.mainbox->deactivate();
-    
+
     struct editdata edit;
 
     edit.mi = win->fr.info;
@@ -184,7 +185,7 @@ void CosuWindow::convbtn_callb(Fl_Widget *w, void *data)
     edit.bpmmode = win->cosuui.bpm->value() >= 1 ? bpm : rate;
     edit.pitch = win->cosuui.pitch->value() >= 1;
     edit.nospinner = win->cosuui.nospinner->value() >= 1;
-    
+
     // not supported yet
     edit.cut_start = 0;
     edit.cut_end = LONG_MAX;
@@ -200,16 +201,19 @@ void CosuWindow::convbtn_callb(Fl_Widget *w, void *data)
     case 3:
         edit.flip = transpose;
         break;
+    case 4:
+        edit.flip = invert;
+        break;
     default:
         edit.flip = none;
         break;
     }
-    
+
     edit.data = data;
     edit.progress_callback = update_progress;
 
     edit_beatmap(&edit);
-    
+
     win->cosuui.mainbox->activate();
     win->cosuui.progress->value(0);
 }
@@ -399,6 +403,18 @@ void CosuWindow::start()
                 (cosuui.cslock)->activate();
 
                 (cosuui.scale_ar)->activate();
+            }
+
+            if (info->mode == 3)
+            {
+                (cosuui.invert)->activate();
+            }
+            else
+            {
+                if ((cosuui.flipbox)->value() == 4)
+                    (cosuui.flipbox)->value(0);
+
+                (cosuui.invert)->deactivate();
             }
 
             cosuui.songtitlelabel->label(info->songname);

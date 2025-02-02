@@ -47,10 +47,10 @@ private:
         free_mapinfo(oldinfo);
         free_mapinfo(info);
     }
-    
+
     std::mutex mtx;
     std::condition_variable_any cnd;
-    
+
     void sleep()
     {
         cnd.wait_for(mtx, std::chrono::milliseconds(500));

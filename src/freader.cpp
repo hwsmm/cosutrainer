@@ -20,7 +20,7 @@ Freader::~Freader()
 void Freader::thread_func(Freader *fr)
 {
     fr->conti = true;
-    
+
     while (fr->conti)
     {
         std::lock_guard<std::mutex> lck(fr->mtx);

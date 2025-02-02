@@ -29,7 +29,7 @@ void Freader::thread_func(Freader *fr)
     while (fr->conti)
     {
         std::lock_guard<std::mutex> lck(fr->mtx);
-        
+
         struct sigscan_status *sst = &(fr->st);
 
         DEFAULT_LOGIC(sst,

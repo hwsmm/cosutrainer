@@ -105,7 +105,7 @@ int change_mp3_speed(const char* source, struct buffers *bufs, double speed, boo
         }
 
         bufsizesample = convbuf_size / sizeof(float) / channels;
-        
+
         float progress = 0;
 
         while (1)
@@ -267,7 +267,7 @@ int change_audio_speed_libsndfile(const char* source, struct buffers *bufs, doub
 
     sf_count_t readcount = 0;
     unsigned int convcount = 0;
-    
+
     float progress = 0;
 
     SoundTouch st;
@@ -289,7 +289,7 @@ int change_audio_speed_libsndfile(const char* source, struct buffers *bufs, doub
     while (!flush)
     {
         readcount = sf_readf_float(in, buffer, bufsamples);
-        
+
         if (callback != NULL)
         {
             if (info.frames > 0) // sndfile ogg impl doesn't seem to report frames though
