@@ -98,9 +98,9 @@ double scale_ar(double ar, double speed, int mode)
 {
     if (mode == 1 || mode == 3) return ar;
 
-    double ar_ms = ar <= 5.0 ? 1200.0 + 600.0 * (5.0 - ar) / 5.0 : 1200.0 - 750.0 * (ar - 5.0) / 5.0;
-    ar_ms /= speed;
-    return ar_ms >= 1200.0 ? 15.0 - ar_ms / 120.0 : (1200.0 / 150.0) - (ar_ms / 150.0) + 5.0;
+    double ms = ar <= 5.0 ? 1800.0 - 120.0 * ar : 1950.0 - 150.0 * ar;
+    ms /= speed;
+    return ms >= 1200.0 ? (1800.0 - ms) / 120.0 : (1950.0 - ms) / 150.0;
 }
 
 // fix mania od
