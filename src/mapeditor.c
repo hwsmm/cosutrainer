@@ -134,7 +134,7 @@ double scale_od(double od, double speed, int mode)
 
 static int loop_map(char *mapfile, int (*func)(char*, void*, enum SECTION), void *pass)
 {
-    FILE *source = fopen(mapfile, "r");
+    FILE *source = fopen(mapfile, "rb");
     if (!source)
     {
         perror(mapfile);
