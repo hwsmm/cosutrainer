@@ -117,7 +117,7 @@ double scale_od(double od, double speed, int mode)
         break;
     case 1:
         base = 50;
-        multiplier = 6;
+        multiplier = 3;
         break;
     case 3:
         base = 64;
