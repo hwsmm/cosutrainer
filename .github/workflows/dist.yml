@@ -70,25 +70,26 @@ jobs:
                       mingw-w64-ucrt-x86_64-soundtouch
                       mingw-w64-ucrt-x86_64-libzip
                       mingw-w64-ucrt-x86_64-fltk
+                      mingw-w64-ucrt-x86_64-meson
 
-            - name: Compile
+            - name: Configure
               shell: msys2 {0}
-              run: |
-                  cd src && x86_64-w64-mingw32-g++ -DWIN32 `fltk-config --use-images --cxxflags` \
-                  cosuui.cpp cosuwindow.cpp cuimain.c main.cpp tools.c mapeditor.c actualzip.c audiospeed.cpp \
-                  buffers.c cosumem.c freader_win.cpp sigscan.c wsigscan.c cosuplatform_win.c winregread.c \
-                  -o ../cosu-trainer `fltk-config --use-images --ldflags` -lwinpthread -lmpg123 -lmp3lame -lzip -lSoundTouch -lsndfile -lshlwapi && cd ..
+              run: meson --prefix=/usr builddir -Dc_args=-Os -Dcpp_args=-Os
+
+            - name: Build
+              shell: msys2 {0}
+              run: ninja -C builddir
 
             - name: Save a list of dependencies
               shell: msys2 {0}
-              run: ldd cosu-trainer.exe | awk 'NF == 4 { print($3) }' | grep -vE '*/c' > ./deplist
+              run: ldd builddir/cosu-trainer.exe | awk 'NF == 4 { print($3) }' | grep -vE '*/c' > ./deplist
 
             - name: Package
               shell: msys2 {0}
               run: |
                   ls -al
                   mkdir package && cd package
-                  mv ../cosu-trainer.exe .
+                  mv ../builddir/cosu-trainer.exe .
                   for lib in $(cat ../deplist); do echo $lib && cp $lib .; done
                   cp ../COPYING.md ../docs/cosutrainer.png .
 

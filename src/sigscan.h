@@ -4,12 +4,12 @@
 #else
 #include <limits.h>
 #include <sys/types.h>
-#include <stdbool.h>
 #endif
 
 #include <inttypes.h>
 #include <wchar.h>
 #include <stdio.h>
+#include <stdbool.h>
 
 typedef void* ptr_type;
 #define PTR_SIZE 4 // sizeof(ptr_type) is not used since osu is a 32bit game, but requires 64bit pointers to function normally for some reason?

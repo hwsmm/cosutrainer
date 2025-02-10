@@ -48,7 +48,7 @@ You can get it [here](https://software.opensuse.org//download.html?project=home%
 
 ### How to build
 1. Install header packages of dependencies
-2. Run `meson build && ninja -C build`
+2. Run `meson setup build && ninja -C build`
 3. Binaries should be in 'build' folder.
 
 Run `cosu-trainer` with no arguments to launch GUI. You can use below arguments if you don't want GUI.
@@ -85,19 +85,6 @@ This works out of box on Windows, and is pretty reliable, but it's a bit flaky o
 `osumem` tries to get the song directory once osu! is found, and it will show you the found directory. `cosu-trainer` will use the found one even if you have set `OSU_SONG_FOLDER` or `~/.cosu_songsfd`.
 
 Please let me know if it works well or not!
-
-### Experimental Windows support
-Things mostly work but it's kinda flaky. You can use [MSYS2](https://msys2.org) (Note that cosu-trainer only supports UCRT).
-Install MinGW GCC and all dependencies through their package manager and use a following command in `src` to compile cosu-trainer.
-```
-x86_64-w64-mingw32-g++ -DWIN32 `fltk-config --use-images --cxxflags` \
-cosuui.cpp cosuwindow.cpp cuimain.c main.cpp tools.c mapeditor.c actualzip.c audiospeed.cpp buffers.c cosumem.c freader_win.cpp sigscan.c wsigscan.c cosuplatform_win.c winregread.c \
--o ../cosu-trainer `fltk-config --use-images --ldflags` -lwinpthread -lmpg123 -lmp3lame -lzip -lSoundTouch -lsndfile -lshlwapi
-```
-
-**Some limitations**
-- CLI `auto` doesn't work
-- `OSZ_HANDLER` doesn't work
 
 ## Thanks a lot to
 - Thanks a lot to developers of libraries I used in this program!!!
