@@ -285,9 +285,9 @@ void CosuWindow::start()
 
     while (Fl::wait() > 0)
     {
-        std::lock_guard<std::recursive_mutex> lck(fr.mtx);
         if (fr.info != NULL && fr.consumed == false)
         {
+            std::lock_guard<std::recursive_mutex> lck(fr.mtx);
             struct mapinfo *info = fr.info;
             fr.consumed = true;
             Fl_Image *tempimg = NULL;

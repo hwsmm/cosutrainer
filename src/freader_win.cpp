@@ -28,8 +28,6 @@ void Freader::thread_func(Freader *fr)
     unsigned int len = 0;
     while (fr->conti)
     {
-        std::lock_guard<std::recursive_mutex> lck(fr->mtx);
-
         struct sigscan_status *sst = &(fr->st);
 
         DEFAULT_LOGIC(sst,
@@ -94,19 +92,22 @@ void Freader::thread_func(Freader *fr)
 
             snprintf(fullpath, fullsize, "%s\\%ls", fr->songf, songpath);
 
-            free_mapinfo(fr->oldinfo);
-            fr->oldinfo = fr->info;
-            fr->info = read_beatmap(fullpath);
-            if (fr->info == NULL)
             {
-                printerr("Failed reading!");
+                std::lock_guard<std::recursive_mutex> lck(fr->mtx);
+                free_mapinfo(fr->oldinfo);
+                fr->oldinfo = fr->info;
+                fr->info = read_beatmap(fullpath);
+                if (fr->info == NULL)
+                {
+                    printerr("Failed reading!");
+                    free(fullpath);
+                    continue;
+                }
                 free(fullpath);
-                continue;
+    
+                fr->consumed = false;
+                Fl::awake();
             }
-            free(fullpath);
-
-            fr->consumed = false;
-            Fl::awake();
         },
         {
             base = NULL;
