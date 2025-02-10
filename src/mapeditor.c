@@ -534,10 +534,10 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
         }
         else // does something
         {
+            bool used = false;
             if (ep->ed->flip == invert)
             {
                 ep->hitobjects_idx++;
-                bool used = false;
                 if (type & (1<<7 | 1))
                 {
                     for (int i = ep->hitobjects_idx; i < ep->hitobjects_num; i++)
@@ -568,92 +568,89 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
                         }
                     }
                 }
-
-                if (!used)
-                {
-                    // this can be the last note of a column, not a note, or gap was too small between the next note.
-                    char *afnul = find_null(typestr);
-                    snpedit("%d,%d,%ld,%s,%s", x, y, time, typestr, afnul);
-                }
             }
-            else if (type & (1<<3 | 1<<7))
+
+            if (!used)
             {
-                const char spinnertoken[] = { (type & (1<<7)) ? ':' : ',', '\0' };
-                char *hitsoundstr;
-                fail_nulltkn(hitsoundstr);
-                char *spinnerstr = strtok(NULL, spinnertoken);
-                if (spinnerstr == NULL)
+                if (type & (1<<3 | 1<<7))
                 {
-                    printerr("Failed parsing spinner!");
-                    return 1;
+                    const char spinnertoken[] = { (type & (1<<7)) ? ':' : ',', '\0' };
+                    char *hitsoundstr;
+                    fail_nulltkn(hitsoundstr);
+                    char *spinnerstr = strtok(NULL, spinnertoken);
+                    if (spinnerstr == NULL)
+                    {
+                        printerr("Failed parsing spinner!");
+                        return 1;
+                    }
+                    char *afnul = find_null(spinnerstr);
+    
+                    long spinnerlen = atol(spinnerstr) / speed;
+    
+                    snpedit("%d,%d,%ld,%s,%s,%ld", x, y, time, typestr, hitsoundstr, spinnerlen);
+    
+                    if (*(afnul - 2) == '\r' || *(afnul - 2) == '\n')
+                    {
+                        putsstr("\r\n");
+                    }
+                    else
+                    {
+                        putsstr(spinnertoken);
+                        putdstr(afnul);
+                    }
                 }
-                char *afnul = find_null(spinnerstr);
-
-                long spinnerlen = atol(spinnerstr) / speed;
-
-                snpedit("%d,%d,%ld,%s,%s,%ld", x, y, time, typestr, hitsoundstr, spinnerlen);
-
-                if (*(afnul - 2) == '\r' || *(afnul - 2) == '\n')
+                else if (type & (1<<1) && ep->ed->flip != none)
                 {
-                    putsstr("\r\n");
+                    char *hitsoundstr;
+                    fail_nulltkn(hitsoundstr);
+                    char *curvetype = strtok(NULL, "|");
+                    if (curvetype == NULL)
+                    {
+                        printerr("Failed parsing slider!");
+                        return 1;
+                    }
+                    char *afnul = find_null(curvetype);
+    
+                    snpedit("%d,%d,%ld,%s,%s,%s|", x, y, time, typestr, hitsoundstr, curvetype);
+    
+                    bool done = false;
+                    while (!done)
+                    {
+                        char *slxc = afnul;
+                        while (*(afnul++) != ':') {}
+                        char *slyc = afnul;
+                        while (*(afnul++))
+                        {
+                            if (*afnul == '|')
+                            {
+                                *afnul = '\0';
+                                break;
+                            }
+                            else if (*afnul == ',')
+                            {
+                                done = true;
+                                break;
+                            }
+                        }
+    
+                        int slx = atoi(slxc);
+                        int sly = atoi(slyc);
+                        if (ep->ed->flip == xflip || ep->ed->flip == transpose) slx = 512 - slx;
+                        if (ep->ed->flip == yflip || ep->ed->flip == transpose) sly = 384 - sly;
+                        snpedit("%d:%d", slx, sly);
+                        if (!done)
+                        {
+                            putsstr("|");
+                            afnul++;
+                        }
+                    }
+                    putdstr(afnul);
                 }
                 else
                 {
-                    putsstr(spinnertoken);
-                    putdstr(afnul);
+                    char *afnul = find_null(typestr);
+                    snpedit("%d,%d,%ld,%s,%s", x, y, time, typestr, afnul);
                 }
-            }
-            else if (type & (1<<1) && ep->ed->flip != none)
-            {
-                char *hitsoundstr;
-                fail_nulltkn(hitsoundstr);
-                char *curvetype = strtok(NULL, "|");
-                if (curvetype == NULL)
-                {
-                    printerr("Failed parsing slider!");
-                    return 1;
-                }
-                char *afnul = find_null(curvetype);
-
-                snpedit("%d,%d,%ld,%s,%s,%s|", x, y, time, typestr, hitsoundstr, curvetype);
-
-                bool done = false;
-                while (!done)
-                {
-                    char *slxc = afnul;
-                    while (*(afnul++) != ':') {}
-                    char *slyc = afnul;
-                    while (*(afnul++))
-                    {
-                        if (*afnul == '|')
-                        {
-                            *afnul = '\0';
-                            break;
-                        }
-                        else if (*afnul == ',')
-                        {
-                            done = true;
-                            break;
-                        }
-                    }
-
-                    int slx = atoi(slxc);
-                    int sly = atoi(slyc);
-                    if (ep->ed->flip == xflip || ep->ed->flip == transpose) slx = 512 - slx;
-                    if (ep->ed->flip == yflip || ep->ed->flip == transpose) sly = 384 - sly;
-                    snpedit("%d:%d", slx, sly);
-                    if (!done)
-                    {
-                        putsstr("|");
-                        afnul++;
-                    }
-                }
-                putdstr(afnul);
-            }
-            else
-            {
-                char *afnul = find_null(typestr);
-                snpedit("%d,%d,%ld,%s,%s", x, y, time, typestr, afnul);
             }
         }
     }
