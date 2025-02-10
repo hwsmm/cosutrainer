@@ -7,12 +7,13 @@ jobs:
     linux:
         runs-on: ubuntu-latest
         name: Linux AppImage Build
-        container: debian:oldstable-backports
+        container: debian:bullseye-backports
         steps:
             - name: Install dependencies
               run: |
                   apt update -y
-                  apt install -y g++ libmpg123-dev libmp3lame-dev libsndfile1-dev libsoundtouch-dev libzip-dev libfltk1.3-dev meson wget tar zstd gzip file fuse libfuse2
+                  apt install -t bullseye-backports -y g++ libmpg123-dev libmp3lame-dev libsndfile1-dev libsoundtouch-dev libzip-dev \
+                  libfltk1.3-dev meson wget tar zstd gzip file fuse libfuse2
 
             - name: Checkout
               uses: actions/checkout@v4
@@ -21,14 +22,14 @@ jobs:
               run: meson --prefix=/usr builddir -Dc_args=-Os -Dcpp_args=-Os
 
             - name: Build
-              run: ninja -C builddir
+              run: ninja -v -C builddir
 
             - name: Download linuxdeploy
               run: wget https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
 
             - name: Make AppDir
               run: |
-                  DESTDIR=$PWD/AppDir meson install -C builddir
+                  DESTDIR=$PWD/AppDir meson install --strip -C builddir
                   rm AppDir/usr/bin/cosu-cleanup AppDir/usr/bin/osumem
 
             - name: Create AppImage
@@ -78,7 +79,7 @@ jobs:
 
             - name: Build
               shell: msys2 {0}
-              run: ninja -C builddir
+              run: ninja -v -C builddir
 
             - name: Save a list of dependencies
               shell: msys2 {0}
@@ -89,8 +90,8 @@ jobs:
               run: |
                   ls -al
                   mkdir package && cd package
-                  mv ../builddir/cosu-trainer.exe .
-                  for lib in $(cat ../deplist); do echo $lib && cp $lib .; done
+                  strip -s -o cosu-trainer.exe ../builddir/cosu-trainer.exe
+                  for lib in $(cat ../deplist); do echo $lib && strip -s -o `basename $lib` $lib; done
                   cp ../COPYING.md ../docs/cosutrainer.png .
 
             - name: Upload a package
