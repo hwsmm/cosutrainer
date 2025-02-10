@@ -8,12 +8,19 @@
 #include <ctype.h>
 #include <sys/stat.h>
 
-int fork_launch(char* cmd)
+int execute_file(char* file)
 {
+    char *open_cmd = getenv("OSZ_HANDLER");
+    if (!open_cmd)
+        return 0;
+
     int ret = fork();
     if (ret == 0)
     {
-        exit(system(cmd));
+        char *real_cmd = replace_string(open_cmd, "{osz}", zipf);
+        ret = system(real_cmd);
+        free(real_cmd);
+        exit(ret);
     }
     return ret;
 }

@@ -48,7 +48,6 @@ private:
         free_mapinfo(info);
     }
 
-    std::mutex mtx;
     std::condition_variable_any cnd;
 
     void sleep()
@@ -58,6 +57,7 @@ private:
 public:
     Freader(CosuWindow *win);
     ~Freader();
+    std::recursive_mutex mtx;
     struct mapinfo *info;
     struct mapinfo *oldinfo;
     volatile bool consumed;

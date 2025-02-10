@@ -23,7 +23,7 @@ void Freader::thread_func(Freader *fr)
 
     while (fr->conti)
     {
-        std::lock_guard<std::mutex> lck(fr->mtx);
+        std::lock_guard<std::recursive_mutex> lck(fr->mtx);
 
         char *fullpath;
         if (!songpath_get(&(fr->st), &fullpath))

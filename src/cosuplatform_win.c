@@ -1,12 +1,23 @@
 #include "cosuplatform.h"
 #include "winregread.h"
+#include <FL/Fl.H>
+#include <FL/Fl_Window.H>
+#include <FL/platform.h>
 #include <stdio.h>
 #include <windows.h>
 #include <strsafe.h>
 
-int fork_launch(char* cmd)
+int execute_file(char* file)
 {
-    return 0; // stub
+    HWND handle = NULL;
+    const Fl_Window *fwin = Fl_Window::current();
+    if (fwin != NULL)
+        handle = fl_win32_xid(fwin);
+    
+    LPWSTR wfile = alloc_mbstowcs(file);
+    ShellExecuteW(handle, L"open", wfile, NULL, NULL, 0);
+    free(wfile);
+    return 0;
 }
 
 char *read_file(const char *file, int *size)

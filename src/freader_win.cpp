@@ -28,7 +28,7 @@ void Freader::thread_func(Freader *fr)
     unsigned int len = 0;
     while (fr->conti)
     {
-        std::lock_guard<std::mutex> lck(fr->mtx);
+        std::lock_guard<std::recursive_mutex> lck(fr->mtx);
 
         struct sigscan_status *sst = &(fr->st);
 

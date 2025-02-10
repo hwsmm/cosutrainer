@@ -1083,13 +1083,9 @@ int edit_beatmap(struct editdata *edit)
         snprintf(zipf, zipflen, "%s.osz", folderpath);
         ret = create_actual_zip(zipf, &bufs);
 
-        char *open_cmd = getenv("OSZ_HANDLER");
-        if (ret == 0 && open_cmd)
-        {
-            char *real_cmd = replace_string(open_cmd, "{osz}", zipf);
-            ret = fork_launch(real_cmd);
-            free(real_cmd);
-        }
+        if (ret == 0)
+            ret = execute_file(zipf);
+
         free(zipf);
     }
     else

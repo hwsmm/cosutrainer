@@ -20,7 +20,7 @@ extern "C"
 {
 #endif
 
-int fork_launch(char* cmd);
+int execute_file(char* file);
 char *read_file(const char *file, int *size);
 char *get_realpath(char *path);
 char *get_songspath();

@@ -172,6 +172,8 @@ void CosuWindow::convbtn_callb(Fl_Widget *w, void *data)
 
     struct editdata edit;
 
+    std::lock_guard<std::recursive_mutex> lck(win->fr.mtx);
+
     edit.mi = win->fr.info;
     edit.hp = win->cosuui.hpslider->value();
     edit.cs = win->cosuui.csslider->value();
@@ -279,9 +281,11 @@ void CosuWindow::start()
     }
 
     window->show();
+    window->make_current();
 
     while (Fl::wait() > 0)
     {
+        std::lock_guard<std::recursive_mutex> lck(fr.mtx);
         if (fr.info != NULL && fr.consumed == false)
         {
             struct mapinfo *info = fr.info;
