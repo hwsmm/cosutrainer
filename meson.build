@@ -18,7 +18,7 @@ deps = [
   meson.get_compiler('cpp').find_library('fltk')
 ]
 
-if host_machine.kernel() != 'nt'
+if host_machine.system() != 'windows'
 
 deps += [
   dependency('x11')
@@ -39,7 +39,7 @@ endif
 
 executable('cosu-trainer', mainfiles, dependencies : deps, include_directories : inc_dir, install : true)
 
-if host_machine.kernel() != 'nt'
+if host_machine.system() != 'windows'
 
 memfiles=['src/tools.c', 'src/sigscan.c', 'src/lsigscan.c', 'src/cosumem.c', 'src/cosuplatform_linux.c', 'src/winregread.c']
 cleanfiles=['src/tools.c', 'src/cleanup.c', 'src/cosuplatform_linux.c']
