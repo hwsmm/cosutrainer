@@ -550,7 +550,7 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
                                 ep->timingpoints_idx++;
 
                             long end_time = ep->hitobjects[i].time - (long)(ep->timingpoints[ep->timingpoints_idx].beatlength / 4.0);
-                            if (end_time > time)
+                            if (end_time - time > 20)
                             {
                                 char *hitsoundstr = nexttkn();
                                 char *afnul = find_null(hitsoundstr);
