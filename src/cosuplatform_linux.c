@@ -17,10 +17,8 @@ int execute_file(char* file)
     int ret = fork();
     if (ret == 0)
     {
-        char *real_cmd = replace_string(open_cmd, "{osz}", zipf);
-        ret = system(real_cmd);
-        free(real_cmd);
-        exit(ret);
+        char *real_cmd = replace_string(open_cmd, "{osz}", file);
+        exit(execlp("sh", "sh", "-c", real_cmd, (char*)NULL));
     }
     return ret;
 }
