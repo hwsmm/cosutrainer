@@ -851,6 +851,12 @@ int edit_beatmap(struct editdata *edit)
     ep.editline = (char*) malloc(ep.editsize);
     ep.ed = edit;
     ep.bufs = &bufs;
+    
+    ep.hitobjects = NULL;
+    ep.hitobjects_num = ep.hitobjects_size = ep.hitobjects_idx = 0;
+    ep.timingpoints = NULL;
+    ep.timingpoints_num = ep.timingpoints_size = ep.timingpoints_idx = 0;
+    ep.done_saving = false;
 
     if (ep.editline == NULL)
     {
@@ -1026,12 +1032,6 @@ int edit_beatmap(struct editdata *edit)
         }
         free(audp);
     }
-
-    ep.hitobjects = NULL;
-    ep.hitobjects_num = ep.hitobjects_size = ep.hitobjects_idx = 0;
-    ep.timingpoints = NULL;
-    ep.timingpoints_num = ep.timingpoints_size = ep.timingpoints_idx = 0;
-    ep.done_saving = false;
 
     if (edit->flip == invert)
     {
