@@ -37,7 +37,7 @@ mainfiles += ['src/freader_win.cpp', 'src/sigscan.c', 'src/wsigscan.c', 'src/cos
 
 endif
 
-executable('cosu-trainer', mainfiles, dependencies : deps, include_directories : inc_dir, install : true)
+executable('cosu-trainer', mainfiles, dependencies : deps, include_directories : inc_dir, install : true, win_subsystem : 'windows')
 
 if host_machine.system() != 'windows'
 

@@ -19,7 +19,7 @@ jobs:
               uses: actions/checkout@v4
 
             - name: Configure
-              run: meson setup --prefix=/usr builddir --buildtype=release
+              run: meson setup --prefix=/usr builddir --optimization=s -Ddebug=false
 
             - name: Build
               run: ninja -v -C builddir
@@ -75,7 +75,7 @@ jobs:
 
             - name: Configure
               shell: msys2 {0}
-              run: meson setup builddir --buildtype=release
+              run: meson setup builddir --optimization=s -Ddebug=false
 
             - name: Build
               shell: msys2 {0}
