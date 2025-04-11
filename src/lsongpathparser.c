@@ -59,7 +59,7 @@ bool songpath_get(struct songpath_status *st, char **path)
     {
         if (st->songf == NULL)
         {
-            st->songf = get_songspath();
+            st->songf = get_songspath(NULL);
             if (st->songf == NULL)
             {
                 printerr("Song Folder not found!");

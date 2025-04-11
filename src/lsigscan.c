@@ -159,7 +159,7 @@ int init_memread(struct sigscan_status *st)
     }
 
     st->mem_fd = fd;
-    return fd;
+    return 1;
 }
 
 bool stop_memread(struct sigscan_status *st)
@@ -239,7 +239,7 @@ void stop_regionit(void *regionit)
     fclose((FILE*) regionit);
 }
 
-char *get_rootpath(struct sigscan_status *st)
+wchar_t *get_rootpath(struct sigscan_status *st)
 {
     return NULL;
 }

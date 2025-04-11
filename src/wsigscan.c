@@ -2,6 +2,7 @@
 #include <windows.h>
 #include <memoryapi.h>
 #include <string.h>
+#include <shlwapi.h>
 #include <tlhelp32.h>
 #include <psapi.h>
 #include <stdio.h>
@@ -151,8 +152,7 @@ void stop_regionit(void *regionit)
     free(regionit);
 }
 
-#ifndef KEYOVERLAY
-char *get_rootpath(struct sigscan_status *st)
+wchar_t *get_rootpath(struct sigscan_status *st)
 {
     LPWSTR pathbuf = (LPWSTR) calloc(MAX_PATH, sizeof(WCHAR));
     if (pathbuf == NULL)
@@ -169,44 +169,36 @@ char *get_rootpath(struct sigscan_status *st)
     else if (err == 0)
     {
         fprintf(stderr, "Failed getting process path: %lu\n", GetLastError());
-        return NULL;
-    }
-
-    LPWSTR findslash = pathbuf + wcslen(pathbuf);
-    while (*--findslash)
-    {
-        if (*findslash == '\\')
-        {
-            *findslash = '\0';
-            break;
-        }
-        err--;
-    }
-
-    int mbnum = WideCharToMultiByte(CP_UTF8, 0, pathbuf, -1, NULL, 0, NULL, NULL);
-    if (mbnum == 0)
-    {
-        fputs("Failed converting!\n", stderr);
         free(pathbuf);
         return NULL;
     }
 
-    LPSTR mbbuf = (LPSTR) malloc(mbnum);
-    if (mbbuf == NULL)
+    LPWSTR findslash = (LPWSTR) StrRChrW(pathbuf, NULL, L'\\');
+    if (findslash == NULL)
     {
-        fputs("Failed allocation\n", stderr);
+        fprintf(stderr, "Invalid process path\n");
         free(pathbuf);
         return NULL;
     }
 
-    if (WideCharToMultiByte(CP_UTF8, 0, pathbuf, -1, mbbuf, mbnum, NULL, NULL) == 0)
+    if (StrCmpW(findslash + 1, L"osu!.exe") != 0)
     {
-        fputs("Failed converting!\n", stderr);
+        fprintf(stderr, "Process path is not osu!\n");
         free(pathbuf);
-        free(mbbuf);
         return NULL;
     }
 
-    return mbbuf;
+    *(findslash + 1) = L'\0';
+
+    LPWSTR rea = (LPWSTR) realloc(pathbuf, (lstrlenW(pathbuf) + 1) * sizeof(WCHAR));
+    if (rea == NULL)
+    {
+        fprintf(stderr, "Failed reallocation\n");
+    }
+    else
+    {
+        pathbuf = rea;
+    }
+
+    return pathbuf;
 }
-#endif

@@ -8,8 +8,8 @@ extern "C"
 #ifdef WIN32
 
 #include <windows.h>
-LPWSTR getOsuPath(LPDWORD len);
-LPWSTR getOsuSongsPath(LPWSTR osupath, DWORD pathsize);
+LPWSTR getOsuPath();
+LPWSTR getOsuSongsPath(LPWSTR osupath);
 
 #else
 

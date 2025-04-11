@@ -133,7 +133,7 @@ char *get_realpath(char *path)
     return NULL;
 }
 
-char *get_songspath()
+char *get_songspath(wchar_t *base_path)
 {
     char *tmpenv = getenv("OSU_SONG_FOLDER");
     if (tmpenv != NULL)

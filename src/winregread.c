@@ -38,7 +38,7 @@ static LPWSTR getRegistryValue(HKEY hkey, LPCWSTR subKey, LPDWORD len)
     return path;
 }
 
-LPWSTR getOsuPath(LPDWORD len)
+LPWSTR getOsuPath()
 {
     DWORD size = 0;
     LPWSTR path = NULL;
@@ -92,13 +92,12 @@ LPWSTR getOsuPath(LPDWORD len)
         return NULL;
     }
 
-    *len = i;
-
     return tmp;
 }
 
-LPWSTR getOsuSongsPath(LPWSTR osupath, DWORD pathsize)
+LPWSTR getOsuSongsPath(LPWSTR osupath)
 {
+    DWORD pathsize = lstrlenW(osupath);
     WCHAR uname[UNLEN + 1];
     DWORD size = UNLEN + 1;
     if (GetUserNameW(uname, &size) == 0)

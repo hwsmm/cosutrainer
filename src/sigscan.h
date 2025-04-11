@@ -57,7 +57,7 @@ if (OSUMEM_NOT_FOUND(st)) \
     find_and_set_osu(st); \
     if (OSUMEM_OK(st)) \
     { \
-        if (init_memread(st) == -1) \
+        if (init_memread(st) < 0) \
         { \
             fputs("Failed initializing memory reader\n", stderr); \
         } \
@@ -84,7 +84,7 @@ if (OSUMEM_OK(st)) \
 void find_and_set_osu(struct sigscan_status *st);
 bool is_osu_alive(struct sigscan_status *st);
 bool readmemory(struct sigscan_status *st, ptr_type address, void *buffer, size_t len);
-char *get_rootpath(struct sigscan_status *st);
+wchar_t *get_rootpath(struct sigscan_status *st);
 
 void *start_regionit(struct sigscan_status *st);
 int next_regionit(void *regionit, struct vm_region *res);

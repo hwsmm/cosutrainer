@@ -61,12 +61,16 @@ char *get_realpath(char *path)
     return mbbuf;
 }
 
-char *get_songspath()
+char *get_songspath(wchar_t *base_path)
 {
-    DWORD sz = 0;
-    LPWSTR st = getOsuPath(&sz);
+    LPWSTR st = base_path;
+    if (st == NULL)
+    {
+        fputs("Failed to get osu! directory from process, falling back to defaults...\n", stderr);
+        st = getOsuPath();
+    }
     if (st == NULL) return NULL;
-    LPWSTR rs = getOsuSongsPath(st, sz);
+    LPWSTR rs = getOsuSongsPath(st);
     if (rs == NULL)
     {
         free(st);
