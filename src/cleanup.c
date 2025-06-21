@@ -18,7 +18,7 @@ int main(int argc, char *argv[])
     }
     else
     {
-        mainfd = get_songspath();
+        mainfd = get_songspath(NULL);
     }
 
     if (mainfd == NULL)
