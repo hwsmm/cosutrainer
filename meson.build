@@ -1,5 +1,5 @@
 project('cosu-trainer', 'c', 'cpp',
-        version : '0.13',
+        version : '0.14',
         license : 'GPL-3.0-only')
 
 inc_dir = include_directories('./src')
