@@ -489,8 +489,11 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
                 ep->timingpoints_num++;
             }
         }
-        else
+        else if (!ep->ed->remove_sv || !ep->first_tp_passed)
         {
+            if (ep->ed->remove_sv)
+                ep->first_tp_passed = true;
+            
             if (*btlenstr != '-')
             {
                 btlen /= speed;
@@ -918,6 +921,12 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
             default:
                 break;
             }
+            
+            if (ep->ed->remove_sv)
+            {
+                putsstr(" NO SV");
+            }
+            
             putsstr("\r\n");
         }
         else if (CMPSTR(line, "Tags:"))
@@ -963,6 +972,7 @@ int edit_beatmap(struct editdata *edit)
     ep.done_saving = false;
     ep.max_combo = 0;
     ep.uninherited_tp_idx = 0;
+    ep.first_tp_passed = false;
 
     if (ep.editline == NULL)
     {

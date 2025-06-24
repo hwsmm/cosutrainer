@@ -69,6 +69,8 @@ Run `cosu-trainer` with no arguments to launch GUI. You can use below arguments 
                  either [eMM:SS] or [eMM:SS-] removes all hitobjects before the time. you can omit MM, so you can do eSS
                  note that time you give should be in pre-rate-adjusted time.
 [wCOMBO-COMBO] : same as above, but you can use combo count. note that this works properly only on osu! mode.
+[s]: removes spinners
+[v]: removes SV from a mania map by removing all timing points except for the first one.
 
 example: ./cosu-trainer auto 220bpm a7.2c c7.2 h7 p e27-
 ```

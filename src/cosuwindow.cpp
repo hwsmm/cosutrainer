@@ -192,6 +192,7 @@ void CosuWindow::convbtn_callb(Fl_Widget *w, void *data)
     edit.cut_combo = false;
     edit.cut_start = 0;
     edit.cut_end = LONG_MAX;
+    edit.remove_sv = false;
 
     switch (win->cosuui.flipbox->value())
     {

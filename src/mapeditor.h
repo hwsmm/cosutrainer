@@ -49,12 +49,13 @@ struct editdata // data needed to edit a map
     enum SPEED_MODE bpmmode;
     bool pitch;
     bool nospinner;
+    bool remove_sv;
     enum FLIP flip;
     
     bool cut_combo;
     long cut_start;
     long cut_end;
-
+    
     update_progress_cb progress_callback;
     void *data;
 };
@@ -82,6 +83,7 @@ struct editpass // temporary data that's only needed in editing (only passed wit
     bool arexists;
     bool tagexists;
     bool diffexists;
+    bool first_tp_passed;
 
     struct buffers *bufs;
     struct editdata *ed;
