@@ -251,9 +251,6 @@ static char *try_get_osu_path(char *wineprefix, char *reg_file, const char **sub
         }
     }
 
-    if (result == NULL)
-        printerr("Couldn't find song folder!");
-
 exit:
     fclose(f);
     return result;
@@ -271,6 +268,9 @@ char *get_osu_path(char *wineprefix)
     char *res = try_get_osu_path(wineprefix, "system.reg", list);
     if (res == NULL)
         res = try_get_osu_path(wineprefix, "user.reg", list);
+        
+    if (res == NULL)
+        printerr("Couldn't find song folder!");
 
     return res;
 }

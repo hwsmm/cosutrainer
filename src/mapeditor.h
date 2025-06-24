@@ -27,6 +27,7 @@ struct mapinfo
 
     double maxbpm, minbpm;
     float hp, cs, ar, od;
+    float slider_multiplier, slider_tick_rate;
 
     int mode;
     bool arexists;
@@ -34,6 +35,7 @@ struct mapinfo
     bool diffexists;
 
     int read_sections;
+    int version;
 };
 
 struct editdata // data needed to edit a map
@@ -48,7 +50,8 @@ struct editdata // data needed to edit a map
     bool pitch;
     bool nospinner;
     enum FLIP flip;
-
+    
+    bool cut_combo;
     long cut_start;
     long cut_end;
 
@@ -65,7 +68,10 @@ struct timingpoint
 struct hitobject
 {
     int x, y, type;
+    int combo;
     long time;
+    int timing_real_idx;
+    int timing_idx;
 };
 
 struct editpass // temporary data that's only needed in editing (only passed within edit_beatmap)
@@ -80,7 +86,7 @@ struct editpass // temporary data that's only needed in editing (only passed wit
     struct buffers *bufs;
     struct editdata *ed;
 
-    bool prior_read;
+    int prior_read;
     bool done_saving;
 
     struct hitobject *hitobjects;
@@ -92,6 +98,9 @@ struct editpass // temporary data that's only needed in editing (only passed wit
     int timingpoints_num;
     int timingpoints_size;
     int timingpoints_idx;
+    int uninherited_tp_idx;
+    
+    int max_combo;
 };
 
 #ifdef __cplusplus

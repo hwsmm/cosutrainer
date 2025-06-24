@@ -55,7 +55,7 @@ Run `cosu-trainer` with no arguments to launch GUI. You can use below arguments 
 
 ### `cosu-trainer` command usage
 ```
-./cosu-trainer <filename|auto> <rate|bpm> [a/o/h/c] [p] [x/y/t] [eMM:SS-MM:SS]
+./cosu-trainer <filename|auto> <rate|bpm> [a/o/h/c] [p] [x/y/t] [eMM:SS-MM:SS] [wCOMBO-COMBO]
 <> are requirements, [] are optional
 <filename|auto> : specify file name like 'songfolder/diff.osu' or just put 'auto' if you are running `osumem`
 <rate|bpm> : '1.2x' if you want to use rate, '220bpm' if you want to use bpm (it uses max bpm of map to calculate, so be careful)
@@ -68,6 +68,7 @@ Run `cosu-trainer` with no arguments to launch GUI. You can use below arguments 
 [eMM:SS-MM:SS] : extracts specified section from the map, [e-MM:SS] removes all hitobjects after the specified time,
                  either [eMM:SS] or [eMM:SS-] removes all hitobjects before the time. you can omit MM, so you can do eSS
                  note that time you give should be in pre-rate-adjusted time.
+[wCOMBO-COMBO] : same as above, but you can use combo count. note that this works properly only on osu! mode.
 
 example: ./cosu-trainer auto 220bpm a7.2c c7.2 h7 p e27-
 ```
@@ -90,3 +91,4 @@ Please let me know if it works well or not!
 - Thanks a lot to developers of libraries I used in this program!!!
 - [josu-trainer](https://github.com/ngoduyanh/josu-trainer) for basic idea of speeding up the map
 - [gosumemory](https://github.com/l3lackShark/gosumemory) and [ProcessMemoryDataFinder](https://github.com/Piotrekol/ProcessMemoryDataFinder) for memory reading
+- [osu-practice-tool](https://github.com/JerryZhu99/osu-practice-tool) for how to calculate combo count of a map

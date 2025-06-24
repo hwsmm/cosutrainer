@@ -189,6 +189,7 @@ void CosuWindow::convbtn_callb(Fl_Widget *w, void *data)
     edit.nospinner = win->cosuui.nospinner->value() >= 1;
 
     // not supported yet
+    edit.cut_combo = false;
     edit.cut_start = 0;
     edit.cut_end = LONG_MAX;
 

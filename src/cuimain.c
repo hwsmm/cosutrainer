@@ -88,7 +88,8 @@ int cuimain(int argc, char *argv[])
     edit.pitch = false;
     edit.flip = none;
     edit.nospinner = false;
-
+    
+    edit.cut_combo = false;
     edit.cut_start = 0;
     edit.cut_end = LONG_MAX;
 
@@ -183,6 +184,37 @@ int cuimain(int argc, char *argv[])
                     end *= 1000.0;
                     edit.cut_end = (long)end;
                 }
+            }
+            else if (*curarg == 'w')
+            {
+                char *combo = curarg + 1;
+                char *temp;
+
+                if (*combo == '\0')
+                    continue;
+
+                long start = 0, end = LONG_MAX;
+
+                if (*combo != '-')
+                {
+                    start = strtol(combo, &temp, 10);
+                    combo = temp;
+                }
+
+                if (*combo == '-' && *(++combo) != '\0')
+                {
+                    end = strtol(combo, &temp, 10);
+                }
+
+                if (start >= end)
+                {
+                    printerr("Cut combo is invalid, ignoring this parameter");
+                    continue;
+                }
+
+                edit.cut_start = start;
+                edit.cut_end = end;
+                edit.cut_combo = true;
             }
 
             if (diffv != NULL)

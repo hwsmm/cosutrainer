@@ -231,7 +231,18 @@ static int write_mapinfo(char *line, void *vinfo, enum SECTION sect)
         info->read_sections |= (1 << sect);
     }
 
-    if (sect == timingpoints) // 9
+    if (sect == root)
+    {
+        if (strstr(line, "osu file format") != NULL)
+        {
+            char *vstr = strrchr(line, 'v');
+            if (vstr != NULL)
+            {
+                info->version = atoi(vstr + 1);
+            }
+        }
+    }
+    else if (sect == timingpoints) // 9
     {
         // char *timestr =
         tkn(line);
@@ -263,6 +274,8 @@ static int write_mapinfo(char *line, void *vinfo, enum SECTION sect)
         else if (CMPSTR(line, "CircleSize:"))        info->cs = atof(CUTFIRST(line, "CircleSize:"));
         else if (CMPSTR(line, "OverallDifficulty:")) info->od = atof(CUTFIRST(line, "OverallDifficulty:"));
         else if (CMPSTR(line, "ApproachRate:"))      info->arexists = true, info->ar = atof(CUTFIRST(line, "ApproachRate:"));
+        else if (CMPSTR(line, "SliderMultiplier:"))  info->slider_multiplier = atof(CUTFIRST(line, "SliderMultiplier:"));
+        else if (CMPSTR(line, "SliderTickRate:"))    info->slider_tick_rate = atof(CUTFIRST(line, "SliderTickRate:"));
     }
     else if (sect == metadata) // 6
     {
@@ -379,6 +392,9 @@ struct mapinfo *read_beatmap(char *mapfile)
         info->minbpm = 1 / info->minbpm * 1000 * 60;
 
         if (!info->arexists) info->ar = info->od;
+        
+        if (info->version <= 0)
+            info->version = 14;
 
 #ifndef WIN32
         convert_vaildpath(info);
@@ -449,14 +465,11 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
         edited = true;
         long time = atol(tkn(line)) / speed;
         char *btlenstr = nexttkn(); // most likely it won't fail if reading succeeded
-        if (*btlenstr != '-')
+        double btlen = atof(btlenstr);
+        
+        if (prior_read)
         {
-            double btlen = atof(btlenstr) / speed;
-            if (!prior_read)
-            {
-                snpedit("%ld,%.12lf,%s", time, btlen, find_null(btlenstr));
-            }
-            else
+            if (ep->prior_read == 1)
             {
                 if (ep->timingpoints == NULL || ep->timingpoints_size < ep->timingpoints_num + 1)
                 {
@@ -476,9 +489,17 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
                 ep->timingpoints_num++;
             }
         }
-        else if (!prior_read)
+        else
         {
-            snpedit("%ld,%s,%s", time, btlenstr, find_null(btlenstr));
+            if (*btlenstr != '-')
+            {
+                btlen /= speed;
+                snpedit("%ld,%.12lf,%s", time, btlen, find_null(btlenstr));
+            }
+            else
+            {
+                snpedit("%ld,%s,%s", time, btlenstr, find_null(btlenstr));
+            }
         }
     }
     else if (sect == hitobjects)
@@ -506,50 +527,116 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
         {
             // do nothing to remove spinner lines
         }
-        else if (origtime < ep->ed->cut_start || origtime > ep->ed->cut_end)
+        else if (!ep->ed->cut_combo && (origtime < ep->ed->cut_start || origtime > ep->ed->cut_end))
+        {
+            // do nothing to create a practice diff
+        }
+        else if (ep->done_saving && ep->ed->cut_combo &&
+            (ep->hitobjects[ep->hitobjects_idx].combo < ep->ed->cut_start || ep->hitobjects[ep->hitobjects_idx].combo > ep->ed->cut_end))
         {
             // do nothing to create a practice diff
         }
         else if (prior_read)
         {
-            // this is run prior to main edit when hitobject data is needed for further processing (e.g. mania full LN)
-            if (ep->hitobjects == NULL || ep->hitobjects_size < ep->hitobjects_num + 1)
+            // this requires TimingPoints to be read first
+            if (ep->prior_read == 2)
             {
-                struct hitobject *newarr = (struct hitobject*)realloc(ep->hitobjects, (ep->hitobjects_size + 300) * sizeof(struct hitobject));
-                if (newarr == NULL)
+                // this is run prior to main edit when hitobject data is needed for further processing (e.g. mania full LN)
+                if (ep->hitobjects == NULL || ep->hitobjects_size < ep->hitobjects_num + 1)
                 {
-                    printerr("Failed hitobject allocation");
-                    return 3;
+                    struct hitobject *newarr = (struct hitobject*)realloc(ep->hitobjects, (ep->hitobjects_size + 300) * sizeof(struct hitobject));
+                    if (newarr == NULL)
+                    {
+                        printerr("Failed hitobject allocation");
+                        return 3;
+                    }
+    
+                    ep->hitobjects = newarr;
+                    ep->hitobjects_size += 300;
                 }
+    
+                ep->hitobjects[ep->hitobjects_num].x = x;
+                ep->hitobjects[ep->hitobjects_num].y = y;
+                ep->hitobjects[ep->hitobjects_num].time = time;
+                ep->hitobjects[ep->hitobjects_num].type = type;
+                
+                while (ep->timingpoints_idx + 1 < ep->timingpoints_num && time >= ep->timingpoints[ep->timingpoints_idx + 1].time)
+                {
+                    ep->timingpoints_idx++;
+                    
+                    if (ep->timingpoints[ep->timingpoints_idx].beatlength > 0)
+                        ep->uninherited_tp_idx = ep->timingpoints_idx;
+                }
+                
+                ep->hitobjects[ep->hitobjects_num].timing_real_idx = ep->timingpoints_idx;
+                ep->hitobjects[ep->hitobjects_num].timing_idx = ep->uninherited_tp_idx;
 
-                ep->hitobjects = newarr;
-                ep->hitobjects_size += 300;
+                ep->max_combo += 1;
+                ep->hitobjects[ep->hitobjects_num].combo = ep->max_combo;
+                
+                if (type & (1<<1))
+                {
+                    char *hitsoundstr;
+                    fail_nulltkn(hitsoundstr);
+                    char *curvestr;
+                    fail_nulltkn(curvestr);
+                    char *slidestr;
+                    fail_nulltkn(slidestr);
+                    char *lengthstr;
+                    fail_nulltkn(lengthstr);
+                    
+                    int repeat = atoi(slidestr);
+                    int pixel_length = atoi(lengthstr);
+                    
+                    // taken from https://github.com/JerryZhu99/osu-practice-tool/blob/master/src/osufile.js
+                    double sv_multiplier = 1.0;
+                    double ms_per_beat = ep->timingpoints[ep->timingpoints_idx].beatlength;
+                    if (ms_per_beat < 0)
+                        sv_multiplier = 100.0 / -ms_per_beat;
+                    
+                    const double epsilon = 0.1;
+                    double pixels_per_beat = ep->ed->mi->slider_multiplier * 100.0;
+                    if (ep->ed->mi->version >= 8)
+                    {
+                        pixels_per_beat *= sv_multiplier;
+                    }
+                    
+                    double num_beats = pixel_length * repeat / pixels_per_beat;
+                    int ticks = (int)ceil((num_beats - epsilon) / repeat * ep->ed->mi->slider_tick_rate) - 1;
+                    if (ticks < 0)
+                        ticks = 0;
+                    
+                    ep->max_combo += ticks * repeat;
+                    ep->max_combo += repeat;
+                }
+                else if (type & (1<<7))
+                {
+                    char *hitsoundstr;
+                    fail_nulltkn(hitsoundstr);
+                    char *endstr = strtok(NULL, ":");
+                    long time = atol(endstr) - origtime;
+                    double length = time / speed;
+                    
+                    ep->max_combo += (int)floor(length / 100.0);
+                }
+                
+                ep->hitobjects_num++;
             }
-
-            ep->hitobjects[ep->hitobjects_num].x = x;
-            ep->hitobjects[ep->hitobjects_num].y = y;
-            ep->hitobjects[ep->hitobjects_num].time = time;
-            ep->hitobjects[ep->hitobjects_num].type = type;
-            ep->hitobjects_num++;
         }
         else // does something
         {
             bool used = false;
             if (ep->ed->flip == invert)
             {
-                ep->hitobjects_idx++;
                 if (type & (1<<7 | 1))
                 {
-                    for (int i = ep->hitobjects_idx; i < ep->hitobjects_num; i++)
+                    for (int i = ep->hitobjects_idx + 1; i < ep->hitobjects_num; i++)
                     {
                         int c1 = (int)(x * ep->ed->mi->cs / 512.0);
                         int c2 = (int)(ep->hitobjects[i].x * ep->ed->mi->cs / 512.0);
                         if (c1 == c2 && (ep->hitobjects[i].type & (1<<7 | 1)) && ep->hitobjects[i].time > time)
                         {
-                            if (ep->timingpoints_idx + 1 < ep->timingpoints_num && time >= ep->timingpoints[ep->timingpoints_idx + 1].time)
-                                ep->timingpoints_idx++;
-
-                            long end_time = ep->hitobjects[i].time - (long)(ep->timingpoints[ep->timingpoints_idx].beatlength / 4.0);
+                            long end_time = ep->hitobjects[i].time - (long)(ep->timingpoints[ep->hitobjects[i].timing_idx].beatlength / speed / 4.0);
                             if (end_time - time > 20)
                             {
                                 char *hitsoundstr = nexttkn();
@@ -574,7 +661,7 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
             {
                 if (type & (1<<3 | 1<<7))
                 {
-                    const char spinnertoken[] = { (type & (1<<7)) ? ':' : ',', '\0' };
+                    char spinnertoken[] = { (type & (1<<7)) ? ':' : ',', '\0' };
                     char *hitsoundstr;
                     fail_nulltkn(hitsoundstr);
                     char *spinnerstr = strtok(NULL, spinnertoken);
@@ -653,6 +740,9 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
                 }
             }
         }
+        
+        if (!prior_read)
+            ep->hitobjects_idx++;
     }
     else if (!prior_read && sect == editor)
     {
@@ -784,16 +874,30 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
                 putsstr(" Cut:");
                 if (ep->ed->cut_start > 0)
                 {
-                    long t = ep->ed->cut_start / 1000;
-                    snpedit("%ld:%02ld", t / 60, t % 60);
+                    if (ep->ed->cut_combo)
+                    {
+                        snpedit("%ld", ep->ed->cut_start);
+                    }
+                    else
+                    {
+                        long t = ep->ed->cut_start / 1000;
+                        snpedit("%ld:%02ld", t / 60, t % 60);
+                    }
                 }
 
                 putsstr("~");
 
                 if (ep->ed->cut_end < LONG_MAX)
                 {
-                    long t = ep->ed->cut_end / 1000;
-                    snpedit("%ld:%02ld", t / 60, t % 60);
+                    if (ep->ed->cut_combo)
+                    {
+                        snpedit("%ld", ep->ed->cut_end);
+                    }
+                    else
+                    {
+                        long t = ep->ed->cut_end / 1000;
+                        snpedit("%ld:%02ld", t / 60, t % 60);
+                    }
                 }
             }
 
@@ -857,6 +961,8 @@ int edit_beatmap(struct editdata *edit)
     ep.timingpoints = NULL;
     ep.timingpoints_num = ep.timingpoints_size = ep.timingpoints_idx = 0;
     ep.done_saving = false;
+    ep.max_combo = 0;
+    ep.uninherited_tp_idx = 0;
 
     if (ep.editline == NULL)
     {
@@ -1032,37 +1138,57 @@ int edit_beatmap(struct editdata *edit)
         }
         free(audp);
     }
-
+    
+    bool needs_preread = false;
+    ep.prior_read = 0;
+    
     if (edit->flip == invert)
     {
         if (edit->mi->mode == 3)
         {
-            ep.prior_read = true;
-            ret = loop_map(edit->mi->fullpath, &convert_map, &ep);
-            if (ret != 0)
-            {
-                printerr("Failed reading hitobjects!");
-                ret = -70;
-                goto tryfree;
-            }
-            ep.done_saving = true;
-
-            if (ep.hitobjects_num == 0 || ep.timingpoints_num == 0)
-            {
-                ret = -80;
-                goto tryfree;
-            }
+            needs_preread = true;
         }
         else
         {
             printerr("Invert is only available on osu!mania!");
-            ep.prior_read = false;
             edit->flip = none;
         }
     }
-    else
+    else if (edit->cut_combo)
     {
-        ep.prior_read = false;
+        // may add proper mania support in future
+        needs_preread = true;
+    }
+
+    if (needs_preread)
+    {
+        // fill timingpoints
+        ep.prior_read = 1;
+        ret = loop_map(edit->mi->fullpath, &convert_map, &ep);
+        if (ret != 0)
+        {
+            printerr("Failed reading hitobjects!");
+            ret = -70;
+            goto tryfree;
+        }
+        
+        // fill hitobjects
+        ep.prior_read = 2;
+        ret = loop_map(edit->mi->fullpath, &convert_map, &ep);
+        if (ret != 0)
+        {
+            printerr("Failed reading hitobjects!");
+            ret = -70;
+            goto tryfree;
+        }
+        
+        ep.done_saving = true;
+
+        if (ep.hitobjects_num == 0 || ep.timingpoints_num == 0)
+        {
+            ret = -80;
+            goto tryfree;
+        }
     }
 
     ret = loop_map(edit->mi->fullpath, &convert_map, &ep);
