@@ -70,7 +70,7 @@ jobs:
                       mingw-w64-ucrt-x86_64-libsndfile
                       mingw-w64-ucrt-x86_64-soundtouch
                       mingw-w64-ucrt-x86_64-libzip
-                      mingw-w64-ucrt-x86_64-fltk
+                      mingw-w64-ucrt-x86_64-fltk1.3
                       mingw-w64-ucrt-x86_64-meson
 
             - name: Configure
