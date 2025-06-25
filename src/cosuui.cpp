@@ -21,9 +21,7 @@ Fl_Window* CosuUI::make_window()
 {
     {
         window = new Fl_Window(390, 530, "cosu-trainer");
-        window->labeltype(FL_NORMAL_LABEL);
         window->user_data((void*)(this));
-        window->align(Fl_Align(FL_ALIGN_CLIP|FL_ALIGN_INSIDE));
         {
             mainbox = new Fl_Group(10, 10, 370, 510);
             {

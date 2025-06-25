@@ -51,11 +51,11 @@ struct editdata // data needed to edit a map
     bool nospinner;
     bool remove_sv;
     enum FLIP flip;
-    
+
     bool cut_combo;
     long cut_start;
     long cut_end;
-    
+
     update_progress_cb progress_callback;
     void *data;
 };
@@ -101,7 +101,7 @@ struct editpass // temporary data that's only needed in editing (only passed wit
     int timingpoints_size;
     int timingpoints_idx;
     int uninherited_tp_idx;
-    
+
     int max_combo;
 };
 

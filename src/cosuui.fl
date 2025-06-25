@@ -8,7 +8,7 @@ class CosuUI {open
   } {
     Fl_Window window {
       label {cosu-trainer} open selected
-      xywh {91 461 390 530} type Single labeltype NORMAL_LABEL align 80 size_range {390 530 390 530} visible
+      xywh {91 461 390 530} type Single size_range {390 530 390 530} visible
     } {
       Fl_Group mainbox {open
         xywh {10 10 370 510}

@@ -16,48 +16,49 @@
 #include <FL/Fl_Input.H>
 #include <FL/Fl_Progress.H>
 
-class CosuUI {
+class CosuUI
+{
 public:
-  Fl_Window* make_window();
-  Fl_Window *window;
-  Fl_Group *mainbox;
-  Fl_Box *infobox;
-  Fl_Choice *flipbox;
-  static Fl_Menu_Item menu_flipbox[];
-  static Fl_Menu_Item *no_flip;
-  static Fl_Menu_Item *x_flip;
-  static Fl_Menu_Item *y_flip;
-  static Fl_Menu_Item *transpose;
-  static Fl_Menu_Item *invert;
-  Fl_Check_Button *scale_ar;
-  Fl_Check_Button *scale_od;
-  Fl_Check_Button *pitch;
-  Fl_Check_Button *nospinner;
-  Fl_Round_Button *rate;
-  Fl_Round_Button *bpm;
-  Fl_Spinner *speedval;
-  Fl_Check_Button *lock;
-  Fl_Check_Button *hplock;
-  Fl_Check_Button *cslock;
-  Fl_Check_Button *arlock;
-  Fl_Check_Button *odlock;
-  Fl_Button *reset;
-  Fl_Button *convert;
-  Fl_Box *songtitlelabel;
-  Fl_Box *difflabel;
-  Fl_Group *diffgroup;
-  Fl_Slider *hpslider;
-  Fl_Slider *csslider;
-  Fl_Slider *arslider;
-  Fl_Slider *odslider;
-  Fl_Value_Input *hpinput;
-  Fl_Value_Input *csinput;
-  Fl_Value_Input *arinput;
-  Fl_Value_Input *odinput;
-  Fl_Box *ratebpm;
-  Fl_Box *cutlabel;
-  Fl_Input *cutstart;
-  Fl_Input *cutend;
-  Fl_Progress *progress;
+    Fl_Window* make_window();
+    Fl_Window *window;
+    Fl_Group *mainbox;
+    Fl_Box *infobox;
+    Fl_Choice *flipbox;
+    static Fl_Menu_Item menu_flipbox[];
+    static Fl_Menu_Item *no_flip;
+    static Fl_Menu_Item *x_flip;
+    static Fl_Menu_Item *y_flip;
+    static Fl_Menu_Item *transpose;
+    static Fl_Menu_Item *invert;
+    Fl_Check_Button *scale_ar;
+    Fl_Check_Button *scale_od;
+    Fl_Check_Button *pitch;
+    Fl_Check_Button *nospinner;
+    Fl_Round_Button *rate;
+    Fl_Round_Button *bpm;
+    Fl_Spinner *speedval;
+    Fl_Check_Button *lock;
+    Fl_Check_Button *hplock;
+    Fl_Check_Button *cslock;
+    Fl_Check_Button *arlock;
+    Fl_Check_Button *odlock;
+    Fl_Button *reset;
+    Fl_Button *convert;
+    Fl_Box *songtitlelabel;
+    Fl_Box *difflabel;
+    Fl_Group *diffgroup;
+    Fl_Slider *hpslider;
+    Fl_Slider *csslider;
+    Fl_Slider *arslider;
+    Fl_Slider *odslider;
+    Fl_Value_Input *hpinput;
+    Fl_Value_Input *csinput;
+    Fl_Value_Input *arinput;
+    Fl_Value_Input *odinput;
+    Fl_Box *ratebpm;
+    Fl_Box *cutlabel;
+    Fl_Input *cutstart;
+    Fl_Input *cutend;
+    Fl_Progress *progress;
 };
 #endif
