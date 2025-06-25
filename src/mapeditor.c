@@ -542,7 +542,7 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
         else if (prior_read)
         {
             // this requires TimingPoints to be read first
-            if (ep->prior_read == 2)
+            if ((ep->prior_read == 1 && ep->timingpoints_num > 0) || ep->prior_read == 2)
             {
                 // this is run prior to main edit when hitobject data is needed for further processing (e.g. mania full LN)
                 if (ep->hitobjects == NULL || ep->hitobjects_size < ep->hitobjects_num + 1)
@@ -1182,14 +1182,17 @@ int edit_beatmap(struct editdata *edit)
             goto tryfree;
         }
         
-        // fill hitobjects
-        ep.prior_read = 2;
-        ret = loop_map(edit->mi->fullpath, &convert_map, &ep);
-        if (ret != 0)
+        if (ep.hitobjects_num <= 0)
         {
-            printerr("Failed reading hitobjects!");
-            ret = -70;
-            goto tryfree;
+            // fill hitobjects in case hitobjects were written before timingpoints
+            ep.prior_read = 2;
+            ret = loop_map(edit->mi->fullpath, &convert_map, &ep);
+            if (ret != 0)
+            {
+                printerr("Failed reading hitobjects!");
+                ret = -70;
+                goto tryfree;
+            }
         }
         
         ep.done_saving = true;
