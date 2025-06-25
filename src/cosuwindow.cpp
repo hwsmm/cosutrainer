@@ -252,6 +252,12 @@ void CosuWindow::convbtn_callb(Fl_Widget *w, void *data)
             }
         }
     }
+    else
+    {
+        edit.cut_combo = false;
+        edit.cut_start = 0;
+        edit.cut_end = LONG_MAX;
+    }
 
     switch (win->cosuui.flipbox->value())
     {
