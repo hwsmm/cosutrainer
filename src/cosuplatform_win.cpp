@@ -12,7 +12,7 @@ int execute_file(char* file)
     HWND handle = NULL;
     const Fl_Window *fwin = Fl_Window::current();
     if (fwin != NULL)
-        handle = fl_win32_xid(fwin);
+        handle = fl_xid(fwin);
 
     LPWSTR wfile = alloc_mbstowcs(file);
     ShellExecuteW(handle, L"open", wfile, NULL, NULL, 0);
