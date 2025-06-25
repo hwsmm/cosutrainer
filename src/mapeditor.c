@@ -485,7 +485,7 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
                 }
 
                 ep->timingpoints[ep->timingpoints_num].time = time;
-                ep->timingpoints[ep->timingpoints_num].beatlength = btlen;
+                ep->timingpoints[ep->timingpoints_num].beatlength = btlen >= 0 ? btlen / speed : btlen;
                 ep->timingpoints_num++;
             }
         }
@@ -639,7 +639,7 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
                         int c2 = (int)(ep->hitobjects[i].x * ep->ed->mi->cs / 512.0);
                         if (c1 == c2 && (ep->hitobjects[i].type & (1<<7 | 1)) && ep->hitobjects[i].time > time)
                         {
-                            long end_time = ep->hitobjects[i].time - (long)(ep->timingpoints[ep->hitobjects[i].timing_idx].beatlength / speed / 4.0);
+                            long end_time = ep->hitobjects[i].time - (long)(ep->timingpoints[ep->hitobjects[i].timing_idx].beatlength / 4.0);
                             if (end_time - time > 20)
                             {
                                 char *hitsoundstr = nexttkn();
