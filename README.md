@@ -23,7 +23,6 @@ It's very destructive and experimental, so don't use unless you desperately need
 - Can generate a practice difficulty by cutting
 - Generates an osz file for easier import
 - An user-defined osz handler can be set for seamless integration with osu!
-- Supports MP3 and [all formats that libsndfile supports](https://libsndfile.github.io/libsndfile/formats.html). (though osu! only accepts ogg and mp3 as rankable formats)
 
 ### Linux requirements
 - osu! must run on WINE with dotnet 4.5+ for proper memory scanning
