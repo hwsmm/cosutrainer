@@ -104,7 +104,7 @@ void Freader::thread_func(Freader *fr)
                     continue;
                 }
                 free(fullpath);
-    
+
                 fr->consumed = false;
                 Fl::awake();
             }

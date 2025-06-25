@@ -268,7 +268,7 @@ char *get_osu_path(char *wineprefix)
     char *res = try_get_osu_path(wineprefix, "system.reg", list);
     if (res == NULL)
         res = try_get_osu_path(wineprefix, "user.reg", list);
-        
+
     if (res == NULL)
         printerr("Couldn't find song folder!");
 
@@ -293,6 +293,11 @@ char *get_osu_songs_path(char *wineprefix, char *uid)
         /*char *lid =*/ strtok(id, ":");
         /*char *lpw =*/ strtok(NULL, ":");
         char *luid = strtok(NULL, ":");
+        if (luid == NULL)
+        {
+            fclose(pw);
+            return NULL;
+        }
 
         if (strcmp(uid, luid) == 0)
         {
@@ -303,6 +308,11 @@ char *get_osu_songs_path(char *wineprefix, char *uid)
                 /*char *lgid =*/ strtok(NULL, ":");
                 /*char *lgecos =*/ strtok(NULL, ":");
                 char *ldir = strtok(NULL, ":");
+                if (ldir == NULL)
+                {
+                    fclose(pw);
+                    return NULL;
+                }
 
                 const char winedefp[] = ".wine";
 

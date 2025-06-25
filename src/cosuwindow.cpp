@@ -5,6 +5,7 @@
 #include <cmath>
 #include <thread>
 #include <climits>
+#include <cstdlib>
 #include <FL/Fl_JPEG_Image.H>
 #include <FL/Fl_PNG_Image.H>
 
@@ -160,6 +161,26 @@ void CosuWindow::update_progress(void *data, float progress)
     }
 }
 
+static long read_cut_str(const char *str, bool *combo)
+{
+    char *middle = NULL;
+    long cut = strtol(str, &middle, 10);
+
+    if (middle != NULL && *middle == ':')
+    {
+        cut *= 60;
+        cut += strtol(++middle, NULL, 10);
+        cut *= 1000;
+        *combo = false;
+    }
+    else
+    {
+        *combo = true;
+    }
+
+    return cut;
+}
+
 void CosuWindow::convbtn_callb(Fl_Widget *w, void *data)
 {
     CosuWindow *win = (CosuWindow*) data;
@@ -186,13 +207,51 @@ void CosuWindow::convbtn_callb(Fl_Widget *w, void *data)
     edit.speed = win->cosuui.speedval->value();
     edit.bpmmode = win->cosuui.bpm->value() >= 1 ? bpm : rate;
     edit.pitch = win->cosuui.pitch->value() >= 1;
-    edit.nospinner = win->cosuui.nospinner->value() >= 1;
 
-    // not supported yet
-    edit.cut_combo = false;
-    edit.cut_start = 0;
-    edit.cut_end = LONG_MAX;
-    edit.remove_sv = false;
+    if (edit.mi->mode != 3)
+    {
+        edit.nospinner = win->cosuui.nospinner->value() >= 1;
+        edit.remove_sv = false;
+    }
+    else
+    {
+        edit.remove_sv = win->cosuui.nospinner->value() >= 1;
+        edit.nospinner = false;
+    }
+
+    const char *cutstart_str = win->cosuui.cutstart->value();
+    const char *cutend_str = win->cosuui.cutend->value();
+    bool start_valid = *cutstart_str != '\0';
+    bool end_valid = *cutend_str != '\0';
+
+    if (start_valid || end_valid)
+    {
+        bool start_combo;
+        long cutstart = read_cut_str(cutstart_str, &start_combo);
+
+        bool end_combo;
+        long cutend = read_cut_str(cutend_str, &end_combo);
+        if (cutend == 0)
+            cutend = LONG_MAX;
+
+        if (start_valid && end_valid && start_combo != end_combo)
+        {
+            printerr("Cut format is not the same, not performing cut");
+        }
+        else
+        {
+            if (cutstart >= cutend)
+            {
+                printerr("Given cut parameter is not valid, not performing cut");
+            }
+            else
+            {
+                edit.cut_combo = start_valid ? start_combo : end_combo;
+                edit.cut_start = cutstart;
+                edit.cut_end = cutend;
+            }
+        }
+    }
 
     switch (win->cosuui.flipbox->value())
     {
@@ -281,6 +340,14 @@ void CosuWindow::start()
             Fl_Window::default_icon(icon);
         }
     }
+
+    const char cut_tooltip[] = "Put only numbers for combo count, or \':\' for time.\n"
+                               "Blanking the first box makes the converted map start from 0, and blanking the second makes it end at the end of an original map.\n"
+                               "Example: 2385 for combo count, and 1:30 or 0:30 for time";
+
+    cosuui.cutlabel->tooltip(cut_tooltip);
+    cosuui.cutstart->tooltip(cut_tooltip);
+    cosuui.cutend->tooltip(cut_tooltip);
 
     window->show();
     window->make_current();
@@ -414,6 +481,7 @@ void CosuWindow::start()
             if (info->mode == 3)
             {
                 (cosuui.invert)->activate();
+                (cosuui.nospinner)->label("No SV");
             }
             else
             {
@@ -421,6 +489,7 @@ void CosuWindow::start()
                     (cosuui.flipbox)->value(0);
 
                 (cosuui.invert)->deactivate();
+                (cosuui.nospinner)->label("No Spinner");
             }
 
             cosuui.songtitlelabel->label(info->songname);

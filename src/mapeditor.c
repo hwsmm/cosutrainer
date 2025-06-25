@@ -392,7 +392,7 @@ struct mapinfo *read_beatmap(char *mapfile)
         info->minbpm = 1 / info->minbpm * 1000 * 60;
 
         if (!info->arexists) info->ar = info->od;
-        
+
         if (info->version <= 0)
             info->version = 14;
 
@@ -466,7 +466,7 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
         long time = atol(tkn(line)) / speed;
         char *btlenstr = nexttkn(); // most likely it won't fail if reading succeeded
         double btlen = atof(btlenstr);
-        
+
         if (prior_read)
         {
             if (ep->prior_read == 1)
@@ -493,7 +493,7 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
         {
             if (ep->ed->remove_sv)
                 ep->first_tp_passed = true;
-            
+
             if (*btlenstr != '-')
             {
                 btlen /= speed;
@@ -535,7 +535,7 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
             // do nothing to create a practice diff
         }
         else if (ep->done_saving && ep->ed->cut_combo &&
-            (ep->hitobjects[ep->hitobjects_idx].combo < ep->ed->cut_start || ep->hitobjects[ep->hitobjects_idx].combo > ep->ed->cut_end))
+                 (ep->hitobjects[ep->hitobjects_idx].combo < ep->ed->cut_start || ep->hitobjects[ep->hitobjects_idx].combo > ep->ed->cut_end))
         {
             // do nothing to create a practice diff
         }
@@ -553,30 +553,30 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
                         printerr("Failed hitobject allocation");
                         return 3;
                     }
-    
+
                     ep->hitobjects = newarr;
                     ep->hitobjects_size += 300;
                 }
-    
+
                 ep->hitobjects[ep->hitobjects_num].x = x;
                 ep->hitobjects[ep->hitobjects_num].y = y;
                 ep->hitobjects[ep->hitobjects_num].time = time;
                 ep->hitobjects[ep->hitobjects_num].type = type;
-                
+
                 while (ep->timingpoints_idx + 1 < ep->timingpoints_num && time >= ep->timingpoints[ep->timingpoints_idx + 1].time)
                 {
                     ep->timingpoints_idx++;
-                    
+
                     if (ep->timingpoints[ep->timingpoints_idx].beatlength > 0)
                         ep->uninherited_tp_idx = ep->timingpoints_idx;
                 }
-                
+
                 ep->hitobjects[ep->hitobjects_num].timing_real_idx = ep->timingpoints_idx;
                 ep->hitobjects[ep->hitobjects_num].timing_idx = ep->uninherited_tp_idx;
 
                 ep->max_combo += 1;
                 ep->hitobjects[ep->hitobjects_num].combo = ep->max_combo;
-                
+
                 if (type & (1<<1))
                 {
                     char *hitsoundstr;
@@ -587,28 +587,28 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
                     fail_nulltkn(slidestr);
                     char *lengthstr;
                     fail_nulltkn(lengthstr);
-                    
+
                     int repeat = atoi(slidestr);
                     int pixel_length = atoi(lengthstr);
-                    
+
                     // taken from https://github.com/JerryZhu99/osu-practice-tool/blob/master/src/osufile.js
                     double sv_multiplier = 1.0;
                     double ms_per_beat = ep->timingpoints[ep->timingpoints_idx].beatlength;
                     if (ms_per_beat < 0)
                         sv_multiplier = 100.0 / -ms_per_beat;
-                    
+
                     const double epsilon = 0.1;
                     double pixels_per_beat = ep->ed->mi->slider_multiplier * 100.0;
                     if (ep->ed->mi->version >= 8)
                     {
                         pixels_per_beat *= sv_multiplier;
                     }
-                    
+
                     double num_beats = pixel_length * repeat / pixels_per_beat;
                     int ticks = (int)ceil((num_beats - epsilon) / repeat * ep->ed->mi->slider_tick_rate) - 1;
                     if (ticks < 0)
                         ticks = 0;
-                    
+
                     ep->max_combo += ticks * repeat;
                     ep->max_combo += repeat;
                 }
@@ -619,10 +619,10 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
                     char *endstr = strtok(NULL, ":");
                     long time = atol(endstr) - origtime;
                     double length = time / speed;
-                    
+
                     ep->max_combo += (int)floor(length / 100.0);
                 }
-                
+
                 ep->hitobjects_num++;
             }
         }
@@ -674,11 +674,11 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
                         return 1;
                     }
                     char *afnul = find_null(spinnerstr);
-    
+
                     long spinnerlen = atol(spinnerstr) / speed;
-    
+
                     snpedit("%d,%d,%ld,%s,%s,%ld", x, y, time, typestr, hitsoundstr, spinnerlen);
-    
+
                     if (*(afnul - 2) == '\r' || *(afnul - 2) == '\n')
                     {
                         putsstr("\r\n");
@@ -700,9 +700,9 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
                         return 1;
                     }
                     char *afnul = find_null(curvetype);
-    
+
                     snpedit("%d,%d,%ld,%s,%s,%s|", x, y, time, typestr, hitsoundstr, curvetype);
-    
+
                     bool done = false;
                     while (!done)
                     {
@@ -722,7 +722,7 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
                                 break;
                             }
                         }
-    
+
                         int slx = atoi(slxc);
                         int sly = atoi(slyc);
                         if (ep->ed->flip == xflip || ep->ed->flip == transpose) slx = 512 - slx;
@@ -743,7 +743,7 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
                 }
             }
         }
-        
+
         if (!prior_read)
             ep->hitobjects_idx++;
     }
@@ -921,12 +921,12 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
             default:
                 break;
             }
-            
+
             if (ep->ed->remove_sv)
             {
                 putsstr(" NO SV");
             }
-            
+
             putsstr("\r\n");
         }
         else if (CMPSTR(line, "Tags:"))
@@ -964,7 +964,7 @@ int edit_beatmap(struct editdata *edit)
     ep.editline = (char*) malloc(ep.editsize);
     ep.ed = edit;
     ep.bufs = &bufs;
-    
+
     ep.hitobjects = NULL;
     ep.hitobjects_num = ep.hitobjects_size = ep.hitobjects_idx = 0;
     ep.timingpoints = NULL;
@@ -1148,10 +1148,10 @@ int edit_beatmap(struct editdata *edit)
         }
         free(audp);
     }
-    
+
     bool needs_preread = false;
     ep.prior_read = 0;
-    
+
     if (edit->flip == invert)
     {
         if (edit->mi->mode == 3)
@@ -1181,7 +1181,7 @@ int edit_beatmap(struct editdata *edit)
             ret = -70;
             goto tryfree;
         }
-        
+
         if (ep.hitobjects_num <= 0)
         {
             // fill hitobjects in case hitobjects were written before timingpoints
@@ -1194,7 +1194,7 @@ int edit_beatmap(struct editdata *edit)
                 goto tryfree;
             }
         }
-        
+
         ep.done_saving = true;
 
         if (ep.hitobjects_num == 0 || ep.timingpoints_num == 0)

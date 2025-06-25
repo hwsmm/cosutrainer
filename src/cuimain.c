@@ -88,7 +88,7 @@ int cuimain(int argc, char *argv[])
     edit.pitch = false;
     edit.flip = none;
     edit.nospinner = false;
-    
+
     edit.cut_combo = false;
     edit.cut_start = 0;
     edit.cut_end = LONG_MAX;

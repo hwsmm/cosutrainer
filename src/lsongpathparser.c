@@ -26,6 +26,10 @@ bool songpath_get(struct songpath_status *st, char **path)
     }
 
     char *sep = strchr(new_path, ' ');
+    if (sep == NULL)
+    {
+        return false;
+    }
     *sep = '\0';
     int songflen = atoi(new_path);
     *sep = ' ';

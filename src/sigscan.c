@@ -24,7 +24,7 @@ ptr_type find_pattern(struct sigscan_status *st, const uint8_t bytearray[], cons
             continue;
         }
 
-        if (rg.len > bufsize)
+        if (rg.len > bufsize || buffer == NULL)
         {
             if (buffer != NULL) free(buffer);
             buffer = (uint8_t*) malloc(rg.len);
