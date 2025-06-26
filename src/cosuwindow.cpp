@@ -141,6 +141,8 @@ void CosuWindow::resetbtn_callb(Fl_Widget *w, void *data)
     win->cosuui.pitch->clear();
     win->cosuui.nospinner->clear();
     win->cosuui.flipbox->value(0);
+    win->cosuui.cutstart->value("");
+    win->cosuui.cutend->value("");
     win->fr.consumed = false;
     Fl::awake();
 }
@@ -349,11 +351,14 @@ void CosuWindow::start()
 
     const char cut_tooltip[] = "Put only numbers for combo count, or \':\' for time.\n"
                                "Blanking the first box makes the converted map start from 0, and blanking the second makes it end at the end of an original map.\n"
+                               "Note that combo count works properly only on the standard mode.\n"
                                "Example: 2385 for combo count, and 1:30 or 0:30 for time";
 
     cosuui.cutlabel->tooltip(cut_tooltip);
     cosuui.cutstart->tooltip(cut_tooltip);
     cosuui.cutend->tooltip(cut_tooltip);
+
+    Fl::lock();
 
     window->show();
     window->make_current();
@@ -421,7 +426,6 @@ void CosuWindow::start()
                 }
                 free(bgpath);
             }
-            Fl::lock();
             if ((cosuui.hplock)->value() <= 0)
             {
                 (cosuui.hpslider)->value(info->hp);
@@ -525,7 +529,6 @@ void CosuWindow::start()
             update_od_label();
 
             cosuui.infobox->redraw();
-            Fl::unlock();
         }
     }
     if (img != NULL) delete img;

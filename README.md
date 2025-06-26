@@ -93,6 +93,6 @@ Please let me know if it works well or not!
 
 ## Thanks a lot to
 - Thanks a lot to developers of libraries I used in this program!!!
-- [josu-trainer](https://github.com/ngoduyanh/josu-trainer) for basic idea of speeding up the map
+- [josu-trainer](https://github.com/ngoduyanh/josu-trainer) for basic idea of speeding up a map
 - [gosumemory](https://github.com/l3lackShark/gosumemory) and [ProcessMemoryDataFinder](https://github.com/Piotrekol/ProcessMemoryDataFinder) for memory reading
 - [osu-practice-tool](https://github.com/JerryZhu99/osu-practice-tool) for how to calculate combo count of a map
