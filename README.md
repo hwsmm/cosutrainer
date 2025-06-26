@@ -13,14 +13,14 @@ Basically removes every MP3 that is not used as a main audio file in any .osu fi
 It's very destructive and experimental, so don't use unless you desperately need it.
 
 ### Features
-- Can speed up/down audio/map
+- Speed up/down audio/map
 - Supports all modes, but not tested enough tho
 - Emulates DT if either (scaled) AR or OD is over 10
 - Scales AR/OD, but you can cap so that it won't scale over the value you put
 - Adds osutrainer tag like osu-trainer
-- Can flip/transpose a map
-- Can generate a full LN difficulty for noodle enjoyers
-- Can generate a practice difficulty by cutting
+- Flip/transpose a map
+- Generates a full LN difficulty for noodle enjoyers
+- Generates a practice difficulty by cutting
 - Generates an osz file for easier import
 - An user-defined osz handler can be set for seamless integration with osu!
 
