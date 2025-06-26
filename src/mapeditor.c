@@ -1230,6 +1230,7 @@ int edit_beatmap(struct editdata *edit)
         if (mapfd == NULL || fwrite(bufs.mapbuf, 1, bufs.maplast, mapfd) < bufs.maplast)
         {
             printerr("Error writing a map");
+            ret = -71;
         }
         else
         {
@@ -1239,6 +1240,7 @@ int edit_beatmap(struct editdata *edit)
                 if (audfd == NULL || fwrite(bufs.audbuf, 1, bufs.audlast, audfd) < bufs.audlast)
                 {
                     printerr("Error writing an audio file");
+                    ret = -71;
                 }
                 fclose(audfd);
             }

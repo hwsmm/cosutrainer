@@ -8,6 +8,7 @@
 #include <cstdlib>
 #include <FL/Fl_JPEG_Image.H>
 #include <FL/Fl_PNG_Image.H>
+#include <FL/fl_ask.H>
 
 using namespace std;
 
@@ -191,11 +192,53 @@ void CosuWindow::convbtn_callb(Fl_Widget *w, void *data)
         return;
     }
 
+    std::lock_guard<std::recursive_mutex> lck(win->fr.mtx);
+
     win->cosuui.mainbox->deactivate();
 
     struct editdata edit;
 
-    std::lock_guard<std::recursive_mutex> lck(win->fr.mtx);
+    const char *cutstart_str = win->cosuui.cutstart->value();
+    const char *cutend_str = win->cosuui.cutend->value();
+    bool start_valid = *cutstart_str != '\0';
+    bool end_valid = *cutend_str != '\0';
+
+    edit.cut_combo = false;
+    edit.cut_start = 0;
+    edit.cut_end = LONG_MAX;
+
+    if (start_valid || end_valid)
+    {
+        bool start_combo;
+        long cutstart = read_cut_str(cutstart_str, &start_combo);
+
+        bool end_combo;
+        long cutend = read_cut_str(cutend_str, &end_combo);
+        if (cutend == 0)
+            cutend = LONG_MAX;
+
+        if (start_valid && end_valid && start_combo != end_combo)
+        {
+            fl_alert("Cut format is not the same! Not converting.");
+            win->cosuui.mainbox->activate();
+            return;
+        }
+        else
+        {
+            if (cutstart >= cutend)
+            {
+                fl_alert("Given cut parameter is not valid! Not converting.");
+                win->cosuui.mainbox->activate();
+                return;
+            }
+            else
+            {
+                edit.cut_combo = start_valid ? start_combo : end_combo;
+                edit.cut_start = cutstart;
+                edit.cut_end = cutend;
+            }
+        }
+    }
 
     edit.mi = win->fr.info;
     edit.hp = win->cosuui.hpslider->value();
@@ -221,46 +264,6 @@ void CosuWindow::convbtn_callb(Fl_Widget *w, void *data)
         edit.nospinner = false;
     }
 
-    const char *cutstart_str = win->cosuui.cutstart->value();
-    const char *cutend_str = win->cosuui.cutend->value();
-    bool start_valid = *cutstart_str != '\0';
-    bool end_valid = *cutend_str != '\0';
-
-    if (start_valid || end_valid)
-    {
-        bool start_combo;
-        long cutstart = read_cut_str(cutstart_str, &start_combo);
-
-        bool end_combo;
-        long cutend = read_cut_str(cutend_str, &end_combo);
-        if (cutend == 0)
-            cutend = LONG_MAX;
-
-        if (start_valid && end_valid && start_combo != end_combo)
-        {
-            printerr("Cut format is not the same, not performing cut");
-        }
-        else
-        {
-            if (cutstart >= cutend)
-            {
-                printerr("Given cut parameter is not valid, not performing cut");
-            }
-            else
-            {
-                edit.cut_combo = start_valid ? start_combo : end_combo;
-                edit.cut_start = cutstart;
-                edit.cut_end = cutend;
-            }
-        }
-    }
-    else
-    {
-        edit.cut_combo = false;
-        edit.cut_start = 0;
-        edit.cut_end = LONG_MAX;
-    }
-
     switch (win->cosuui.flipbox->value())
     {
     case 1:
@@ -283,7 +286,11 @@ void CosuWindow::convbtn_callb(Fl_Widget *w, void *data)
     edit.data = data;
     edit.progress_callback = update_progress;
 
-    edit_beatmap(&edit);
+    int ret = edit_beatmap(&edit);
+    if (ret != 0)
+    {
+        fl_alert("Editing a beatmap failed: %d\nCheck console for details.", ret);
+    }
 
     win->cosuui.mainbox->activate();
     win->cosuui.progress->value(0);
