@@ -8,6 +8,7 @@
 #include <sys/stat.h>
 #include <wchar.h>
 #include <wctype.h>
+#include <ctype.h>
 #include <stdbool.h>
 #include <locale.h>
 #include "cosumem.h"
@@ -198,23 +199,44 @@ int main()
             else
                 fprintf(stderr, "WINEPREFIX is not found, falling back to default prefix...\n");
 
-            char uid[128];
-            snprintf(uid, sizeof(uid), "/proc/%d/loginuid", st.osu);
-            int idfd = open(uid, O_RDONLY);
-            ssize_t idlen = 0;
+            char uid[1024];
+            snprintf(uid, sizeof(uid), "/proc/%d/status", st.osu);
+            FILE *idfd = fopen(uid, "r");
 
-            if (idfd == -1 || (idlen = read(idfd, uid, sizeof(uid) - 1)) <= 0)
+            if (idfd == NULL)
             {
                 printerr("Failed getting UID that is running osu");
             }
             else
             {
-                uid[idlen] = '\0';
-                songsfd = get_osu_songs_path(pfx, uid);
-                if (songsfd != NULL)
+                char *uidptr = NULL;
+                while (fgets(uid, sizeof(uid), idfd))
                 {
-                    fprintf(stderr, "Found Song folder: %s\n", songsfd);
-                    songsfdlen = strlen(songsfd);
+                    const char uid_key[] = "Uid:";
+                    if (strncmp(uid, uid_key, sizeof(uid_key) - 1) == 0)
+                    {
+                        int uidtemp = -1;
+                        if (sscanf(uid, "Uid: %d", &uidtemp) > 0 && snprintf(uid, sizeof(uid), "%d", uidtemp) > 0)
+                        {
+                            uidptr = uid;
+                            break;
+                        }
+                    }
+                }
+                fclose(idfd);
+
+                if (uidptr != NULL)
+                {
+                    songsfd = get_osu_songs_path(pfx, uidptr);
+                    if (songsfd != NULL)
+                    {
+                        fprintf(stderr, "Found Song folder: %s\n", songsfd);
+                        songsfdlen = strlen(songsfd);
+                    }
+                }
+                else
+                {
+                    printerr("Couldn't find UID of a process");
                 }
             }
 
@@ -299,9 +321,9 @@ contin:
     }
 
     unlink("/tmp/osu_path");
-    free(oldpath);
-    free(songsfd);
+    if (songpath != oldpath) free(oldpath);
     if (songpath != NULL) free(songpath);
+    free(songsfd);
     stop_memread(&st);
     close(fd);
     return 0;
