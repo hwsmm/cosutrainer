@@ -296,6 +296,7 @@ char *get_osu_songs_path(char *wineprefix, char *uid)
         if (luid == NULL)
         {
             fclose(pw);
+            printerr("Failed parsing /etc/passwd");
             return NULL;
         }
 
@@ -311,6 +312,7 @@ char *get_osu_songs_path(char *wineprefix, char *uid)
                 if (ldir == NULL)
                 {
                     fclose(pw);
+                    printerr("Failed parsing /etc/passwd");
                     return NULL;
                 }
 
@@ -322,6 +324,7 @@ char *get_osu_songs_path(char *wineprefix, char *uid)
                 if (!wineprefix)
                 {
                     fclose(pw);
+                    printerr("Failed allocation");
                     return NULL;
                 }
                 else
@@ -337,7 +340,10 @@ char *get_osu_songs_path(char *wineprefix, char *uid)
     fclose(pw);
 
     if (!uidfound)
+    {
+        printerr("Corresponding UID is not found");
         return NULL;
+    }
 
     char *result = NULL;
 
