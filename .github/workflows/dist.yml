@@ -19,7 +19,7 @@ jobs:
               uses: actions/checkout@v4
 
             - name: Configure
-              run: meson setup --prefix=/usr builddir --optimization=s -Ddebug=false
+              run: meson setup --prefix=/usr builddir --optimization=s -Ddebug=false -Dstrip=true
 
             - name: Build
               run: ninja -v -C builddir
@@ -29,7 +29,7 @@ jobs:
 
             - name: Make AppDir
               run: |
-                  DESTDIR=$PWD/AppDir meson install --strip -C builddir
+                  DESTDIR=$PWD/AppDir meson install -C builddir
                   rm AppDir/usr/bin/cosu-cleanup AppDir/usr/bin/osumem
 
             - name: Create AppImage
