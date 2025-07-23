@@ -616,7 +616,7 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
                 {
                     char *hitsoundstr;
                     fail_nulltkn(hitsoundstr);
-                    char *endstr = strtok(NULL, ":");
+                    char *endstr = strtok(NULL, ":,");
                     long time = atol(endstr) - origtime;
                     double length = time / speed;
 
@@ -646,7 +646,7 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
                                 char *afnul = find_null(hitsoundstr);
                                 if (type & (1<<7))
                                 {
-                                    char *orig_len = strtok(NULL, ":");
+                                    char *orig_len = strtok(NULL, ":,");
                                     afnul = find_null(orig_len);
                                 }
 
@@ -667,10 +667,13 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
                     char spinnertoken[] = { (type & (1<<7)) ? ':' : ',', '\0' };
                     char *hitsoundstr;
                     fail_nulltkn(hitsoundstr);
-                    char *spinnerstr = strtok(NULL, spinnertoken);
+                    // This is different from spinnertoken, because some mania conversion tools produce
+                    // weird long note objects that use , as delimiter like standard spinners, and osu! also parses them with no problem.
+                    // So parse whatever if it is either spinner or long note, and produce a hitobject with 'correct' delimiter.
+                    char *spinnerstr = strtok(NULL, ":,");
                     if (spinnerstr == NULL)
                     {
-                        printerr("Failed parsing spinner!");
+                        printerr("Failed parsing spinner/long note!");
                         return 1;
                     }
                     char *afnul = find_null(spinnerstr);
