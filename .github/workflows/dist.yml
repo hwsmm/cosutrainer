@@ -7,12 +7,12 @@ jobs:
     linux:
         runs-on: ubuntu-latest
         name: Linux AppImage Build
-        container: debian:bullseye-backports
+        container: debian:bullseye
         steps:
             - name: Install dependencies
               run: |
                   apt update -y
-                  apt install -t bullseye-backports -y g++ libmpg123-dev libmp3lame-dev libsndfile1-dev libsoundtouch-dev libzip-dev \
+                  apt install -y g++ libmpg123-dev libmp3lame-dev libsndfile1-dev libsoundtouch-dev libzip-dev \
                   libfltk1.3-dev meson wget tar zstd gzip file fuse libfuse2
 
             - name: Checkout
