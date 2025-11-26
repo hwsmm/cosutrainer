@@ -1104,7 +1104,7 @@ int edit_beatmap(struct editdata *edit)
         randomstr(prefix, 7);
         memcpy(fcmappath + folderlen, prefix, 7);
         if (fcaudpath) memcpy(fcaudpath + folderlen, prefix, 7);
-        if (access(fcmappath, F_OK) != 0 && (fcaudpath == NULL || access(fcaudpath, F_OK) != 0))
+        if (_access(fcmappath, F_OK) != 0 && (fcaudpath == NULL || _access(fcaudpath, F_OK) != 0))
             name_conflict = false;
     }
 

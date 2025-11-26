@@ -43,7 +43,7 @@ jobs:
                   ls -al
                   mkdir package
                   cp builddir/osumem builddir/cosu-cleanup cosu-trainer-*.AppImage COPYING.md package
-                  tar cf - -C package . | zstd > cosu-trainer-bin.tar.zst
+                  tar cf - -C package . | zstd -9 > cosu-trainer-bin.tar.zst
 
             - name: Upload a package
               uses: actions/upload-artifact@v4

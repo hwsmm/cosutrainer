@@ -86,7 +86,7 @@ char *get_songspath(wchar_t *base_path)
 // stub, since winapi functions already handle them well enough
 int try_convertwinpath(char *path, int pos)
 {
-    if (access(path, F_OK) == 0)
+    if (_access(path, F_OK) == 0)
     {
         return 1;
     }
