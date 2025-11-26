@@ -7,6 +7,8 @@
 #include <stdbool.h>
 #include <ctype.h>
 #include <sys/stat.h>
+#include <iconv.h>
+#include <errno.h>
 
 int execute_file(char* file)
 {
@@ -391,4 +393,71 @@ wchar_t *alloc_mbstowcs(char *multi)
         return NULL;
     }
     return wc;
+}
+
+char *convert_to_cp932(char *str)
+{
+    // stable is very weird. it creates an archive with cp932 and encodes an map file in utf-8
+    iconv_t ic = iconv_open("CP932", "UTF-8");
+    if (ic == (iconv_t)-1)
+    {
+        perror(NULL);
+        return NULL;
+    }
+
+    size_t origlen = strlen(str) + 1;
+    char *orig = str;
+
+    size_t destlen = origlen;
+    char *cvalloc = (char*)calloc(destlen, 1);
+
+    if (cvalloc == NULL)
+    {
+        iconv_close(ic);
+        printerr("Failed allocation");
+        return NULL;
+    }
+
+    char *dest = cvalloc;
+
+    size_t origleft = origlen;
+    size_t destleft = destlen;
+
+    while (origleft > 0)
+    {
+        size_t cv = iconv(ic, &orig, &origleft, &dest, &destleft);
+        if (cv == (size_t)-1)
+        {
+            if (errno == E2BIG)
+            {
+                intptr_t diff = (intptr_t)dest - (intptr_t)cvalloc;
+                size_t newadd = 1024;
+                size_t newlen = destlen + newadd;
+                char *newalloc = (char*)realloc(cvalloc, newlen);
+                if (!newalloc)
+                {
+                    free(cvalloc);
+                    cvalloc = NULL;
+                    printerr("Failed allocation");
+                    break;
+                }
+
+                cvalloc = newalloc;
+                dest = cvalloc + diff;
+                destlen = newlen;
+                destleft += newadd;
+                continue;
+            }
+            else
+            {
+                perror(NULL);
+                free(cvalloc);
+                cvalloc = NULL;
+                break;
+            }
+        }
+    }
+
+    iconv_close(ic);
+    return cvalloc;
 }

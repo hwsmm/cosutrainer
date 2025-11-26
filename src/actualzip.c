@@ -1,60 +1,102 @@
-#include <zip.h>
+#include <minizip/zip.h>
+#include <time.h>
 #include "actualzip.h"
 #include "tools.h"
 #include "cosuplatform.h"
 
 int create_actual_zip(char *zipfile, struct buffers *bufs)
 {
-    zip_t *zf = zip_open(zipfile, ZIP_CREATE, NULL);
+    int ret = 0;
+
+    zipFile zf = zipOpen(zipfile, access(zipfile, F_OK) == 0 ? APPEND_STATUS_ADDINZIP : 0);
     if (zf == NULL)
     {
         printerr("Failed creating a zip file");
         return 1;
     }
 
-    zip_source_t *audb = NULL;
+    time_t ti = time(NULL);
+    if (ti == -1)
+    {
+        perror(NULL);
+        ret = 3;
+        goto zipc;
+    }
+
+    struct tm *lt = localtime(&ti);
+    if (lt == NULL)
+    {
+        printerr("Failed getting time");
+        ret = 4;
+        goto zipc;
+    }
+
+    zip_fileinfo mapf;
+    mapf.tmz_date.tm_sec  = lt->tm_sec;
+    mapf.tmz_date.tm_min  = lt->tm_min;
+    mapf.tmz_date.tm_hour = lt->tm_hour;
+    mapf.tmz_date.tm_mday = lt->tm_mday;
+    mapf.tmz_date.tm_mon  = lt->tm_mon;
+    mapf.tmz_date.tm_year = lt->tm_year;
+
+    mapf.dosDate = 0;
+    mapf.internal_fa = 0;
+    mapf.external_fa = 0;
+
+    char *cvname;
+
     if (bufs->audname)
     {
-        audb = zip_source_buffer(zf, bufs->audbuf, bufs->audlast, 0);
-        if (audb == NULL)
+        zip_fileinfo audf = mapf;
+        char *cvname = convert_to_cp932(bufs->audname);
+
+        if (cvname == NULL)
         {
-            zip_discard(zf);
-            return 1;
+            printerr("Failed to convert name");
+            ret = 10;
+            goto zipc;
         }
-        else
+
+        if (!(zipOpenNewFileInZip(zf, cvname, &audf, NULL, 0, NULL, 0, NULL, Z_DEFLATED, Z_NO_COMPRESSION) == ZIP_OK
+                && zipWriteInFileInZip(zf, bufs->audbuf, bufs->audlast) == ZIP_OK
+                && zipCloseFileInZip(zf) == ZIP_OK))
         {
-            if (zip_set_file_compression(zf, zip_file_add(zf, bufs->audname, audb, ZIP_FL_ENC_UTF_8), ZIP_CM_STORE, 0) == -1)
-            {
-                zip_source_free(audb);
-                zip_discard(zf);
-                return 1;
-            }
+            printerr("Error writing an audio file in zip");
+            free(cvname);
+            ret = 2;
+            goto zipc;
         }
+
+        free(cvname);
     }
 
-    zip_source_t *mapb = zip_source_buffer(zf, bufs->mapbuf, bufs->maplast, 0);
-    if (mapb == NULL)
+    cvname = convert_to_cp932(bufs->mapname);
+
+    if (cvname == NULL)
     {
-        if (audb) zip_source_free(audb);
-        zip_discard(zf);
-        return 1;
-    }
-    else
-    {
-        if (zip_set_file_compression(zf, zip_file_add(zf, bufs->mapname, mapb, ZIP_FL_ENC_UTF_8), ZIP_CM_STORE, 0) == -1)
-        {
-            if (audb) zip_source_free(audb);
-            zip_source_free(mapb);
-            zip_discard(zf);
-            return 1;
-        }
+        printerr("Failed to convert name");
+        ret = 10;
+        goto zipc;
     }
 
-    if (zip_close(zf) == -1)
+    if (!(zipOpenNewFileInZip(zf, cvname, &mapf, NULL, 0, NULL, 0, NULL, Z_DEFLATED, Z_NO_COMPRESSION) == ZIP_OK
+            && zipWriteInFileInZip(zf, bufs->mapbuf, bufs->maplast) == ZIP_OK
+            && zipCloseFileInZip(zf) == ZIP_OK))
     {
-        printerr("Failed finishing a zip file");
-        zip_discard(zf);
-        return 1;
+        printerr("Error writing a map file in zip");
+        free(cvname);
+        ret = 2;
+        goto zipc;
     }
-    return 0;
+
+    free(cvname);
+
+zipc:
+    if (zipClose(zf, NULL) != ZIP_OK)
+    {
+        printerr("Error closing a zip file");
+        return 2;
+    }
+
+    return ret;
 }

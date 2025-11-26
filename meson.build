@@ -9,7 +9,7 @@ mainfiles=['src/cosuui.cpp', 'src/cosuwindow.cpp', 'src/cuimain.c', 'src/main.cp
 
 deps = [
   dependency('libmpg123'),
-  dependency('libzip'),
+  dependency('minizip'),
   dependency('soundtouch'),
   dependency('sndfile'),
   dependency('threads'),

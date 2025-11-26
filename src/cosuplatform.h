@@ -28,6 +28,7 @@ char *get_iconpath();
 int try_convertwinpath(char *path, int pos);
 char *alloc_wcstombs(wchar_t *wide);
 wchar_t *alloc_mbstowcs(char *multi);
+char *convert_to_cp932(char *str);
 
 #ifdef __cplusplus
 }

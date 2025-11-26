@@ -131,9 +131,9 @@ char *get_iconpath()
     return mbbuf;
 }
 
-LPSTR alloc_wcstombs(LPWSTR wide)
+static LPSTR alloc_wcstombs_internal(LPWSTR wide, UINT codepage)
 {
-    int mbnum = WideCharToMultiByte(CP_UTF8, 0, wide, -1, NULL, 0, NULL, NULL);
+    int mbnum = WideCharToMultiByte(codepage, 0, wide, -1, NULL, 0, NULL, NULL);
     if (mbnum == 0)
     {
         fputs("Failed converting!\n", stderr);
@@ -147,7 +147,7 @@ LPSTR alloc_wcstombs(LPWSTR wide)
         return NULL;
     }
 
-    if (WideCharToMultiByte(CP_UTF8, 0, wide, -1, mbbuf, mbnum, NULL, NULL) == 0)
+    if (WideCharToMultiByte(codepage, 0, wide, -1, mbbuf, mbnum, NULL, NULL) == 0)
     {
         fputs("Failed converting!\n", stderr);
         free(mbbuf);
@@ -155,6 +155,11 @@ LPSTR alloc_wcstombs(LPWSTR wide)
     }
 
     return mbbuf;
+}
+
+LPSTR alloc_wcstombs(LPWSTR wide)
+{
+    return alloc_wcstombs_internal(wide, CP_UTF8);
 }
 
 LPWSTR alloc_mbstowcs(LPSTR multi)
@@ -181,4 +186,17 @@ LPWSTR alloc_mbstowcs(LPSTR multi)
     }
 
     return wcbuf;
+}
+
+char *convert_to_cp932(char *str)
+{
+    LPWSTR wstr = alloc_mbstowcs(str);
+    if (wstr != NULL)
+    {
+        LPSTR cv = alloc_wcstombs_internal(wstr, 932);
+        free(wstr);
+        return cv;
+    }
+
+    return NULL;
 }

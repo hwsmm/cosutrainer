@@ -46,7 +46,7 @@ My [wine-osu repository](https://build.opensuse.org/project/show/home:hwsnemo:pa
 You can get it [here](https://software.opensuse.org//download.html?project=home%3Ahwsnemo%3Apackaged-wine-osu&package=cosu-trainer)!
 
 ### Build dependencies
-- libmpg123, libmp3lame, libsndfile, libsoundtouch, libzip, libfltk1.3
+- libmpg123, libmp3lame, libsndfile, libsoundtouch, libminizip, libfltk1.3
 
 ### How to build
 1. Install header packages of dependencies
