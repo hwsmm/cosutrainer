@@ -28,6 +28,8 @@ void Freader::thread_func(Freader *fr)
     unsigned int len = 0;
     while (fr->conti)
     {
+        std::lock_guard<std::recursive_mutex> lck(fr->mtx);
+
         struct sigscan_status *sst = &(fr->st);
 
         DEFAULT_LOGIC(sst,
@@ -66,6 +68,7 @@ void Freader::thread_func(Freader *fr)
                 if (oldpath != NULL && wcscmp(songpath, oldpath) == 0)
                 {
                     free(songpath);
+                    songpath = NULL;
                     fr->sleep();
                     continue;
                 }
@@ -93,7 +96,6 @@ void Freader::thread_func(Freader *fr)
             snprintf(fullpath, fullsize, "%s\\%ls", fr->songf, songpath);
 
             {
-                std::lock_guard<std::recursive_mutex> lck(fr->mtx);
                 free_mapinfo(fr->oldinfo);
                 fr->oldinfo = fr->info;
                 fr->info = read_beatmap(fullpath);
@@ -119,8 +121,6 @@ void Freader::thread_func(Freader *fr)
         })
         fr->sleep();
     }
-    free_mapinfo(fr->oldinfo);
-    free_mapinfo(fr->info);
     free(songpath);
     free(oldpath);
 }

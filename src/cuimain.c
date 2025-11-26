@@ -1,9 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <errno.h>
 #include <stdbool.h>
-#include <pthread.h>
 #include <limits.h>
 #include <math.h>
 #include "mapeditor.h"

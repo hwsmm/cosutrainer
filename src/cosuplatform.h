@@ -1,7 +1,7 @@
 #pragma once
-#include <wchar.h>
 
 #ifdef WIN32
+#include <windows.h>
 #include <io.h>
 #include <synchapi.h>
 #define PATHSEP '\\'
@@ -13,7 +13,10 @@
 #define PATHSEP '/'
 #define STR_PATHSEP "/"
 #define ssleep(x) usleep(x * 1000)
+#define _access access
 #endif
+
+#include <wchar.h>
 
 #ifdef __cplusplus
 extern "C"

@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <unistd.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <fcntl.h>
@@ -16,6 +15,10 @@
 #include "cosuplatform.h"
 #include "winregread.h"
 #include "sigscan.h"
+
+#ifndef WIN32
+#include <unistd.h>
+#endif
 
 bool match_pattern(struct sigscan_status *st, ptr_type *baseaddr)
 {

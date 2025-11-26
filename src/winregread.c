@@ -4,6 +4,10 @@
 
 #ifdef WIN32
 
+#ifdef _MSC_VER
+#pragma comment(lib, "shlwapi.lib")
+#endif
+
 #include <shlwapi.h>
 #include <lmcons.h>
 #include <strsafe.h>

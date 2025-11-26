@@ -2,14 +2,15 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <ctype.h>
-#include <strings.h>
 
 #ifdef WIN32
 #include <windows.h>
 #define gtime() GetTickCount()
+#define strncasecmp(x,y,z) _strnicmp(x,y,z)
 #else
 #include <time.h>
 #define gtime() time(NULL)
+#include <strings.h>
 #endif
 
 void randominit()

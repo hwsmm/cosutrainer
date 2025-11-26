@@ -1,0 +1,10 @@
+{
+  "dependencies": [
+    "minizip",
+    "mp3lame",
+    "mpg123",
+    "libsndfile",
+    "soundtouch",
+    "fltk"
+  ]
+}
