@@ -792,7 +792,10 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
         {
             edited = true;
             char *p = CUTFIRST(line, "PreviewTime: ");
-            long time = atol(p) / speed;
+            long time = atol(p);
+            if (time > 0)
+                time /= speed;
+
             snpedit("PreviewTime: %ld\r\n", time);
         }
     }
