@@ -1,4 +1,5 @@
 #pragma once
+#include <stddef.h>
 #ifndef WIN32
 #include <sys/types.h>
 #else
