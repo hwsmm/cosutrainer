@@ -288,7 +288,7 @@ skip:
 
             if (fd == -1)
             {
-                fd = open("/tmp/osu_path", O_CREAT|O_WRONLY|O_TRUNC, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH);
+                fd = open("/tmp/osu_path", O_CREAT|O_WRONLY|O_TRUNC|O_SYNC, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH);
                 if (fd == -1)
                 {
                     perror("/tmp/osu_path");
@@ -310,6 +310,8 @@ skip:
                     perror("dprintf");
                 else if (ftruncate(fd, write) == -1)
                     perror("truncate");
+                else
+                    fsync(fd);
             }
         },
         {
