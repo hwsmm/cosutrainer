@@ -1,11 +1,7 @@
-// #define OSUMEM_PREAD
-
-#ifndef OSUMEM_PREAD
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
 #endif
 #include <sys/uio.h>
-#endif
 
 #include <fcntl.h>
 #include <unistd.h>
@@ -24,9 +20,6 @@ void init_sigstatus(struct sigscan_status *st)
 {
     st->status = -1;
     st->osu = -1;
-#ifdef OSUMEM_PREAD
-    st->mem_fd = -1;
-#endif
 }
 
 void find_and_set_osu(struct sigscan_status *st)
@@ -113,7 +106,8 @@ bool is_osu_alive(struct sigscan_status *st)
     return st->status >= 0 && st->osu > 0 && kill(st->osu, 0) == 0;
 }
 
-#ifndef OSUMEM_PREAD
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
 int init_memread(struct sigscan_status *st)
 {
     return 1;
@@ -123,6 +117,7 @@ bool stop_memread(struct sigscan_status *st)
 {
     return true;
 }
+#pragma GCC diagnostic pop
 
 bool readmemory(struct sigscan_status *st, ptr_type address, void *buffer, size_t len)
 {
@@ -142,47 +137,6 @@ bool readmemory(struct sigscan_status *st, ptr_type address, void *buffer, size_
 
     return true;
 }
-#else
-int init_memread(struct sigscan_status *st)
-{
-    char procmem[32];
-    int fd;
-    snprintf(procmem, sizeof procmem, "/proc/%d/mem", st->osu);
-    fd = open(procmem, O_RDONLY);
-
-    if (fd == -1)
-    {
-        perror(procmem);
-        st->status = -1;
-        st->osu = -1;
-        return -3;
-    }
-
-    st->mem_fd = fd;
-    return 1;
-}
-
-bool stop_memread(struct sigscan_status *st)
-{
-    if (st->mem_fd != -1 && close(st->mem_fd) == -1)
-    {
-        perror("mem");
-        return false;
-    }
-    st->mem_fd = -1;
-    return true;
-}
-
-bool readmemory(struct sigscan_status *st, ptr_type address, void *buffer, size_t len)
-{
-    if (pread(st->mem_fd, buffer, len, (off_t) address) == -1)
-    {
-        perror("mem");
-        return false;
-    }
-    return true;
-}
-#endif
 
 void *start_regionit(struct sigscan_status *st)
 {

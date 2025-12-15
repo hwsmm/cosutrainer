@@ -25,9 +25,6 @@ struct sigscan_status
     HANDLE osuproc;
 #else
     pid_t osu;
-#ifdef OSUMEM_PREAD
-    int mem_fd;
-#endif
 #endif
 };
 
