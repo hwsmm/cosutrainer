@@ -94,7 +94,7 @@ Fl_Window* CosuUI::make_window()
                 convert = new Fl_Button(120, 465, 260, 55, "Convert now");
             } // Fl_Button* convert
             {
-                songtitlelabel = new Fl_Box(10, 155, 370, 25, "Song Title");
+                songtitlelabel = new Fl_Box(10, 155, 370, 25, "Select a map");
                 songtitlelabel->labelsize(25);
                 songtitlelabel->align(Fl_Align(FL_ALIGN_LEFT|FL_ALIGN_INSIDE));
             } // Fl_Box* songtitlelabel

@@ -90,6 +90,7 @@ void CosuWindow::rateradio_callb(Fl_Widget *w, void *data)
 
         win->update_ar_label();
         win->update_od_label();
+        win->update_rate_bpm();
     }
 }
 

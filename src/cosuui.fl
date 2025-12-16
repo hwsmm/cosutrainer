@@ -92,7 +92,7 @@ class CosuUI {open
           xywh {120 465 260 55}
         }
         Fl_Box songtitlelabel {
-          label {Song Title}
+          label {Select a map}
           xywh {10 155 370 25} labelsize 25 align 20
         }
         Fl_Box difflabel {
