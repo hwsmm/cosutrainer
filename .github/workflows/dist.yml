@@ -5,14 +5,13 @@ on:
 
 jobs:
     linux:
-        runs-on: ubuntu-latest
+        runs-on: ubuntu-22.04
         name: Linux AppImage Build
-        container: debian:bullseye
         steps:
             - name: Install dependencies
               run: |
-                  apt update -y
-                  apt install -y g++ libmpg123-dev libmp3lame-dev libsndfile1-dev libsoundtouch-dev libminizip-dev zlib1g-dev \
+                  sudo apt update -y
+                  sudo apt install -y g++ libmpg123-dev libmp3lame-dev libsndfile1-dev libsoundtouch-dev libminizip-dev zlib1g-dev \
                   libfltk1.3-dev meson wget tar zstd gzip file fuse libfuse2
 
             - name: Checkout
