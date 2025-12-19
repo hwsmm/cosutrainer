@@ -323,15 +323,16 @@ void CosuWindow::diffch_callb(Fl_Widget *w, void *data)
 
 #ifndef WIN32
 
-static const char iconpaths[2][35] =
+static const char iconpaths[3][35] =
 {
     "/usr/share/pixmaps/cosutrainer.png",
-    "./cosutrainer.png"
+    "./cosutrainer.png",
+    "../docs/cosutrainer.png",
 };
 
 static char *get_iconpath()
 {
-    for (int i = 0; i < 2; i++)
+    for (int i = 0; i < 3; i++)
     {
         if (access(iconpaths[i], F_OK) == 0)
         {
@@ -366,33 +367,26 @@ static char *get_iconpath()
 
 Fl_RGB_Image *icon = NULL;
 
-static void set_default_icon()
+static void set_cosu_icon(Fl_Window *fwin)
 {
     char *icp = get_iconpath();
     if (icp != NULL)
     {
-        icon = new Fl_PNG_Image(icp);
+        Fl_RGB_Image *newicon = new Fl_PNG_Image(icp);
         free(icp);
-        if (icon != NULL)
-        {
-            Fl_Window::default_icon(icon);
-        }
-    }
-}
+        fwin->icon(newicon);
 
-static void set_cosu_icon(Fl_Window *fwin)
-{
-    (void*)fwin;
+        if (icon != NULL)
+            delete icon;
+
+        icon = newicon;
+    }
 }
 
 #else
 
 #include <FL/platform.h>
 #include "app.rc"
-
-static void set_default_icon()
-{
-}
 
 static void set_cosu_icon(Fl_Window *fwin)
 {
@@ -426,8 +420,6 @@ void CosuWindow::start()
     {
         (*(diffw + gi))->callback(diffch_callb, (void*) this);
     }
-
-    set_default_icon();
 
     const char cut_tooltip[] = "Put only numbers for combo count, or \':\' for time.\n"
                                "Blanking the first box makes the converted map start from 0, and blanking the second makes it end at the end of an original map.\n"
