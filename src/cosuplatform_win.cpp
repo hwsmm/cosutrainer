@@ -93,44 +93,6 @@ int try_convertwinpath(char *path, int pos)
     return -1;
 }
 
-char *get_iconpath()
-{
-    const WCHAR name[] = L"cosutrainer.png";
-
-    LPWSTR pathbuf = (LPWSTR) calloc(MAX_PATH, sizeof(WCHAR));
-    if (pathbuf == NULL)
-    {
-        fputs("Failed allocating memory for process path!\n", stderr);
-        return NULL;
-    }
-
-    DWORD err = GetModuleFileNameW(NULL, pathbuf, MAX_PATH);
-    if (err >= MAX_PATH)
-    {
-        fputs("Windows may have truncated file path!\n", stderr);
-    }
-    else if (err == 0)
-    {
-        fprintf(stderr, "Failed getting process path: %lu\n", GetLastError());
-        return NULL;
-    }
-
-    LPWSTR findslash = pathbuf + wcslen(pathbuf);
-    while (*--findslash)
-    {
-        if (*findslash == '\\')
-        {
-            StringCchCopyW(findslash + 1, MAX_PATH - err - 1, name);
-            break;
-        }
-        err--;
-    }
-
-    LPSTR mbbuf = alloc_wcstombs(pathbuf);
-    free(pathbuf);
-    return mbbuf;
-}
-
 static LPSTR alloc_wcstombs_internal(LPWSTR wide, UINT codepage)
 {
     int mbnum = WideCharToMultiByte(codepage, 0, wide, -1, NULL, 0, NULL, NULL);

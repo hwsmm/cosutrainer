@@ -321,6 +321,88 @@ void CosuWindow::diffch_callb(Fl_Widget *w, void *data)
 
 #pragma GCC diagnostic pop
 
+#ifndef WIN32
+
+static const char iconpaths[2][35] =
+{
+    "/usr/share/pixmaps/cosutrainer.png",
+    "./cosutrainer.png"
+};
+
+static char *get_iconpath()
+{
+    for (int i = 0; i < 2; i++)
+    {
+        if (access(iconpaths[i], F_OK) == 0)
+        {
+            char *cpy = (char*) malloc(sizeof(iconpaths[i])); // may allocate larger memory than needed if it's short but whatever
+            if (cpy == NULL)
+            {
+                printerr("Failed allocating!");
+                return NULL;
+            }
+            strcpy(cpy, iconpaths[i]);
+            return cpy;
+        }
+    }
+
+    char *appi = getenv("APPDIR");
+    if (appi != NULL)
+    {
+        const char suffix[] = "/usr/share/pixmaps/cosutrainer.png";
+        char *path = (char*) malloc(strlen(appi) + sizeof(suffix));
+        if (path == NULL)
+        {
+            printerr("Failed allocating!");
+            return NULL;
+        }
+        strcpy(path, appi);
+        strcat(path, suffix);
+        return path;
+    }
+
+    return NULL;
+}
+
+Fl_RGB_Image *icon = NULL;
+
+static void set_default_icon()
+{
+    char *icp = get_iconpath();
+    if (icp != NULL)
+    {
+        icon = new Fl_PNG_Image(icp);
+        free(icp);
+        if (icon != NULL)
+        {
+            Fl_Window::default_icon(icon);
+        }
+    }
+}
+
+static void set_cosu_icon(Fl_Window *fwin)
+{
+    (void*)fwin;
+}
+
+#else
+
+#include <FL/platform.h>
+#include "app.rc"
+
+static void set_default_icon()
+{
+}
+
+static void set_cosu_icon(Fl_Window *fwin)
+{
+    HICON hIcon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_ICON1));
+    SendMessage(fl_xid(fwin), WM_SETICON, ICON_BIG, (LPARAM)hIcon);
+    SendMessage(fl_xid(fwin), WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
+}
+
+#endif
+
 void CosuWindow::start()
 {
     Fl::scheme("plastic");
@@ -330,7 +412,6 @@ void CosuWindow::start()
 
     Fl_Image emptyimg(0,0,0);
     Fl_Image *img = NULL;
-    Fl_RGB_Image *icon = NULL;
 
     cosuui.lock->hide();
 
@@ -346,16 +427,7 @@ void CosuWindow::start()
         (*(diffw + gi))->callback(diffch_callb, (void*) this);
     }
 
-    char *icp = get_iconpath();
-    if (icp != NULL)
-    {
-        icon = new Fl_PNG_Image(icp);
-        free(icp);
-        if (icon != NULL)
-        {
-            Fl_Window::default_icon(icon);
-        }
-    }
+    set_default_icon();
 
     const char cut_tooltip[] = "Put only numbers for combo count, or \':\' for time.\n"
                                "Blanking the first box makes the converted map start from 0, and blanking the second makes it end at the end of an original map.\n"
@@ -370,6 +442,8 @@ void CosuWindow::start()
 
     window->show();
     window->make_current();
+
+    set_cosu_icon(window);
 
     while (Fl::wait() > 0)
     {
@@ -540,5 +614,7 @@ void CosuWindow::start()
         }
     }
     if (img != NULL) delete img;
+#ifndef WIN32
     if (icon != NULL) delete icon;
+#endif
 }

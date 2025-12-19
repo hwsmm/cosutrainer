@@ -91,7 +91,7 @@ jobs:
                   mkdir package && cd package
                   strip -s -o cosu-trainer.exe ../builddir/cosu-trainer.exe
                   for lib in $(cat ../deplist); do echo $lib && strip -s -o `basename $lib` $lib; done
-                  cp ../COPYING.md ../docs/cosutrainer.png .
+                  cp ../COPYING.md .
 
             - name: Upload a package
               uses: actions/upload-artifact@v4

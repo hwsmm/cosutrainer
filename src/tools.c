@@ -6,7 +6,9 @@
 #ifdef WIN32
 #include <windows.h>
 #define gtime() GetTickCount()
+#ifndef strncasecmp
 #define strncasecmp(x,y,z) _strnicmp(x,y,z)
+#endif
 #else
 #include <time.h>
 #define gtime() time(NULL)

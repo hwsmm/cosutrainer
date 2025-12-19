@@ -288,48 +288,6 @@ int try_convertwinpath(char *path, int pos)
     return 0;
 }
 
-static const char iconpaths[2][35] =
-{
-    "/usr/share/pixmaps/cosutrainer.png",
-    "./cosutrainer.png"
-};
-
-char *get_iconpath()
-{
-    for (int i = 0; i < 2; i++)
-    {
-        if (access(iconpaths[i], F_OK) == 0)
-        {
-            char *cpy = (char*) malloc(sizeof(iconpaths[i])); // may allocate larger memory than needed if it's short but whatever
-            if (cpy == NULL)
-            {
-                printerr("Failed allocating!");
-                return NULL;
-            }
-            strcpy(cpy, iconpaths[i]);
-            return cpy;
-        }
-    }
-
-    char *appi = getenv("APPDIR");
-    if (appi != NULL)
-    {
-        const char suffix[] = "/usr/share/pixmaps/cosutrainer.png";
-        char *path = (char*) malloc(strlen(appi) + sizeof(suffix));
-        if (path == NULL)
-        {
-            printerr("Failed allocating!");
-            return NULL;
-        }
-        strcpy(path, appi);
-        strcat(path, suffix);
-        return path;
-    }
-
-    return NULL;
-}
-
-
 char *alloc_wcstombs(wchar_t *wide)
 {
     char tmp[MB_CUR_MAX];

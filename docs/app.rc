@@ -1,0 +1,5 @@
+#define IDI_ICON1 129
+
+#ifdef RC_INVOKED
+IDI_ICON1 ICON DISCARDABLE "icon.ico"
+#endif
