@@ -1,6 +1,7 @@
 #pragma once
 
 #ifdef WIN32
+
 #include <windows.h>
 #include <io.h>
 #include <synchapi.h>
@@ -8,12 +9,19 @@
 #define STR_PATHSEP "\\"
 #define F_OK 0
 #define ssleep(x) Sleep(x)
+
 #else
+
 #include <unistd.h>
 #define PATHSEP '/'
 #define STR_PATHSEP "/"
 #define ssleep(x) usleep(x * 1000)
 #define _access access
+
+#define COSU_IPCKEY ftok("/", 727)
+#define COSU_IPCREQ 1
+#define COSU_IPCPATH 2
+
 #endif
 
 #include <wchar.h>

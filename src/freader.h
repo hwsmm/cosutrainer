@@ -6,6 +6,7 @@
 #include <cstring>
 #include <chrono>
 #include <mutex>
+#include <atomic>
 #include <condition_variable>
 
 #ifdef WIN32
@@ -27,7 +28,7 @@ private:
     struct songpath_status st;
 #endif
     static void thread_func(Freader *fr);
-    volatile bool conti;
+    std::atomic<bool> conti;
     CosuWindow *win;
 
     void init(CosuWindow *win)
@@ -35,6 +36,7 @@ private:
         info = NULL;
         oldinfo = NULL;
         consumed = true;
+        conti = true;
         this->win = win;
     }
 
@@ -50,7 +52,7 @@ private:
 
     std::condition_variable_any cnd;
 
-    void sleep()
+    void sleep_cnd()
     {
         cnd.wait_for(mtx, std::chrono::milliseconds(500));
     }

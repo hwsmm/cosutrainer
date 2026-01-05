@@ -4,6 +4,7 @@
 #include <fcntl.h>
 #include <string.h>
 #include <signal.h>
+#include <sys/types.h>
 #include <sys/stat.h>
 #include <wchar.h>
 #include <wctype.h>
@@ -18,6 +19,10 @@
 
 #ifndef WIN32
 #include <unistd.h>
+#include <errno.h>
+#include <time.h>
+#include <sys/msg.h>
+#include <sys/ipc.h>
 #endif
 
 bool match_pattern(struct sigscan_status *st, ptr_type *baseaddr)
@@ -128,39 +133,95 @@ volatile int run = 1;
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
-void gotquitsig(int sig)
+static void gotsig(int sig)
 {
-    run = 0;
+    if (sig != SIGRTMIN)
+        run = 0;
 }
 #pragma GCC diagnostic pop
 
-int main()
+int main(int argc, char *argv[])
 {
     fprintf(stderr, "Current locale: %s\n", setlocale(LC_CTYPE, ""));
     struct sigscan_status st;
     init_sigstatus(&st);
     ptr_type base = PTR_NULL;
 
-    wchar_t *songpath = NULL;
-    wchar_t *oldpath = NULL;
-    unsigned int len = 0;
-
     char *songsfd = NULL;
-    int songsfdlen = 0;
 
-    int fd = -1;
+    int fd = msgget(COSU_IPCKEY, IPC_CREAT | S_IRWXU | S_IRWXG | S_IRWXO);
+    if (fd == -1)
+    {
+        perror("msgget");
+        return -1;
+    }
 
-    struct sigaction act;
-    memset(&act, 0, sizeof(act));
-    act.sa_handler = gotquitsig;
-    if (sigaction(SIGINT, &act, NULL) != 0 && sigaction(SIGTERM, &act, NULL) != 0)
+    struct msqid_ds fdattr = { 0, };
+    if (msgctl(fd, IPC_STAT, &fdattr) == -1)
+    {
+        perror("IPC_STAT");
+        return -1;
+    }
+
+    if (argc > 1 && strcmp(argv[1], "--max-queue-size") == 0)
+    {
+        if (argc < 3)
+        {
+            printerr("Please set the queue size");
+            return 1;
+        }
+
+        msglen_t qsize = atol(argv[2]);
+        fdattr.msg_qbytes = qsize;
+
+        if (msgctl(fd, IPC_SET, &fdattr) == -1)
+        {
+            perror("IPC_SET");
+            return -1;
+        }
+
+        fprintf(stderr, "Successfully overrode queue size to %ld.\n", qsize);
+    }
+
+    char *msgbuf = (char*)malloc(fdattr.msg_qbytes);
+    if (msgbuf == NULL)
+    {
+        printerr("Failed allocation");
+        return -2;
+    }
+    msglen_t msgbufsize = fdattr.msg_qbytes;
+
+    struct sigaction act = { 0, };
+    act.sa_handler = gotsig;
+    if (sigaction(SIGINT, &act, NULL) != 0 || sigaction(SIGTERM, &act, NULL) != 0 || sigaction(SIGRTMIN, &act, NULL) != 0)
     {
         perror(NULL);
         return -3;
     }
 
+    struct sigevent sigevt = { 0, };
+    sigevt.sigev_notify = SIGEV_SIGNAL;
+    sigevt.sigev_signo = SIGRTMIN;
+    sigevt.sigev_value.sival_ptr = NULL;
+
+    struct itimerspec timerspec;
+    timerspec.it_value.tv_sec = 1;
+    timerspec.it_value.tv_nsec = 0;
+    timerspec.it_interval.tv_sec = 1;
+    timerspec.it_interval.tv_nsec = 0;
+
+    timer_t timerId = 0;
+    if (timer_create(CLOCK_REALTIME, &sigevt, &timerId) != 0 || timer_settime(timerId, 0, &timerspec, NULL) != 0)
+    {
+        perror("timer");
+        return -3;
+    }
+
+    ssize_t recvbyte = -1;
+
     printerr("Memory scanner is now starting... Open osu! and get into song select!");
-    while (run)
+
+    do
     {
         DEFAULT_LOGIC(&st,
         {
@@ -234,7 +295,6 @@ int main()
                     if (songsfd != NULL)
                     {
                         fprintf(stderr, "Found Song folder: %s\n", songsfd);
-                        songsfdlen = strlen(songsfd);
                     }
                 }
                 else
@@ -258,79 +318,77 @@ skip:
                 else
                 {
                     printerr("Failed scanning memory: It could be because it's too early");
-                    printerr("Will retry in 3 seconds...");
-                    sleep(3);
-                    continue;
+                    printerr("Will retry in a bit...");
+                    goto contin;
                 }
             }
 
-            songpath = get_mappath(&st, base, &len);
-            if (songpath != NULL)
+            if (recvbyte < 0)
             {
-                if (oldpath != NULL && wcscmp(songpath, oldpath) == 0)
-                {
-                    free(songpath);
-                    songpath = NULL;
-                    goto contin;
-                }
-                else
-                {
-                    free(oldpath);
-                    oldpath = songpath;
-                }
-            }
-            else
-            {
-                printerr("Failed reading memory: Scanning again...");
-                base = NULL;
                 goto contin;
             }
 
-            if (fd == -1)
+            unsigned int len = 0;
+            wchar_t *songpath = get_mappath(&st, base, &len);
+
+            if (songpath == NULL)
             {
-                fd = open("/tmp/osu_path", O_CREAT|O_WRONLY|O_TRUNC|O_SYNC, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH);
-                if (fd == -1)
-                {
-                    perror("/tmp/osu_path");
-                    goto contin;
-                }
+                printerr("Failed reading memory: Scanning again...");
+                base = PTR_NULL;
+                goto contin;
             }
 
-            if (lseek(fd, 0, SEEK_SET) == -1)
-            {
-                perror("/tmp/osu_path");
-            }
-            else
-            {
-                int write = songsfd != NULL
-                            ? dprintf(fd, "%d %s/%ls", songsfdlen, songsfd, songpath)
-                            : dprintf(fd, "0 %ls", songpath);
+            int writ = songsfd != NULL
+                       ? snprintf(msgbuf + sizeof(long), msgbufsize - sizeof(long), "%s\n%ls", songsfd, songpath)
+                       : snprintf(msgbuf + sizeof(long), msgbufsize - sizeof(long), "%ls", songpath);
 
-                if (write < 0)
-                    perror("dprintf");
-                else if (ftruncate(fd, write) == -1)
-                    perror("truncate");
-                else
-                    fsync(fd);
+            *(long*)msgbuf = COSU_IPCPATH; // mtype
+
+            if (writ < 0)
+            {
+                perror(NULL);
             }
+            else if (msgsnd(fd, msgbuf, writ + 1, IPC_NOWAIT) == -1)
+            {
+                perror("msgsnd");
+
+                fprintf(stderr, "Your message queue buffer might be too small for this map path.\n"
+                                "Consider running `%s --max-queue-size %lu` to increase limit."
+                                "You may need to restart cosu-trainer after running the command.\n"
+                                "However, you should rather place your osu install in a better location if your song folder path is too long.", argv[0], msgbufsize * 2);
+            }
+
+            free(songpath);
         },
         {
             printerr("Process lost! Waiting for osu...");
-            base = NULL;
+            base = PTR_NULL;
 
             free(songsfd);
             songsfd = NULL;
         });
 contin:
-        sleep(1);
+        recvbyte = msgrcv(fd, msgbuf, msgbufsize, COSU_IPCREQ, 0);
+        if (recvbyte < 0)
+        {
+            if (errno == EINTR)
+            {
+                continue;
+            }
+            else
+            {
+                perror("msgrcv");
+                break;
+            }
+        }
     }
+    while (run);
 
-    unlink("/tmp/osu_path");
-    if (songpath != oldpath) free(oldpath);
-    if (songpath != NULL) free(songpath);
     free(songsfd);
+    free(msgbuf);
     stop_memread(&st);
-    close(fd);
+    timer_delete(timerId);
+    msgctl(fd, IPC_RMID, NULL);
     return 0;
 }
 #endif
