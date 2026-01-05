@@ -20,8 +20,6 @@ Freader::~Freader()
 
 void Freader::thread_func(Freader *fr)
 {
-    fr->conti = true;
-
     ptr_type base = NULL;
     wchar_t *songpath = NULL;
     wchar_t *oldpath = NULL;
@@ -47,7 +45,7 @@ void Freader::thread_func(Freader *fr)
                 if (fr->songf == NULL)
                 {
                     printerr("Song folder not found!");
-                    fr->sleep();
+                    fr->sleep_cnd();
                     continue;
                 }
             }
@@ -57,7 +55,7 @@ void Freader::thread_func(Freader *fr)
                 if (!match_pattern(sst, &base) || base == PTR_NULL)
                 {
                     printerr("Failed scanning memory!");
-                    fr->sleep();
+                    fr->sleep_cnd();
                     continue;
                 }
             }
@@ -69,7 +67,7 @@ void Freader::thread_func(Freader *fr)
                 {
                     free(songpath);
                     songpath = NULL;
-                    fr->sleep();
+                    fr->sleep_cnd();
                     continue;
                 }
                 else
@@ -119,7 +117,7 @@ void Freader::thread_func(Freader *fr)
                 fr->songf = NULL;
             }
         })
-        fr->sleep();
+        fr->sleep_cnd();
     }
     free(songpath);
     free(oldpath);

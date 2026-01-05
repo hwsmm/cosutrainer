@@ -8,7 +8,10 @@
 #include "tools.h"
 #include "cuimain.h"
 #include "cosuplatform.h"
+
+#ifndef WIN32
 #include "lsongpathparser.h"
+#endif
 
 static void showprog(void *data, float progress)
 {

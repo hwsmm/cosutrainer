@@ -3,6 +3,9 @@
 
 #ifndef WIN32
 
+#include <sys/msg.h>
+#include <sys/ipc.h>
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -10,12 +13,17 @@ extern "C"
 
 struct songpath_status
 {
-    char *songf;
+    int waitcnt;
+
+    int fd;
+    char *msgbuf;
+    long msgbufsize;
 
     char *save;
-    char *path;
+    ssize_t savesize;
 
-    bool within;
+    char *songf;
+    char *path;
 };
 
 void songpath_init(struct songpath_status *st);
