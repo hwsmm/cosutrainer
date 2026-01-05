@@ -34,7 +34,7 @@ void CosuWindow::update_rate_bpm()
         return;
 
     double bpm = fr.info->maxbpm * cosuui.speedval->value();
-    snprintf(bpmstr, sizeof(bpmstr), "%dbpm", (int)round(bpm));
+    snprintf(bpmstr, sizeof(bpmstr), "%.0lfbpm", bpm);
 
     cosuui.ratebpm->label(bpmstr);
 }
