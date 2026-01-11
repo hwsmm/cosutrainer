@@ -8,6 +8,7 @@
 #include <cstdlib>
 #include <FL/Fl_JPEG_Image.H>
 #include <FL/Fl_PNG_Image.H>
+#include <FL/Fl_Shared_Image.H>
 #include <FL/fl_ask.H>
 
 using namespace std;
@@ -400,7 +401,9 @@ static void set_cosu_icon(Fl_Window *fwin)
 void CosuWindow::start()
 {
     Fl::scheme("plastic");
+    Fl::visual(FL_RGB);
     Fl_Image::RGB_scaling(FL_RGB_SCALING_BILINEAR);
+    fl_register_images();
 
     Fl_Window *window = cosuui.make_window();
 
@@ -478,26 +481,16 @@ void CosuWindow::start()
             }
             if (bgpath != NULL)
             {
-                if (endswith(bgpath, ".png"))
-                {
-                    tempimg = new Fl_PNG_Image(bgpath);
-                }
-                else if (endswith(bgpath, ".jpg") || endswith(bgpath, ".jpeg"))
-                {
-                    tempimg = new Fl_JPEG_Image(bgpath);
-                }
-                else
-                {
-                    tempimg = NULL;
-                }
+                Fl_Shared_Image *simg = Fl_Shared_Image::get(bgpath);
 
-                if (tempimg != NULL)
+                if (simg->w() > 0 && simg->h() > 0)
                 {
-                    float newh = (370.0f / (float) (tempimg->w())) * (float) tempimg->h();
-                    Fl_Image *res = ((Fl_RGB_Image*) tempimg)->copy(370, (int) newh);
-                    delete tempimg;
+                    float newh = (370.0f / (float) (simg->w())) * (float) simg->h();
+                    Fl_Image *res = simg->copy(370, (int) newh);
                     tempimg = res;
                 }
+
+                simg->release();
                 free(bgpath);
             }
             if ((cosuui.hplock)->value() <= 0)
