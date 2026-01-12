@@ -25,42 +25,6 @@ char *read_file(const char *file, int *size)
     return NULL; // stub;
 }
 
-char *get_realpath(char *path)
-{
-    LPWSTR pathbuf = (LPWSTR) calloc(MAX_PATH, sizeof(WCHAR));
-    if (pathbuf == NULL)
-    {
-        fputs("Failed allocating memory for path!\n", stderr);
-        return NULL;
-    }
-
-    LPWSTR wcbuf = alloc_mbstowcs(path);
-    if (wcbuf == NULL)
-    {
-        fputs("Failed allocating memory for path!\n", stderr);
-        free(pathbuf);
-        return NULL;
-    }
-
-    DWORD err = GetFullPathNameW(wcbuf, MAX_PATH, pathbuf, NULL);
-    if (err >= MAX_PATH)
-    {
-        fputs("Windows may have truncated file path!\n", stderr);
-    }
-    else if (err == 0)
-    {
-        fprintf(stderr, "Failed getting process path: %lu\n", GetLastError());
-        free(wcbuf);
-        free(pathbuf);
-        return NULL;
-    }
-    free(wcbuf);
-
-    LPSTR mbbuf = alloc_wcstombs(pathbuf);
-    free(pathbuf);
-    return mbbuf;
-}
-
 char *get_songspath(wchar_t *base_path)
 {
     LPWSTR st = base_path;

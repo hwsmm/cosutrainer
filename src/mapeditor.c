@@ -398,13 +398,19 @@ static int convert_vaildpath(struct mapinfo *mi)
 struct mapinfo *read_beatmap(char *mapfile)
 {
     struct mapinfo *info = (struct mapinfo*) calloc(1, sizeof(struct mapinfo));
+    if (info == NULL)
+    {
+        printerr("Failed allocation");
+        return NULL;
+    }
+
     int ret = loop_map(mapfile, &write_mapinfo, info);
     if (ret == 0)
     {
-        info->fullpath = get_realpath(mapfile);
+        info->fullpath = _strdup(mapfile);
         if (info->fullpath == NULL)
         {
-            perror(mapfile);
+            printerr("Failed allocation");
             free_mapinfo(info);
             return NULL;
         }

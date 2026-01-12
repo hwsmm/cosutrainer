@@ -17,6 +17,7 @@
 #define STR_PATHSEP "/"
 #define ssleep(x) usleep(x * 1000)
 #define _access access
+#define _strdup strdup
 
 #define COSU_IPCKEY ftok("/", 727)
 #define COSU_IPCREQ 1
@@ -33,7 +34,6 @@ extern "C"
 
 int execute_file(char* file);
 char *read_file(const char *file, int *size);
-char *get_realpath(char *path);
 char *get_songspath(wchar_t *base_path);
 int try_convertwinpath(char *path, int pos);
 char *alloc_wcstombs(wchar_t *wide);
