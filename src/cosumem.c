@@ -221,6 +221,7 @@ int main(int argc, char *argv[])
     }
 
     ssize_t recvbyte = -1;
+    bool sent = true;
 
     printerr("Memory scanner is now starting... Open osu! and get into song select!");
 
@@ -326,7 +327,7 @@ skip:
                 }
             }
 
-            if (recvbyte < 0)
+            if (sent)
             {
                 goto contin;
             }
@@ -360,6 +361,10 @@ skip:
                                 "You may need to restart cosu-trainer after running the command.\n"
                                 "However, you should rather place your osu install in a better location if your song folder path is too long.", argv[0], msgbufsize * 2);
             }
+            else
+            {
+                sent = true;
+            }
 
             free(songpath);
         },
@@ -383,6 +388,10 @@ contin:
                 perror("msgrcv");
                 break;
             }
+        }
+        else
+        {
+            sent = false;
         }
     }
     while (run);

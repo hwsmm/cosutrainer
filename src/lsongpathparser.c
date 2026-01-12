@@ -95,7 +95,7 @@ bool songpath_get(struct songpath_status *st, char **path)
 
     char *msgbuf = st->msgbuf + sizeof(long);
 
-    if (readbytes == 0)
+    if (readbytes <= 0)
     {
         return false;
     }
