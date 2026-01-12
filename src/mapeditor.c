@@ -7,6 +7,7 @@
 #include <math.h>
 #include <inttypes.h>
 #include <stdarg.h>
+#include <ctype.h>
 
 #define tkn(x) strtok(x, ",")
 #define nexttkn() strtok(NULL, ",")
@@ -192,6 +193,26 @@ static int loop_map(char *mapfile, int (*func)(char*, void*, enum SECTION), void
         {
             newsect = sect;
             sect = empty;
+        }
+        else if (isspace(*line))
+        {
+            bool onlyspace = true;
+            char *check = line;
+
+            while (*(++check) != '\0')
+            {
+                if (!isspace(*check))
+                {
+                    onlyspace = false;
+                    break;
+                }
+            }
+
+            if (onlyspace)
+            {
+                newsect = sect;
+                sect = empty;
+            }
         }
 
         if (sect != unknown)
