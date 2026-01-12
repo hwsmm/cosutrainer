@@ -98,6 +98,9 @@ wchar_t *get_mappath(struct sigscan_status *st, ptr_type base_address, unsigned 
 
     int size;
     size = foldersize + 1 + pathsize + 1; // / , \0
+    if (size <= 0)
+        goto readfail;
+
     wchar_t *songpath;
     songpath = (wchar_t*) malloc(size * sizeof(wchar_t));
 
