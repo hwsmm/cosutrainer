@@ -483,14 +483,22 @@ void CosuWindow::start()
             {
                 Fl_Shared_Image *simg = Fl_Shared_Image::get(bgpath);
 
-                if (simg->w() > 0 && simg->h() > 0)
+                if (simg != NULL)
                 {
-                    float newh = (370.0f / (float) (simg->w())) * (float) simg->h();
-                    Fl_Image *res = simg->copy(370, (int) newh);
-                    tempimg = res;
+                    if (simg->w() > 0 && simg->h() > 0)
+                    {
+                        float newh = (370.0f / (float) (simg->w())) * (float) simg->h();
+                        Fl_Image *res = simg->copy(370, (int) newh);
+                        tempimg = res;
+                    }
+
+                    simg->release();
+                }
+                else
+                {
+                    fprintf(stderr, "Image (%s) is not valid!\n", bgpath);
                 }
 
-                simg->release();
                 free(bgpath);
             }
             if ((cosuui.hplock)->value() <= 0)
