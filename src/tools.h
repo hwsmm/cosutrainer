@@ -6,7 +6,9 @@
 #define CMPSTR(x, y) (strncmp(x, y, sizeof((y)) - 1) == 0)
 // compare the first part of string with a fixed string
 
-#define CUTFIRST(x, y) (x + sizeof(y) - 1)
+#define CUTFIRST(x, y) trim(x + sizeof(y) - 1, NULL)
+
+#define CUTFIRST_NOTRIM(x, y) (x + sizeof(y) - 1)
 
 #define CLAMP(x, min, max) x = x > max ? max : x < min ? min : x
 

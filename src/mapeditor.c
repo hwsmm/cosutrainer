@@ -278,15 +278,14 @@ static int write_mapinfo(char *line, void *vinfo, enum SECTION sect)
     }
     else if (sect == general) // 4
     {
-        if (CMPSTR(line, "AudioFilename: "))
+        if (CMPSTR(line, "AudioFilename:"))
         {
-            char *filename = CUTFIRST(line, "AudioFilename: ");
-            remove_newline(filename);
+            char *filename = CUTFIRST(line, "AudioFilename:");
             allocput(info->audioname, filename);
         }
-        else if (CMPSTR(line, "Mode: "))
+        else if (CMPSTR(line, "Mode:"))
         {
-            info->mode = atoi(CUTFIRST(line, "Mode: "));
+            info->mode = atoi(CUTFIRST(line, "Mode:"));
         }
     }
     else if (sect == difficulty) // 7
@@ -304,13 +303,11 @@ static int write_mapinfo(char *line, void *vinfo, enum SECTION sect)
         {
             info->diffexists = true;
             char *diffname = CUTFIRST(line, "Version:");
-            remove_newline(diffname);
             allocput(info->diffname, diffname);
         }
         else if (CMPSTR(line, "Title:"))
         {
             char *songname = CUTFIRST(line, "Title:");
-            remove_newline(songname);
             allocput(info->songname, songname);
         }
         else if (CMPSTR(line, "Tags:"))
@@ -322,7 +319,7 @@ static int write_mapinfo(char *line, void *vinfo, enum SECTION sect)
     {
         if (CMPSTR(line, "0,0,"))
         {
-            char *bgname = CUTFIRST(line, "0,0,");
+            char *bgname = CUTFIRST_NOTRIM(line, "0,0,");
             char *endhere = NULL;
             if (*bgname == '\"')
             {
@@ -351,10 +348,20 @@ static int write_mapinfo(char *line, void *vinfo, enum SECTION sect)
 #ifndef WIN32
 static int convert_vaildpath(struct mapinfo *mi)
 {
-    char *sep = strrchr(mi->fullpath, PATHSEP);
-    *sep = '\0';
+    int fdlen;
+    char *fullpath = mi->fullpath;
+    char *sep = strrchr(fullpath, PATHSEP);
+    if (sep != NULL)
+    {
+        *sep = '\0';
+        fdlen = strlen(mi->fullpath);
+    }
+    else
+    {
+        fullpath = ".";
+        fdlen = 1;
+    }
 
-    int fdlen = strlen(mi->fullpath);
     int solen = mi->audioname != NULL ? strlen(mi->audioname) : 0;
     int bglen = mi->bgname != NULL ? strlen(mi->bgname) : 0;
     int res = 0;
@@ -364,8 +371,10 @@ static int convert_vaildpath(struct mapinfo *mi)
         printerr("Failed allocation!");
         return -1;
     }
-    strcpy(temp, mi->fullpath);
-    *sep = PATHSEP;
+    strcpy(temp, fullpath);
+    if (sep != NULL)
+        *sep = PATHSEP;
+
     *(temp + fdlen) = PATHSEP;
 
     if (mi->audioname != NULL)
@@ -407,7 +416,20 @@ struct mapinfo *read_beatmap(char *mapfile)
     int ret = loop_map(mapfile, &write_mapinfo, info);
     if (ret == 0)
     {
-        info->fullpath = _strdup(mapfile);
+        if (strchr(mapfile, PATHSEP) == NULL)
+        {
+            info->fullpath = (char*) malloc(2 + strlen(mapfile) + 1);
+            if (info->fullpath != NULL)
+            {
+                strcpy(info->fullpath, "./");
+                strcat(info->fullpath, mapfile);
+            }
+        }
+        else
+        {
+            info->fullpath = _strdup(mapfile);
+        }
+
         if (info->fullpath == NULL)
         {
             printerr("Failed allocation");
@@ -780,10 +802,10 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
     }
     else if (!prior_read && sect == editor)
     {
-        if (CMPSTR(line, "Bookmarks: "))
+        if (CMPSTR(line, "Bookmarks:"))
         {
             edited = true;
-            char *p = CUTFIRST(line, "Bookmarks: ");
+            char *p = CUTFIRST(line, "Bookmarks:");
             char *token = tkn(p);
             putsstr("Bookmarks: ");
             while (1)
@@ -804,22 +826,28 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
     }
     else if (!prior_read && sect == general)
     {
-        if (CMPSTR(line, "AudioFilename: ") && speed != 1)
+        if (CMPSTR(line, "AudioFilename:") && speed != 1.0)
         {
             edited = true;
+            if (ep->bufs->audname == NULL)
+            {
+                printerr("Speed is not 1.0x, but audio file name is not set");
+                return 5;
+            }
+
             snpedit("AudioFilename: %s\r\n", ep->bufs->audname);
         }
-        else if (CMPSTR(line, "AudioLeadIn: "))
+        else if (CMPSTR(line, "AudioLeadIn:"))
         {
             edited = true;
-            char *p = CUTFIRST(line, "AudioLeadIn: ");
+            char *p = CUTFIRST(line, "AudioLeadIn:");
             long time = atol(p) / speed;
             snpedit("AudioLeadIn: %ld\r\n", time);
         }
-        else if (CMPSTR(line, "PreviewTime: "))
+        else if (CMPSTR(line, "PreviewTime:"))
         {
             edited = true;
-            char *p = CUTFIRST(line, "PreviewTime: ");
+            char *p = CUTFIRST(line, "PreviewTime:");
             long time = atol(p);
             if (time > 0)
                 time /= speed;
@@ -1112,13 +1140,20 @@ int edit_beatmap(struct editdata *edit)
     long audnlen = 0;
     char *fcmappath = (char*) malloc(mapnlen);
     char *fcaudpath = NULL;
-    if (edit->mi->audioname && edit->speed != 1)
+    if (edit->mi->audioname)
     {
-        audnlen = folderlen + 7 + 1 + strlen(edit->mi->audioname) + 1;
-        fcaudpath = (char*) malloc(audnlen);
+        if (edit->speed != 1.0)
+        {
+            audnlen = folderlen + 7 + 1 + strlen(edit->mi->audioname) + 1;
+            fcaudpath = (char*) malloc(audnlen);
+        }
+    }
+    else
+    {
+        printerr("Audio file name is not available!");
     }
 
-    if (fcmappath == NULL || (edit->mi->audioname && edit->speed != 1 && fcaudpath == NULL))
+    if (fcmappath == NULL || (edit->mi->audioname && edit->speed != 1.0 && fcaudpath == NULL))
     {
         printerr("Failed allocating memory");
         ret = -99;
