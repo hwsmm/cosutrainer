@@ -358,8 +358,7 @@ static int convert_vaildpath(struct mapinfo *mi)
     }
     else
     {
-        fullpath = ".";
-        fdlen = 1;
+        return -2;
     }
 
     int solen = mi->audioname != NULL ? strlen(mi->audioname) : 0;
@@ -372,9 +371,7 @@ static int convert_vaildpath(struct mapinfo *mi)
         return -1;
     }
     strcpy(temp, fullpath);
-    if (sep != NULL)
-        *sep = PATHSEP;
-
+    *sep = PATHSEP;
     *(temp + fdlen) = PATHSEP;
 
     if (mi->audioname != NULL)
@@ -421,7 +418,7 @@ struct mapinfo *read_beatmap(char *mapfile)
             info->fullpath = (char*) malloc(2 + strlen(mapfile) + 1);
             if (info->fullpath != NULL)
             {
-                strcpy(info->fullpath, "./");
+                strcpy(info->fullpath, "." STR_PATHSEP);
                 strcat(info->fullpath, mapfile);
             }
         }
@@ -446,7 +443,12 @@ struct mapinfo *read_beatmap(char *mapfile)
             info->version = 14;
 
 #ifndef WIN32
-        convert_vaildpath(info);
+        if (convert_vaildpath(info) < 0)
+        {
+            printerr("Failed converting path of audio and bg");
+            free_mapinfo(info);
+            return NULL;
+        }
 #endif
     }
     else
@@ -920,19 +922,20 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
                 snpedit("%.2lfx %.0lfbpm (DT)", dtspeed, ep->ed->mi->maxbpm * dtspeed);
             }
 
-            if (ep->ed->mi->hp != ep->ed->hp) snpedit(" HP%.1lf", ep->ed->hp);
             if ((ep->ed->mi->mode != 1 && ep->ed->mi->mode != 3) && ep->ed->mi->cs != ep->ed->cs) snpedit(" CS%.1lf", ep->ed->cs);
 
             if (ep->emuldt)
             {
-                if (ep->ed->mi->mode != 2) snpedit(" OD%.1lf", scale_od(ep->ed->od, 1.5, ep->ed->mi->mode));
                 if (ep->ed->mi->mode != 1 && ep->ed->mi->mode != 3) snpedit(" AR%.1lf", scale_ar(ep->ed->ar, 1.5, ep->ed->mi->mode));
+                if (ep->ed->mi->mode != 2) snpedit(" OD%.1lf", scale_od(ep->ed->od, 1.5, ep->ed->mi->mode));
             }
             else
             {
-                if (ep->ed->mi->mode != 2 && ep->ed->mi->od != ep->ed->od) snpedit(" OD%.1lf", ep->ed->od);
                 if ((ep->ed->mi->mode != 1 && ep->ed->mi->mode != 3) && ep->ed->mi->ar != ep->ed->ar) snpedit(" AR%.1lf", ep->ed->ar);
+                if (ep->ed->mi->mode != 2 && ep->ed->mi->od != ep->ed->od) snpedit(" OD%.1lf", ep->ed->od);
             }
+
+            if (ep->ed->mi->hp != ep->ed->hp) snpedit(" HP%.1lf", ep->ed->hp);
 
             if (ep->ed->cut_start > 0 || ep->ed->cut_end < LONG_MAX)
             {
