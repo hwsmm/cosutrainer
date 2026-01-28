@@ -440,7 +440,11 @@ struct mapinfo *read_beatmap(char *mapfile)
         if (!info->arexists) info->ar = info->od;
 
         if (info->version <= 0)
-            info->version = 14;
+        {
+            printerr("Invalid osu! file without version");
+            free_mapinfo(info);
+            return NULL;
+        }
 
 #ifndef WIN32
         if (convert_vaildpath(info) < 0)
@@ -1238,7 +1242,6 @@ int edit_beatmap(struct editdata *edit)
     }
     else if (edit->cut_combo)
     {
-        // may add proper mania support in future
         needs_preread = true;
     }
 
@@ -1271,6 +1274,7 @@ int edit_beatmap(struct editdata *edit)
 
         if (ep.hitobjects_num == 0 || ep.timingpoints_num == 0)
         {
+            printerr("Map contains no objects to convert!");
             ret = -80;
             goto tryfree;
         }
