@@ -78,6 +78,7 @@ int change_mp3_speed(const char* source, struct buffers *bufs, double speed, boo
         else st.setRateChange((speed - 1.0) * 100.0);
 
         gfp = lame_init();
+        lame_set_mode(gfp, channels == 1 ? MONO : STEREO);
         lame_set_num_channels(gfp, channels);
         lame_set_in_samplerate(gfp, rate);
         switch (fi.vbr)
@@ -155,7 +156,11 @@ int change_mp3_speed(const char* source, struct buffers *bufs, double speed, boo
                     mp3buf_size = wanted;
                 }
 
-                lamerr = lame_encode_buffer_interleaved_ieee_float(gfp, convbuf, samplecount, mp3buf, mp3buf_size);
+                if (channels == 1)
+                    lamerr = lame_encode_buffer_ieee_float(gfp, convbuf, convbuf, samplecount, mp3buf, mp3buf_size);
+                else
+                    lamerr = lame_encode_buffer_interleaved_ieee_float(gfp, convbuf, samplecount, mp3buf, mp3buf_size);
+
                 if (lamerr < 0)
                 {
                     printerr("LAME encoding failed");
