@@ -382,6 +382,11 @@ static int convert_vaildpath(struct mapinfo *mi)
         {
             strcpy(mi->audioname, temp + fdlen + 1);
         }
+        else if (ares < 0)
+        {
+            printerr("Failed converting path of audio file, make sure that it exists");
+        }
+
         res = ares;
     }
 
@@ -393,7 +398,12 @@ static int convert_vaildpath(struct mapinfo *mi)
         {
             strcpy(mi->bgname, temp + fdlen + 1);
         }
-        if (res >= 0) res = bres;
+        else if (bres < 0)
+        {
+            printerr("Failed converting path of BG file, make sure that it exists (not fatal)");
+        }
+
+        // if (res >= 0) res = bres;
     }
 
     free(temp);
@@ -449,7 +459,6 @@ struct mapinfo *read_beatmap(char *mapfile)
 #ifndef WIN32
         if (convert_vaildpath(info) < 0)
         {
-            printerr("Failed converting path of audio and bg");
             free_mapinfo(info);
             return NULL;
         }

@@ -263,7 +263,7 @@ int change_audio_speed_libsndfile(const char* source, struct buffers *bufs, doub
 {
     int success = 1;
     SNDFILE *in = NULL, *out = NULL;
-    SF_INFO info = { 0, 0, 0, 0, 0, 0 };
+    SF_INFO info = { 0, };
     SF_VIRTUAL_IO sfvio = { &sfvio_get_filelen, &sfvio_seek, &sfvio_read, &sfvio_write, &sfvio_tell };
 
     float buffer[256] = { 0.0 };
@@ -278,7 +278,17 @@ int change_audio_speed_libsndfile(const char* source, struct buffers *bufs, doub
     SoundTouch st;
     bool flush = false;
 
-    if ((in = sf_open(source, SFM_READ, &info)) == NULL || (out = sf_open_virtual(&sfvio, SFM_WRITE, &info, bufs)) == NULL)
+    sf_count_t frames = 0;
+
+    if ((in = sf_open(source, SFM_READ, &info)) == NULL)
+    {
+        goto sndfclose;
+    }
+
+    frames = info.frames;
+    info.frames = 0;
+
+    if ((out = sf_open_virtual(&sfvio, SFM_WRITE, &info, bufs)) == NULL)
     {
         goto sndfclose;
     }
@@ -297,8 +307,8 @@ int change_audio_speed_libsndfile(const char* source, struct buffers *bufs, doub
 
         if (callback != NULL)
         {
-            if (info.frames > 0) // sndfile ogg impl doesn't seem to report frames though
-                progress += (float) readcount / (float) info.frames;
+            if (frames > 0)
+                progress += (float) readcount / (float) frames;
 
             callback(data, progress);
         }
