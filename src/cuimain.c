@@ -25,16 +25,25 @@ int cuimain(int argc, char *argv[])
 #endif
 {
     int ret = 0;
-    if (argc < 3)
+    if (argc < 2)
     {
         printerr("Not enough arguments.");
         return 1;
     }
 
     char *path = NULL;
-    bool osumem = (strcmp(argv[1], "auto") == 0);
+    int argstart = 2;
 
 #ifndef WIN32
+    bool osumem = (strcmp(argv[1], "auto") == 0);
+
+    if (!osumem && !endswith(argv[1], ".osu"))
+    {
+        printf("File name doesn't end with .osu, assuming that this is auto\n");
+        osumem = true;
+        argstart = 1;
+    }
+
     struct songpath_status st;
     if (osumem)
     {
@@ -42,13 +51,19 @@ int cuimain(int argc, char *argv[])
 
         if (!songpath_get(&st, &path))
         {
+            printerr("Failed to get song path, is osumem running?");
             songpath_free(&st);
             return 5;
         }
     }
     else
-#endif
+    {
         path = argv[1];
+    }
+#else
+    bool osumem = false;
+    path = argv[1];
+#endif
 
     struct mapinfo *mi = read_beatmap(path);
 #ifndef WIN32
@@ -72,7 +87,7 @@ int cuimain(int argc, char *argv[])
     edit.makezip = osumem;
 
     char *identifier = NULL;
-    edit.speed = strtod(argv[2], &identifier);
+    edit.speed = strtod(argv[argstart++], &identifier);
     edit.bpmmode = guess;
     if (identifier != NULL)
     {
@@ -95,10 +110,10 @@ int cuimain(int argc, char *argv[])
     edit.cut_end = LONG_MAX;
     edit.remove_sv = false;
 
-    if (argc >= 4)
+    if (argstart < argc)
     {
         int i;
-        for (i = 3; i < argc; i++)
+        for (i = argstart; i < argc; i++)
         {
             double *diffv = NULL;
             char *curarg = argv[i];

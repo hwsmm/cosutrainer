@@ -29,7 +29,7 @@ bool songpath_get(struct songpath_status *st, char **path)
         {
             perror(NULL);
 
-            if (st->waitcnt <= 0)
+            if (st->waitcnt == 1)
                 printerr("Waiting for osumem...");
 
             st->waitcnt++;
