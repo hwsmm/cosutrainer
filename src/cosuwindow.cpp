@@ -13,8 +13,18 @@
 
 using namespace std;
 
-CosuWindow::CosuWindow() : fr(this)
+CosuWindow::CosuWindow()
 {
+    memset(&mi, 0, sizeof(struct mapinfo));
+    memset(&mi2, 0, sizeof(struct mapinfo));
+    mi_first = true;
+    first = true;
+}
+
+CosuWindow::~CosuWindow()
+{
+    free_mapinfo(&mi);
+    free_mapinfo(&mi2);
 }
 
 double CosuWindow::get_relative_speed()
@@ -22,7 +32,7 @@ double CosuWindow::get_relative_speed()
     if (cosuui.rate->value() >= 1)
         return cosuui.speedval->value();
     else if (cosuui.bpm->value() >= 1)
-        return cosuui.speedval->value() / fr.info->maxbpm;
+        return cosuui.speedval->value() / curinfo()->maxbpm;
 
     return 1;
 }
@@ -31,10 +41,7 @@ char bpmstr[] = "xxxxxxxxxxxxxxbpm";
 
 void CosuWindow::update_rate_bpm()
 {
-    if (fr.info == NULL)
-        return;
-
-    double bpm = fr.info->maxbpm * cosuui.speedval->value();
+    double bpm = curinfo()->maxbpm * cosuui.speedval->value();
     snprintf(bpmstr, sizeof(bpmstr), "%.0lfbpm", bpm);
 
     cosuui.ratebpm->label(bpmstr);
@@ -46,13 +53,15 @@ const int offset = 12;
 
 void CosuWindow::update_ar_label()
 {
-    if (fr.info == NULL)
+    struct mapinfo *mi = curinfo();
+
+    if (mi == NULL)
         return;
 
-    if (fr.info->mode == 1 || fr.info->mode == 3)
+    if (mi->mode == 1 || mi->mode == 3)
         return;
 
-    double scaled = scale_ar(cosuui.arslider->value(), get_relative_speed(), fr.info->mode);
+    double scaled = scale_ar(cosuui.arslider->value(), get_relative_speed(), mi->mode);
     CLAMP(scaled, 0, 11);
 
     snprintf(arstr + offset, sizeof(arstr) - offset, "%.1lf", scaled);
@@ -61,13 +70,15 @@ void CosuWindow::update_ar_label()
 
 void CosuWindow::update_od_label()
 {
-    if (fr.info == NULL)
+    struct mapinfo *mi = curinfo();
+
+    if (mi == NULL)
         return;
 
-    if (fr.info->mode == 2)
+    if (mi->mode == 2)
         return;
 
-    double scaled = scale_od(cosuui.odslider->value(), get_relative_speed(), fr.info->mode);
+    double scaled = scale_od(cosuui.odslider->value(), get_relative_speed(), mi->mode);
     CLAMP(scaled, 0, 11.11);
 
     snprintf(odstr + offset, sizeof(odstr) - offset, "%.1lf", scaled);
@@ -105,9 +116,9 @@ void CosuWindow::bpmradio_callb(Fl_Widget *w, void *data)
         win->cosuui.lock->show();
         win->cosuui.ratebpm->hide();
         win->cosuui.speedval->step(1);
-        if (win->fr.info != NULL)
+        if (win->curinfo() != NULL)
         {
-            win->cosuui.speedval->value(win->fr.info->maxbpm);
+            win->cosuui.speedval->value(win->curinfo()->maxbpm);
         }
         else
         {
@@ -146,7 +157,7 @@ void CosuWindow::resetbtn_callb(Fl_Widget *w, void *data)
     win->cosuui.flipbox->value(0);
     win->cosuui.cutstart->value("");
     win->cosuui.cutend->value("");
-    win->fr.consumed = false;
+    win->queue_reset = true;
     Fl::awake();
 }
 
@@ -189,12 +200,6 @@ static long read_cut_str(const char *str, bool *combo)
 void CosuWindow::convbtn_callb(Fl_Widget *w, void *data)
 {
     CosuWindow *win = (CosuWindow*) data;
-    if (win->fr.info == NULL)
-    {
-        return;
-    }
-
-    std::lock_guard<std::recursive_mutex> lck(win->fr.mtx);
 
     win->cosuui.mainbox->deactivate();
 
@@ -242,7 +247,7 @@ void CosuWindow::convbtn_callb(Fl_Widget *w, void *data)
         }
     }
 
-    edit.mi = win->fr.info;
+    edit.mi = win->curinfo();
     edit.hp = win->cosuui.hpslider->value();
     edit.cs = win->cosuui.csslider->value();
     edit.ar = win->cosuui.arslider->value();
@@ -432,6 +437,7 @@ void CosuWindow::start()
     cosuui.cutlabel->tooltip(cut_tooltip);
     cosuui.cutstart->tooltip(cut_tooltip);
     cosuui.cutend->tooltip(cut_tooltip);
+    cosuui.mainbox->deactivate();
 
     Fl::lock();
 
@@ -442,23 +448,41 @@ void CosuWindow::start()
 
     while (Fl::wait() > 0)
     {
-        if (fr.info != NULL && fr.consumed == false)
-        {
-            std::lock_guard<std::recursive_mutex> lck(fr.mtx);
-            struct mapinfo *info = fr.info;
-            fr.consumed = true;
-            Fl_Image *tempimg = NULL;
-            char *bgpath = NULL;
-            bool bgchanged = false;
-            if (info->bgname != NULL && (fr.oldinfo == NULL || fr.oldinfo->bgname != NULL))
-            {
-                unsigned long oldfdlen = fr.oldinfo != NULL ? strrchr(fr.oldinfo->fullpath, PATHSEP) - fr.oldinfo->fullpath : 0;
-                unsigned long fdlen = strrchr(info->fullpath, PATHSEP) - info->fullpath;
+        struct mapinfo *info = curinfo();
 
-                if (fr.oldinfo == NULL || oldfdlen != fdlen || strncmp(fr.oldinfo->fullpath, info->fullpath, fdlen) != 0
-                        || strcmp(fr.oldinfo->bgname, info->bgname) != 0)
+        if (queue_reset || (mi_first ? fr.get_mapinfo(&mi) : fr.get_mapinfo(&mi2)) == 0)
+        {
+            if (!queue_reset)
+            {
+                char *bgpath = NULL;
+                bool bgchanged = false;
+                Fl_Image *tempimg = NULL;
+
+                struct mapinfo *oldinfo = mi_first ? &mi2 : &mi;
+                info = mi_first ? &mi : &mi2;
+                mi_first = !mi_first;
+
+                if (first)
+                {
+                    first = false;
+                    bgchanged = true;
+                }
+                else if (info->bgname != NULL)
+                {
+                    if (oldinfo->bgname == NULL
+                        || strncmp(oldinfo->fullpath, info->fullpath, strrchr(info->fullpath, PATHSEP) - info->fullpath) != 0
+                        || strcmp(oldinfo->bgname, info->bgname) != 0)
+                    {
+                        bgchanged = true;
+                    }
+                }
+                else if (oldinfo->bgname != NULL)
                 {
                     bgchanged = true;
+                }
+
+                if (bgchanged && info->bgname != NULL)
+                {
                     char *sepa = strrchr(info->fullpath, PATHSEP);
                     unsigned long newlen = sepa - info->fullpath + 1 + strlen(info->bgname) + 1;
                     bgpath = (char*) malloc(newlen);
@@ -473,34 +497,51 @@ void CosuWindow::start()
                         memcpy(bgpath + (sepa - info->fullpath + 1), info->bgname, strlen(info->bgname) + 1);
                     }
                 }
-            }
-            if ((info->bgname == NULL && (fr.oldinfo != NULL && fr.oldinfo->bgname != NULL))
-                    || (info->bgname != NULL && (fr.oldinfo != NULL && fr.oldinfo->bgname == NULL)))
-            {
-                bgchanged = true;
-            }
-            if (bgpath != NULL)
-            {
-                Fl_Shared_Image *simg = Fl_Shared_Image::get(bgpath);
 
-                if (simg != NULL)
+                if (bgpath != NULL)
                 {
-                    if (simg->w() > 0 && simg->h() > 0)
+                    Fl_Shared_Image *simg = Fl_Shared_Image::get(bgpath);
+
+                    if (simg != NULL)
                     {
-                        float newh = (370.0f / (float) (simg->w())) * (float) simg->h();
-                        Fl_Image *res = simg->copy(370, (int) newh);
-                        tempimg = res;
+                        if (simg->w() > 0 && simg->h() > 0)
+                        {
+                            float newh = (370.0f / (float) (simg->w())) * (float) simg->h();
+                            Fl_Image *res = simg->copy(370, (int) newh);
+                            tempimg = res;
+                        }
+
+                        simg->release();
+                    }
+                    else
+                    {
+                        fprintf(stderr, "Image (%s) is not valid!\n", bgpath);
                     }
 
-                    simg->release();
-                }
-                else
-                {
-                    fprintf(stderr, "Image (%s) is not valid!\n", bgpath);
+                    free(bgpath);
                 }
 
-                free(bgpath);
+                if (tempimg != NULL)
+                {
+                    cosuui.infobox->image(tempimg);
+                    delete img;
+                    img = tempimg;
+                }
+                else if (bgchanged && tempimg == NULL)
+                {
+                    cosuui.infobox->image(emptyimg);
+                    delete img;
+                    img = NULL;
+                }
             }
+            else
+            {
+                queue_reset = false;
+
+                if (info == NULL)
+                    continue;
+            }
+
             if ((cosuui.hplock)->value() <= 0)
             {
                 (cosuui.hpslider)->value(info->hp);
@@ -579,19 +620,7 @@ void CosuWindow::start()
 
             cosuui.songtitlelabel->label(info->songname);
             cosuui.difflabel->label(info->diffname);
-            if (bgpath != NULL && tempimg != NULL)
-            {
-                cosuui.infobox->image(tempimg);
-                delete img;
-                img = tempimg;
-            }
 
-            if ((bgchanged && tempimg == NULL) || info->bgname == NULL)
-            {
-                cosuui.infobox->image(emptyimg);
-                delete img;
-                img = NULL;
-            }
             if (cosuui.bpm->value() >= 1 && cosuui.lock->value() <= 0)
             {
                 cosuui.speedval->value(info->maxbpm);
@@ -600,8 +629,10 @@ void CosuWindow::start()
             {
                 update_rate_bpm();
             }
+
             update_ar_label();
             update_od_label();
+            cosuui.mainbox->activate();
 
             cosuui.infobox->redraw();
         }

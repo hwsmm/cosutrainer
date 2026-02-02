@@ -15,7 +15,13 @@
 
 static void showprog(void *data, float progress)
 {
-    if (progress > 0) printf("\r%d%%", (int) (progress * 100));
+    float *progv = (float*)data;
+
+    if (progress - *progv > 0.01)
+    {
+        fprintf(stderr, "\r%.0f%%", progress * 100.0f);
+        *progv = progress;
+    }
 }
 
 #ifdef DISABLE_GUI
@@ -65,22 +71,23 @@ int cuimain(int argc, char *argv[])
     path = argv[1];
 #endif
 
-    struct mapinfo *mi = read_beatmap(path);
+    struct mapinfo mi;
+    ret = read_beatmap(&mi, path);
 #ifndef WIN32
     if (osumem) songpath_free(&st); // no longer needed since mi has fullpath
 #endif
-    if (mi == NULL)
+    if (ret != 0)
     {
         printerr("Failed reading a map!");
         return 1;
     }
     struct editdata edit;
 
-    edit.mi = mi;
-    edit.hp = mi->hp;
-    edit.cs = mi->cs;
-    edit.od = mi->od;
-    edit.ar = mi->ar;
+    edit.mi = &mi;
+    edit.hp = mi.hp;
+    edit.cs = mi.cs;
+    edit.od = mi.od;
+    edit.ar = mi.ar;
 
     edit.scale_ar = true;
     edit.scale_od = true;
@@ -266,13 +273,14 @@ int cuimain(int argc, char *argv[])
         }
     }
 
-    edit.data = NULL;
+    float progv = 0.0f;
+    edit.data = &progv;
     edit.progress_callback = showprog;
     ret = edit_beatmap(&edit);
 
-    puts("\r100%");
+    fprintf(stderr, "\r100%%\n");
 
-    free_mapinfo(mi);
+    free_mapinfo(&mi);
 
     return ret;
 }

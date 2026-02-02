@@ -411,14 +411,9 @@ static int convert_vaildpath(struct mapinfo *mi)
 }
 #endif
 
-struct mapinfo *read_beatmap(char *mapfile)
+int read_beatmap(struct mapinfo *info, char *mapfile)
 {
-    struct mapinfo *info = (struct mapinfo*) calloc(1, sizeof(struct mapinfo));
-    if (info == NULL)
-    {
-        printerr("Failed allocation");
-        return NULL;
-    }
+    memset(info, 0, sizeof(struct mapinfo));
 
     int ret = loop_map(mapfile, &write_mapinfo, info);
     if (ret == 0)
@@ -441,7 +436,7 @@ struct mapinfo *read_beatmap(char *mapfile)
         {
             printerr("Failed allocation");
             free_mapinfo(info);
-            return NULL;
+            return -1;
         }
 
         info->maxbpm = 1 / info->maxbpm * 1000 * 60;
@@ -453,23 +448,24 @@ struct mapinfo *read_beatmap(char *mapfile)
         {
             printerr("Invalid osu! file without version");
             free_mapinfo(info);
-            return NULL;
+            return -2;
         }
 
 #ifndef WIN32
         if (convert_vaildpath(info) < 0)
         {
             free_mapinfo(info);
-            return NULL;
+            return -3;
         }
 #endif
     }
     else
     {
+        printerr("Failed reading a map!");
         free_mapinfo(info);
-        return NULL;
+        return -4;
     }
-    return info;
+    return 0;
 }
 
 void free_mapinfo(struct mapinfo *info)
@@ -481,7 +477,8 @@ void free_mapinfo(struct mapinfo *info)
         if (info->songname != NULL) free(info->songname);
         if (info->diffname != NULL) free(info->diffname);
         if (info->fullpath != NULL) free(info->fullpath);
-        free(info);
+
+        info->bgname = info->audioname = info->songname = info->diffname = info->fullpath = NULL;
     }
 }
 

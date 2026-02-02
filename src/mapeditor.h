@@ -112,7 +112,7 @@ extern "C"
 
 double scale_ar(double ar, double speed, int mode);
 double scale_od(double od, double speed, int mode);
-struct mapinfo *read_beatmap(char *mapfile);
+int read_beatmap(struct mapinfo *info, char *mapfile);
 void free_mapinfo(struct mapinfo *info);
 int edit_beatmap(struct editdata *edit);
 

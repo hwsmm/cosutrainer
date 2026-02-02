@@ -1,21 +1,18 @@
 #include "freader.h"
-#include "tools.h"
 #include "cosuplatform.h"
-#include "cosuwindow.h"
 #include "cosumem.h"
 #include <FL/Fl.H>
 
-Freader::Freader(CosuWindow *win) : thr(Freader::thread_func, this)
+Freader::Freader() : thr(Freader::thread_func, this)
 {
-    init(win);
+    init();
     init_sigstatus(&st);
-    songf = NULL;
 }
 
 Freader::~Freader()
 {
     close();
-    free(songf);
+    free(path);
 }
 
 void Freader::thread_func(Freader *fr)
@@ -23,6 +20,7 @@ void Freader::thread_func(Freader *fr)
     ptr_type base = NULL;
     wchar_t *songpath = NULL;
     wchar_t *oldpath = NULL;
+    char *songf = NULL;
     unsigned int len = 0;
     while (fr->conti)
     {
@@ -32,17 +30,17 @@ void Freader::thread_func(Freader *fr)
 
         DEFAULT_LOGIC(sst,
         {
-            if (fr->songf != NULL)
+            if (songf != NULL)
             {
-                free(fr->songf);
-                fr->songf = NULL;
+                free(songf);
+                songf = NULL;
             }
         },
         {
-            if (fr->songf == NULL)
+            if (songf == NULL)
             {
-                fr->songf = get_songspath(get_rootpath(sst));
-                if (fr->songf == NULL)
+                songf = get_songspath(get_rootpath(sst));
+                if (songf == NULL)
                 {
                     printerr("Song folder not found!");
                     fr->sleep_cnd();
@@ -83,7 +81,7 @@ void Freader::thread_func(Freader *fr)
                 continue;
             }
 
-            int fullsize = strlen(fr->songf) + 1 + len * MB_CUR_MAX;
+            int fullsize = strlen(songf) + 1 + len * MB_CUR_MAX;
             char *fullpath = (char*) malloc(fullsize);
             if (fullpath == NULL)
             {
@@ -91,34 +89,25 @@ void Freader::thread_func(Freader *fr)
                 continue;
             }
 
-            snprintf(fullpath, fullsize, "%s\\%ls", fr->songf, songpath);
+            snprintf(fullpath, fullsize, "%s\\%ls", songf, songpath);
 
-            {
-                free_mapinfo(fr->oldinfo);
-                fr->oldinfo = fr->info;
-                fr->info = read_beatmap(fullpath);
-                if (fr->info == NULL)
-                {
-                    printerr("Failed reading!");
-                    free(fullpath);
-                    continue;
-                }
-                free(fullpath);
-
-                fr->consumed = false;
-                Fl::awake();
-            }
+            char *curpath = fr->path;
+            fr->path = fullpath;
+            fr->consumed = false;
+            Fl::awake();
+            free(curpath);
         },
         {
             base = NULL;
-            if (fr->songf)
+            if (songf)
             {
-                free(fr->songf);
-                fr->songf = NULL;
+                free(songf);
+                songf = NULL;
             }
         })
         fr->sleep_cnd();
     }
     free(songpath);
     free(oldpath);
+    free(songf);
 }

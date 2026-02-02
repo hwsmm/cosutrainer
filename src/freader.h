@@ -15,29 +15,27 @@
 #include "lsongpathparser.h"
 #endif
 
-class CosuWindow;
-
 class Freader
 {
 private:
     std::thread thr;
 #ifdef WIN32
     struct sigscan_status st;
-    char *songf;
 #else
     struct songpath_status st;
 #endif
+
     static void thread_func(Freader *fr);
     std::atomic<bool> conti;
-    CosuWindow *win;
+    volatile bool consumed;
+    std::recursive_mutex mtx;
+    char *path;
 
-    void init(CosuWindow *win)
+    void init()
     {
-        info = NULL;
-        oldinfo = NULL;
         consumed = true;
         conti = true;
-        this->win = win;
+        path = NULL;
     }
 
     void close()
@@ -45,9 +43,6 @@ private:
         conti = false;
         cnd.notify_one();
         thr.join();
-
-        free_mapinfo(oldinfo);
-        free_mapinfo(info);
     }
 
     std::condition_variable_any cnd;
@@ -56,11 +51,24 @@ private:
     {
         cnd.wait_for(mtx, std::chrono::milliseconds(500));
     }
+
 public:
-    Freader(CosuWindow *win);
+    Freader();
     ~Freader();
-    std::recursive_mutex mtx;
-    struct mapinfo *info;
-    struct mapinfo *oldinfo;
-    volatile bool consumed;
+
+    int get_mapinfo(struct mapinfo *info)
+    {
+        std::lock_guard<std::recursive_mutex> lck(mtx);
+
+        if (!consumed)
+        {
+            free_mapinfo(info);
+            consumed = true;
+
+            if (path != NULL)
+                return read_beatmap(info, path);
+        }
+
+        return -10;
+    }
 };

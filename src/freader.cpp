@@ -4,15 +4,13 @@ extern "C"
 }
 
 #include "freader.h"
-#include "tools.h"
 #include "cosuplatform.h"
-#include "cosuwindow.h"
 #include <FL/Fl.H>
 #include <signal.h>
 
-Freader::Freader(CosuWindow *win) : thr(Freader::thread_func, this)
+Freader::Freader() : thr(Freader::thread_func, this)
 {
-    init(win);
+    init();
     songpath_init(&st);
 }
 
@@ -27,8 +25,6 @@ Freader::~Freader()
     else
     {
         printerr("Failed to signal a reader thread");
-        free_mapinfo(oldinfo);
-        free_mapinfo(info);
     }
 
     songpath_free(&st);
@@ -52,30 +48,27 @@ void Freader::thread_func(Freader *fr)
 
     while (fr->conti)
     {
+        std::lock_guard<std::recursive_mutex> lck(fr->mtx);
+
+        if (!fr->consumed)
+        {
+            fr->sleep_cnd();
+            continue;
+        }
+
         char *fullpath;
         if (!songpath_get(&(fr->st), &fullpath))
         {
             if (fr->conti)
-                usleep(500000);
+                fr->sleep_cnd();
             else
                 break;
 
             continue;
         }
 
-        std::lock_guard<std::recursive_mutex> lck(fr->mtx);
-
-        free_mapinfo(fr->oldinfo);
-        fr->oldinfo = fr->info;
-        fr->info = read_beatmap(fullpath);
-        if (fr->info == NULL)
-        {
-            printerr("Failed reading!");
-        }
-        else
-        {
-            fr->consumed = false;
-            Fl::awake();
-        }
+        fr->path = fullpath;
+        fr->consumed = false;
+        Fl::awake();
     }
 }
