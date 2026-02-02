@@ -317,28 +317,25 @@ static int write_mapinfo(char *line, void *vinfo, enum SECTION sect)
     }
     else if (sect == events) // 8
     {
-        if (CMPSTR(line, "0,0,"))
+        if (CMPSTR(line, "0,"))
         {
-            char *bgname = CUTFIRST_NOTRIM(line, "0,0,");
-            char *endhere = NULL;
+            char *bgname = tkn(line);
+            fail_nulltkn(bgname);
+            fail_nulltkn(bgname);
+
             if (*bgname == '\"')
             {
                 bgname++;
-                endhere = strchr(bgname, '\"'); // using " in filename is illegal in NTFS so
-            }
-            else
-            {
-                endhere = strchr(bgname, ','); // what if , is escaped? how does osu handle it?
-            }
-            if (endhere != NULL)
-            {
+                char *endhere = strchr(bgname, '\"');
+                if (endhere == NULL)
+                {
+                    printerr("Failed parsing background line!");
+                    return 1;
+                }
+
                 *endhere = '\0';
             }
-            else
-            {
-                printerr("Failed parsing background line!");
-                return 1;
-            }
+
             allocput(info->bgname, bgname);
         }
     }
@@ -376,6 +373,10 @@ static int convert_vaildpath(struct mapinfo *mi)
 
     if (mi->audioname != NULL)
     {
+        char *ill;
+        while ((ill = strchr(mi->audioname, '\\')) != NULL)
+            *ill = '/';
+
         strcpy(temp + fdlen + 1, mi->audioname);
         int ares = try_convertwinpath(temp, fdlen + 1);
         if (ares == 0)
@@ -392,6 +393,10 @@ static int convert_vaildpath(struct mapinfo *mi)
 
     if (mi->bgname != NULL)
     {
+        char *ill;
+        while ((ill = strchr(mi->bgname, '\\')) != NULL)
+            *ill = '/';
+
         strcpy(temp + fdlen + 1, mi->bgname);
         int bres = try_convertwinpath(temp, fdlen + 1);
         if (bres == 0)
