@@ -10,16 +10,10 @@ private:
     Freader fr;
     double get_relative_speed();
     void update_rate_bpm();
-    struct mapinfo mi;
-    struct mapinfo mi2;
-    bool first;
-    bool mi_first;
-    bool queue_reset;
 
-    struct mapinfo *curinfo()
-    {
-        return first ? NULL : !mi_first ? &mi : &mi2;
-    }
+    struct mapinfo *info;
+    bool first;
+    bool queue_reset;
 
     void update_ar_label();
     void update_od_label();

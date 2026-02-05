@@ -71,8 +71,7 @@ int cuimain(int argc, char *argv[])
     path = argv[1];
 #endif
 
-    struct mapinfo mi;
-    ret = read_beatmap(&mi, path);
+    struct mapinfo *mi = read_beatmap(path);
 #ifndef WIN32
     if (osumem) songpath_free(&st); // no longer needed since mi has fullpath
 #endif
@@ -83,11 +82,11 @@ int cuimain(int argc, char *argv[])
     }
     struct editdata edit;
 
-    edit.mi = &mi;
-    edit.hp = mi.hp;
-    edit.cs = mi.cs;
-    edit.od = mi.od;
-    edit.ar = mi.ar;
+    edit.mi = mi;
+    edit.hp = mi->hp;
+    edit.cs = mi->cs;
+    edit.od = mi->od;
+    edit.ar = mi->ar;
 
     edit.scale_ar = true;
     edit.scale_od = true;
@@ -280,7 +279,7 @@ int cuimain(int argc, char *argv[])
 
     fprintf(stderr, "\r100%%\n");
 
-    free_mapinfo(&mi);
+    free_mapinfo(mi);
 
     return ret;
 }

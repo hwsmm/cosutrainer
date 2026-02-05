@@ -100,11 +100,19 @@ ssize_t buffers_##BUF##_seek(struct buffers *bufs, ssize_t offset, int whence) \
    return bufs->BUF##cur; \
 }
 
+#define DEFINE_BUFFERS_RESET(BUF) \
+void buffers_##BUF##_reset(struct buffers *bufs) \
+{ \
+    bufs->BUF##cur = 0; \
+    bufs->BUF##last = 0; \
+}
+
 #define DEFINE_BUFFERS(BUF) \
 DEFINE_BUFFERS_RESIZE(BUF) \
 DEFINE_BUFFERS_PUT(BUF) \
 DEFINE_BUFFERS_GET(BUF) \
-DEFINE_BUFFERS_SEEK(BUF)
+DEFINE_BUFFERS_SEEK(BUF) \
+DEFINE_BUFFERS_RESET(BUF)
 
 DEFINE_BUFFERS(map)
 

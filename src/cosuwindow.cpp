@@ -15,16 +15,13 @@ using namespace std;
 
 CosuWindow::CosuWindow()
 {
-    memset(&mi, 0, sizeof(struct mapinfo));
-    memset(&mi2, 0, sizeof(struct mapinfo));
-    mi_first = true;
+    info = NULL;
     first = true;
 }
 
 CosuWindow::~CosuWindow()
 {
-    free_mapinfo(&mi);
-    free_mapinfo(&mi2);
+    free_mapinfo(info);
 }
 
 double CosuWindow::get_relative_speed()
@@ -32,7 +29,7 @@ double CosuWindow::get_relative_speed()
     if (cosuui.rate->value() >= 1)
         return cosuui.speedval->value();
     else if (cosuui.bpm->value() >= 1)
-        return cosuui.speedval->value() / curinfo()->maxbpm;
+        return cosuui.speedval->value() / info->maxbpm;
 
     return 1;
 }
@@ -41,7 +38,7 @@ char bpmstr[] = "xxxxxxxxxxxxxxbpm";
 
 void CosuWindow::update_rate_bpm()
 {
-    double bpm = curinfo()->maxbpm * cosuui.speedval->value();
+    double bpm = info->maxbpm * cosuui.speedval->value();
     snprintf(bpmstr, sizeof(bpmstr), "%.0lfbpm", bpm);
 
     cosuui.ratebpm->label(bpmstr);
@@ -53,15 +50,10 @@ const int offset = 12;
 
 void CosuWindow::update_ar_label()
 {
-    struct mapinfo *mi = curinfo();
-
-    if (mi == NULL)
+    if (info == NULL || info->mode == 1 || info->mode == 3)
         return;
 
-    if (mi->mode == 1 || mi->mode == 3)
-        return;
-
-    double scaled = scale_ar(cosuui.arslider->value(), get_relative_speed(), mi->mode);
+    double scaled = scale_ar(cosuui.arslider->value(), get_relative_speed(), info->mode);
     CLAMP(scaled, 0, 11);
 
     snprintf(arstr + offset, sizeof(arstr) - offset, "%.1lf", scaled);
@@ -70,15 +62,10 @@ void CosuWindow::update_ar_label()
 
 void CosuWindow::update_od_label()
 {
-    struct mapinfo *mi = curinfo();
-
-    if (mi == NULL)
+    if (info == NULL || info->mode == 2)
         return;
 
-    if (mi->mode == 2)
-        return;
-
-    double scaled = scale_od(cosuui.odslider->value(), get_relative_speed(), mi->mode);
+    double scaled = scale_od(cosuui.odslider->value(), get_relative_speed(), info->mode);
     CLAMP(scaled, 0, 11.11);
 
     snprintf(odstr + offset, sizeof(odstr) - offset, "%.1lf", scaled);
@@ -116,9 +103,9 @@ void CosuWindow::bpmradio_callb(Fl_Widget *w, void *data)
         win->cosuui.lock->show();
         win->cosuui.ratebpm->hide();
         win->cosuui.speedval->step(1);
-        if (win->curinfo() != NULL)
+        if (win->info != NULL)
         {
-            win->cosuui.speedval->value(win->curinfo()->maxbpm);
+            win->cosuui.speedval->value(win->info->maxbpm);
         }
         else
         {
@@ -247,7 +234,7 @@ void CosuWindow::convbtn_callb(Fl_Widget *w, void *data)
         }
     }
 
-    edit.mi = win->curinfo();
+    edit.mi = win->info;
     edit.hp = win->cosuui.hpslider->value();
     edit.cs = win->cosuui.csslider->value();
     edit.ar = win->cosuui.arslider->value();
@@ -448,19 +435,18 @@ void CosuWindow::start()
 
     while (Fl::wait() > 0)
     {
-        struct mapinfo *info = curinfo();
-
-        if (queue_reset || (mi_first ? fr.get_mapinfo(&mi) : fr.get_mapinfo(&mi2)) == 0)
+        if (!queue_reset)
         {
-            if (!queue_reset)
-            {
-                char *bgpath = NULL;
-                bool bgchanged = false;
-                Fl_Image *tempimg = NULL;
+            char *bgpath = NULL;
+            bool bgchanged = false;
+            Fl_Image *tempimg = NULL;
 
-                struct mapinfo *oldinfo = mi_first ? &mi2 : &mi;
-                info = mi_first ? &mi : &mi2;
-                mi_first = !mi_first;
+            struct mapinfo *oldinfo = info;
+            struct mapinfo *newinfo = fr.get_mapinfo();
+
+            if (newinfo != NULL)
+            {
+                info = newinfo;
 
                 if (first)
                 {
@@ -480,6 +466,8 @@ void CosuWindow::start()
                 {
                     bgchanged = true;
                 }
+
+                free_mapinfo(oldinfo);
 
                 if (bgchanged && info->bgname != NULL)
                 {
@@ -536,106 +524,110 @@ void CosuWindow::start()
             }
             else
             {
-                queue_reset = false;
-
-                if (info == NULL)
-                    continue;
+                continue;
             }
-
-            if ((cosuui.hplock)->value() <= 0)
-            {
-                (cosuui.hpslider)->value(info->hp);
-                (cosuui.hpinput)->value(info->hp);
-            }
-            if ((cosuui.cslock)->value() <= 0)
-            {
-                (cosuui.csslider)->value(info->cs);
-                (cosuui.csinput)->value(info->cs);
-            }
-            if ((cosuui.odlock)->value() <= 0)
-            {
-                (cosuui.odslider)->value(info->od);
-                (cosuui.odinput)->value(info->od);
-            }
-            if ((cosuui.arlock)->value() <= 0)
-            {
-                (cosuui.arslider)->value(info->ar);
-                (cosuui.arinput)->value(info->ar);
-            }
-
-            if (info->mode == 2)
-            {
-                (cosuui.odslider)->deactivate();
-                (cosuui.odinput)->deactivate();
-                (cosuui.odlock)->deactivate();
-
-                (cosuui.scale_od)->label("Scale OD");
-                (cosuui.scale_od)->deactivate();
-            }
-            else
-            {
-                (cosuui.odslider)->activate();
-                (cosuui.odinput)->activate();
-                (cosuui.odlock)->activate();
-                (cosuui.scale_od)->activate();
-            }
-
-            if (info->mode == 1 || info->mode == 3)
-            {
-                (cosuui.arslider)->deactivate();
-                (cosuui.arinput)->deactivate();
-                (cosuui.arlock)->deactivate();
-                (cosuui.csslider)->deactivate();
-                (cosuui.csinput)->deactivate();
-                (cosuui.cslock)->deactivate();
-
-                (cosuui.scale_ar)->label("Scale AR");
-                (cosuui.scale_ar)->deactivate();
-            }
-            else
-            {
-                (cosuui.arslider)->activate();
-                (cosuui.arinput)->activate();
-                (cosuui.arlock)->activate();
-                (cosuui.csslider)->activate();
-                (cosuui.csinput)->activate();
-                (cosuui.cslock)->activate();
-
-                (cosuui.scale_ar)->activate();
-            }
-
-            if (info->mode == 3)
-            {
-                (cosuui.invert)->activate();
-                (cosuui.nospinner)->label("No SV");
-            }
-            else
-            {
-                if ((cosuui.flipbox)->value() == 4)
-                    (cosuui.flipbox)->value(0);
-
-                (cosuui.invert)->deactivate();
-                (cosuui.nospinner)->label("No Spinner");
-            }
-
-            cosuui.songtitlelabel->label(info->songname);
-            cosuui.difflabel->label(info->diffname);
-
-            if (cosuui.bpm->value() >= 1 && cosuui.lock->value() <= 0)
-            {
-                cosuui.speedval->value(info->maxbpm);
-            }
-            if (cosuui.rate->value() >= 1)
-            {
-                update_rate_bpm();
-            }
-
-            update_ar_label();
-            update_od_label();
-            cosuui.mainbox->activate();
-
-            cosuui.infobox->redraw();
         }
+        else
+        {
+            queue_reset = false;
+
+            if (info == NULL)
+                continue;
+        }
+
+        if ((cosuui.hplock)->value() <= 0)
+        {
+            (cosuui.hpslider)->value(info->hp);
+            (cosuui.hpinput)->value(info->hp);
+        }
+        if ((cosuui.cslock)->value() <= 0)
+        {
+            (cosuui.csslider)->value(info->cs);
+            (cosuui.csinput)->value(info->cs);
+        }
+        if ((cosuui.odlock)->value() <= 0)
+        {
+            (cosuui.odslider)->value(info->od);
+            (cosuui.odinput)->value(info->od);
+        }
+        if ((cosuui.arlock)->value() <= 0)
+        {
+            (cosuui.arslider)->value(info->ar);
+            (cosuui.arinput)->value(info->ar);
+        }
+
+        if (info->mode == 2)
+        {
+            (cosuui.odslider)->deactivate();
+            (cosuui.odinput)->deactivate();
+            (cosuui.odlock)->deactivate();
+
+            (cosuui.scale_od)->label("Scale OD");
+            (cosuui.scale_od)->deactivate();
+        }
+        else
+        {
+            (cosuui.odslider)->activate();
+            (cosuui.odinput)->activate();
+            (cosuui.odlock)->activate();
+            (cosuui.scale_od)->activate();
+        }
+
+        if (info->mode == 1 || info->mode == 3)
+        {
+            (cosuui.arslider)->deactivate();
+            (cosuui.arinput)->deactivate();
+            (cosuui.arlock)->deactivate();
+            (cosuui.csslider)->deactivate();
+            (cosuui.csinput)->deactivate();
+            (cosuui.cslock)->deactivate();
+
+            (cosuui.scale_ar)->label("Scale AR");
+            (cosuui.scale_ar)->deactivate();
+        }
+        else
+        {
+            (cosuui.arslider)->activate();
+            (cosuui.arinput)->activate();
+            (cosuui.arlock)->activate();
+            (cosuui.csslider)->activate();
+            (cosuui.csinput)->activate();
+            (cosuui.cslock)->activate();
+
+            (cosuui.scale_ar)->activate();
+        }
+
+        if (info->mode == 3)
+        {
+            (cosuui.invert)->activate();
+            (cosuui.nospinner)->label("No SV");
+        }
+        else
+        {
+            if ((cosuui.flipbox)->value() == 4)
+                (cosuui.flipbox)->value(0);
+
+            (cosuui.invert)->deactivate();
+            (cosuui.nospinner)->label("No Spinner");
+        }
+
+        cosuui.songtitlelabel->label(info->songname);
+        cosuui.difflabel->label(info->diffname);
+
+        if (cosuui.bpm->value() >= 1 && cosuui.lock->value() <= 0)
+        {
+            cosuui.speedval->value(info->maxbpm);
+        }
+        if (cosuui.rate->value() >= 1)
+        {
+            update_rate_bpm();
+        }
+
+        update_ar_label();
+        update_od_label();
+        cosuui.mainbox->activate();
+
+        cosuui.infobox->redraw();
     }
     if (img != NULL) delete img;
 #ifndef WIN32

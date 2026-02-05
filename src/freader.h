@@ -56,19 +56,18 @@ public:
     Freader();
     ~Freader();
 
-    int get_mapinfo(struct mapinfo *info)
+    struct mapinfo *get_mapinfo()
     {
         std::lock_guard<std::recursive_mutex> lck(mtx);
 
         if (!consumed)
         {
-            free_mapinfo(info);
             consumed = true;
 
             if (path != NULL)
-                return read_beatmap(info, path);
+                return read_beatmap(path);
         }
 
-        return -10;
+        return NULL;
     }
 };

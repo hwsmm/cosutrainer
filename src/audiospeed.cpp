@@ -263,7 +263,7 @@ int change_audio_speed_libsndfile(const char* source, struct buffers *bufs, doub
 {
     int success = 1;
     SNDFILE *in = NULL, *out = NULL;
-    SF_INFO info = { 0, };
+    SF_INFO info = { 0, 0, 0, 0, 0, 0 };
     SF_VIRTUAL_IO sfvio = { &sfvio_get_filelen, &sfvio_seek, &sfvio_read, &sfvio_write, &sfvio_tell };
 
     float buffer[256] = { 0.0 };
@@ -286,7 +286,6 @@ int change_audio_speed_libsndfile(const char* source, struct buffers *bufs, doub
     }
 
     frames = info.frames;
-    fprintf(stderr, "frames: %d\n", (int) frames);
     info.frames = 0;
 
     if ((out = sf_open_virtual(&sfvio, SFM_WRITE, &info, bufs)) == NULL)
@@ -342,15 +341,20 @@ int change_audio_speed(const char* source, struct buffers *bufs, double speed, b
     {
         if (endswith(source, ".mp3"))
         {
-            int ret = change_mp3_speed(source, bufs, speed, pitch, data, callback);
-
-            if (ret == 0)
-                return 0;
-            else
-                fprintf(stderr, "Your MP3 (%s) may not actually be an MP3: %d\nTrying an alternative method\n", source, ret);
             // using mpg123/lame backend exclusively to make bug fixing easier
             // and there are some distros that has libsndfile without mp3 support since it's only released recently
             // libsndfile also uses mpg123/lame anyway
+            int ret = change_mp3_speed(source, bufs, speed, pitch, data, callback);
+
+            if (ret == 0)
+            {
+                return 0;
+            }
+            else
+            {
+                fprintf(stderr, "Your MP3 (%s) may not actually be an MP3: %d\nTrying an alternative method\n", source, ret);
+                buffers_aud_reset(bufs);
+            }
         }
 
         return change_audio_speed_libsndfile(source, bufs, speed, pitch, data, callback);

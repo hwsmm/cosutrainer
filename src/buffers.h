@@ -43,11 +43,13 @@ int buffers_map_resize(struct buffers *bufs, size_t size);
 int buffers_map_put(struct buffers *bufs, const void *data, size_t size);
 int buffers_map_get(struct buffers *bufs, void *data, size_t size);
 ssize_t buffers_map_seek(struct buffers *bufs, ssize_t offset, int whence);
+void buffers_map_reset(struct buffers *bufs);
 
 int buffers_aud_resize(struct buffers *bufs, size_t size);
 int buffers_aud_put(struct buffers *bufs, const void *data, size_t size);
 int buffers_aud_get(struct buffers *bufs, void *data, size_t size);
 ssize_t buffers_aud_seek(struct buffers *bufs, ssize_t offset, int whence);
+void buffers_aud_reset(struct buffers *bufs);
 
 #ifdef __cplusplus
 }
