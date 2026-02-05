@@ -101,7 +101,8 @@ double scale_ar(double ar, double speed, int mode)
 
     double ms = ar <= 5.0 ? 1800.0 - 120.0 * ar : 1950.0 - 150.0 * ar;
     ms /= speed;
-    return ms >= 1200.0 ? (1800.0 - ms) / 120.0 : (1950.0 - ms) / 150.0;
+    ms = ms >= 1200.0 ? (1800.0 - ms) / 120.0 : (1950.0 - ms) / 150.0;
+    return round(ms * 10.0) / 10.0;
 }
 
 // fix mania od
@@ -130,7 +131,8 @@ double scale_od(double od, double speed, int mode)
 
     double ms = base - multiplier * od;
     ms /= speed;
-    return (base - ms) / multiplier;
+    ms = (base - ms) / multiplier;
+    return round(ms * 10.0) / 10.0;
 }
 
 static int loop_map(char *mapfile, int (*func)(char*, void*, enum SECTION), void *pass)
@@ -1129,6 +1131,9 @@ int edit_beatmap(struct editdata *edit)
         edit->speed /= 1.5;
         edit->ar = scale_ar(edit->ar, 1.0/1.5, edit->mi->mode);
         edit->od = scale_od(edit->od, 1.0/1.5, edit->mi->mode);
+
+        if (fabs(edit->speed - 1.0) < 1e-3)
+            edit->speed = 1.0;
     }
     else
     {
