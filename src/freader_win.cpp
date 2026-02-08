@@ -19,7 +19,6 @@ Freader::~Freader()
 void Freader::thread_func(Freader *fr)
 {
     ptr_type base = NULL;
-    wchar_t *songpath = NULL;
     wchar_t *oldpath = NULL;
     char *songf = NULL;
     unsigned int len = 0;
@@ -57,13 +56,12 @@ void Freader::thread_func(Freader *fr)
                 }
             }
 
-            songpath = get_mappath(sst, base, &len);
+            wchar_t *songpath = get_mappath(sst, base, &len);
             if (songpath != NULL)
             {
                 if (oldpath != NULL && wcscmp(songpath, oldpath) == 0)
                 {
                     free(songpath);
-                    songpath = NULL;
                     fr->sleep_cnd();
                     continue;
                 }
@@ -104,7 +102,7 @@ void Freader::thread_func(Freader *fr)
         })
         fr->sleep_cnd();
     }
-    free(songpath);
+
     free(oldpath);
     free(songf);
 }
