@@ -5,14 +5,15 @@
 
 Freader::Freader() : thr(Freader::thread_func, this)
 {
-    init();
+    conti = true;
+    mi = nullptr;
     init_sigstatus(&st);
 }
 
 Freader::~Freader()
 {
-    close();
-    free(path);
+    conti = false;
+    thr.join();
 }
 
 void Freader::thread_func(Freader *fr)
@@ -24,8 +25,6 @@ void Freader::thread_func(Freader *fr)
     unsigned int len = 0;
     while (fr->conti)
     {
-        std::lock_guard<std::recursive_mutex> lck(fr->mtx);
-
         struct sigscan_status *sst = &(fr->st);
 
         DEFAULT_LOGIC(sst,
@@ -91,11 +90,9 @@ void Freader::thread_func(Freader *fr)
 
             snprintf(fullpath, fullsize, "%s\\%ls", songf, songpath);
 
-            char *curpath = fr->path;
-            fr->path = fullpath;
-            fr->consumed = false;
+            free_mapinfo(fr->mi.exchange(read_beatmap(fullpath)));
+            free(fullpath);
             Fl::awake();
-            free(curpath);
         },
         {
             base = NULL;

@@ -27,29 +27,11 @@ private:
 
     static void thread_func(Freader *fr);
     std::atomic<bool> conti;
-    volatile bool consumed;
-    std::recursive_mutex mtx;
-    char *path;
-
-    void init()
-    {
-        consumed = true;
-        conti = true;
-        path = NULL;
-    }
-
-    void close()
-    {
-        conti = false;
-        cnd.notify_one();
-        thr.join();
-    }
-
-    std::condition_variable_any cnd;
+    std::atomic<struct mapinfo*> mi;
 
     void sleep_cnd()
     {
-        cnd.wait_for(mtx, std::chrono::milliseconds(500));
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
     }
 
 public:
@@ -58,16 +40,6 @@ public:
 
     struct mapinfo *get_mapinfo()
     {
-        std::lock_guard<std::recursive_mutex> lck(mtx);
-
-        if (!consumed)
-        {
-            consumed = true;
-
-            if (path != NULL)
-                return read_beatmap(path);
-        }
-
-        return NULL;
+        return mi.exchange(nullptr);
     }
 };

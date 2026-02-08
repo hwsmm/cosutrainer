@@ -6,11 +6,12 @@ extern "C"
 #include "freader.h"
 #include "cosuplatform.h"
 #include <FL/Fl.H>
-#include <signal.h>
+#include <csignal>
 
 Freader::Freader() : thr(Freader::thread_func, this)
 {
-    init();
+    conti = true;
+    mi = nullptr;
     songpath_init(&st);
 }
 
@@ -20,7 +21,7 @@ Freader::~Freader()
 
     if (pthread_kill(thr.native_handle(), SIGUSR1) == 0)
     {
-        close();
+        thr.join();
     }
     else
     {
@@ -48,14 +49,6 @@ void Freader::thread_func(Freader *fr)
 
     while (fr->conti)
     {
-        std::lock_guard<std::recursive_mutex> lck(fr->mtx);
-
-        if (!fr->consumed)
-        {
-            fr->sleep_cnd();
-            continue;
-        }
-
         char *fullpath;
         if (!songpath_get(&(fr->st), &fullpath))
         {
@@ -67,8 +60,8 @@ void Freader::thread_func(Freader *fr)
             continue;
         }
 
-        fr->path = fullpath;
-        fr->consumed = false;
+        free_mapinfo(fr->mi.exchange(read_beatmap(fullpath)));
         Fl::awake();
+        fr->sleep_cnd();
     }
 }

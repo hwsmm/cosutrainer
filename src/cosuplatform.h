@@ -1,5 +1,10 @@
 #pragma once
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 #ifdef WIN32
 
 #include <windows.h>
@@ -8,14 +13,12 @@
 #define PATHSEP '\\'
 #define STR_PATHSEP "\\"
 #define F_OK 0
-#define ssleep(x) Sleep(x)
 
 #else
 
 #include <unistd.h>
 #define PATHSEP '/'
 #define STR_PATHSEP "/"
-#define ssleep(x) usleep(x * 1000)
 #define _access access
 #define _strdup strdup
 
@@ -26,11 +29,6 @@
 #endif
 
 #include <wchar.h>
-
-#ifdef __cplusplus
-extern "C"
-{
-#endif
 
 int execute_file(char* file);
 char *read_file(const char *file, int *size);
