@@ -61,16 +61,16 @@ jobs:
               uses: msys2/setup-msys2@v2
               with:
                   update: true
-                  msystem: UCRT64
+                  msystem: clang64
                   install: >-
-                      mingw-w64-ucrt-x86_64-gcc
-                      mingw-w64-ucrt-x86_64-mpg123
-                      mingw-w64-ucrt-x86_64-lame
-                      mingw-w64-ucrt-x86_64-libsndfile
-                      mingw-w64-ucrt-x86_64-soundtouch
-                      mingw-w64-ucrt-x86_64-minizip
-                      mingw-w64-ucrt-x86_64-fltk1.3
-                      mingw-w64-ucrt-x86_64-meson
+                      mingw-w64-clang-x86_64-clang
+                      mingw-w64-clang-x86_64-mpg123
+                      mingw-w64-clang-x86_64-lame
+                      mingw-w64-clang-x86_64-libsndfile
+                      mingw-w64-clang-x86_64-soundtouch
+                      mingw-w64-clang-x86_64-minizip
+                      mingw-w64-clang-x86_64-fltk1.3
+                      mingw-w64-clang-x86_64-meson
 
             - name: Configure
               shell: msys2 {0}
@@ -82,7 +82,7 @@ jobs:
 
             - name: Save a list of dependencies
               shell: msys2 {0}
-              run: ldd builddir/cosu-trainer.exe | awk 'NF == 4 { print($3) }' | grep -vE '*/c' > ./deplist
+              run: ldd builddir/cosu-trainer.exe | awk 'NF == 4 { print($3) }' | grep -vE '^.*/c/' > ./deplist
 
             - name: Package
               shell: msys2 {0}
