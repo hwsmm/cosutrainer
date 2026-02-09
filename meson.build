@@ -13,7 +13,6 @@ deps = [
     dependency('soundtouch'),
     dependency('sndfile'),
     dependency('threads'),
-    meson.get_compiler('cpp').find_library('fltk_images'),
     meson.get_compiler('cpp').find_library('fltk'),
     meson.get_compiler('c').find_library('mp3lame')
 ]

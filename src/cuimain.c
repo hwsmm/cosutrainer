@@ -71,7 +71,7 @@ int cuimain(int argc, char *argv[])
     path = argv[1];
 #endif
 
-    struct mapinfo *mi = read_beatmap(path);
+    struct mapinfo *mi = read_beatmap(path, NULL);
 #ifndef WIN32
     if (osumem) songpath_free(&st); // no longer needed since mi has fullpath
 #endif

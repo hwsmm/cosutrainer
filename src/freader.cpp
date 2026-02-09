@@ -5,7 +5,6 @@ extern "C"
 
 #include "freader.h"
 #include "cosuplatform.h"
-#include <FL/Fl.H>
 #include <csignal>
 
 Freader::Freader() : thr(Freader::thread_func, this)
@@ -60,8 +59,7 @@ void Freader::thread_func(Freader *fr)
             continue;
         }
 
-        free_mapinfo(fr->mi.exchange(read_beatmap(fullpath)));
-        Fl::awake();
+        fr->update_mapinfo(fullpath);
         fr->sleep_cnd();
     }
 }

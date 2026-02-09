@@ -1,7 +1,6 @@
 #include "freader.h"
 #include "cosuplatform.h"
 #include "cosumem.h"
-#include <FL/Fl.H>
 
 Freader::Freader() : thr(Freader::thread_func, this)
 {
@@ -88,9 +87,8 @@ void Freader::thread_func(Freader *fr)
 
             snprintf(fullpath, fullsize, "%s\\%ls", songf, songpath);
 
-            free_mapinfo(fr->mi.exchange(read_beatmap(fullpath)));
+            fr->update_mapinfo(fullpath);
             free(fullpath);
-            Fl::awake();
         },
         {
             base = NULL;

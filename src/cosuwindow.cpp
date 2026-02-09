@@ -316,6 +316,12 @@ void CosuWindow::diffch_callb(Fl_Widget *w, void *data)
 
 #ifndef WIN32
 
+#define STBI_NO_HDR
+#ifdef WIN32
+#define STBI_WINDOWS_UTF8
+#endif
+#include "stb_image.h"
+
 static const char iconpaths[3][35] =
 {
     "/usr/share/pixmaps/cosutrainer.png",
@@ -359,14 +365,20 @@ static char *get_iconpath()
 }
 
 Fl_RGB_Image *icon = NULL;
+unsigned char *icondata = NULL;
 
 static void set_cosu_icon(Fl_Window *fwin)
 {
     char *icp = get_iconpath();
     if (icp != NULL)
     {
-        Fl_RGB_Image *newicon = new Fl_PNG_Image(icp);
+        int x, y;
+        icondata = stbi_load(icp, &x, &y, NULL, 3);
         free(icp);
+        if (icondata == NULL)
+            return;
+
+        Fl_RGB_Image *newicon = new Fl_RGB_Image(icondata, x, y);
         fwin->icon(newicon);
 
         if (icon != NULL)
@@ -395,11 +407,8 @@ void CosuWindow::start()
     Fl::scheme("plastic");
     Fl::visual(FL_RGB);
     Fl_Image::RGB_scaling(FL_RGB_SCALING_BILINEAR);
-    fl_register_images();
 
     Fl_Window *window = cosuui.make_window();
-
-    Fl_Image emptyimg(0,0,0);
     Fl_Image *img = NULL;
 
     cosuui.lock->hide();
@@ -437,8 +446,6 @@ void CosuWindow::start()
     {
         if (!queue_reset)
         {
-            char *bgpath = NULL;
-            bool bgchanged = false;
             Fl_Image *tempimg = NULL;
 
             struct mapinfo *oldinfo = info;
@@ -447,80 +454,14 @@ void CosuWindow::start()
             if (newinfo != NULL)
             {
                 info = newinfo;
-
-                if (first)
-                {
-                    first = false;
-                    bgchanged = true;
-                }
-                else if (info->bgname != NULL)
-                {
-                    if (oldinfo->bgname == NULL
-                        || strncmp(oldinfo->fullpath, info->fullpath, strrchr(info->fullpath, PATHSEP) - info->fullpath) != 0
-                        || strcmp(oldinfo->bgname, info->bgname) != 0)
-                    {
-                        bgchanged = true;
-                    }
-                }
-                else if (oldinfo->bgname != NULL)
-                {
-                    bgchanged = true;
-                }
-
                 free_mapinfo(oldinfo);
 
-                if (bgchanged && info->bgname != NULL)
-                {
-                    char *sepa = strrchr(info->fullpath, PATHSEP);
-                    unsigned long newlen = sepa - info->fullpath + 1 + strlen(info->bgname) + 1;
-                    bgpath = (char*) malloc(newlen);
-                    if (bgpath == NULL)
-                    {
-                        printerr("Error while allocating!");
-                    }
-                    else
-                    {
-                        memcpy(bgpath, info->fullpath, sepa - info->fullpath);
-                        *(bgpath + (sepa - info->fullpath)) = PATHSEP;
-                        memcpy(bgpath + (sepa - info->fullpath + 1), info->bgname, strlen(info->bgname) + 1);
-                    }
-                }
+                if (info->extra != NULL)
+                    tempimg = (Fl_Image*)info->extra;
 
-                if (bgpath != NULL)
-                {
-                    Fl_Shared_Image *simg = Fl_Shared_Image::get(bgpath);
-
-                    if (simg != NULL)
-                    {
-                        if (simg->w() > 0 && simg->h() > 0)
-                        {
-                            float newh = (370.0f / (float) (simg->w())) * (float) simg->h();
-                            Fl_Image *res = simg->copy(370, (int) newh);
-                            tempimg = res;
-                        }
-
-                        simg->release();
-                    }
-                    else
-                    {
-                        fprintf(stderr, "Image (%s) is not valid!\n", bgpath);
-                    }
-
-                    free(bgpath);
-                }
-
-                if (tempimg != NULL)
-                {
-                    cosuui.infobox->image(tempimg);
-                    delete img;
-                    img = tempimg;
-                }
-                else if (bgchanged && tempimg == NULL)
-                {
-                    cosuui.infobox->image(emptyimg);
-                    delete img;
-                    img = NULL;
-                }
+                cosuui.infobox->image(tempimg);
+                delete img;
+                img = tempimg;
             }
             else
             {
@@ -632,5 +573,6 @@ void CosuWindow::start()
     if (img != NULL) delete img;
 #ifndef WIN32
     if (icon != NULL) delete icon;
+    if (icondata != NULL) stbi_image_free(icondata);
 #endif
 }

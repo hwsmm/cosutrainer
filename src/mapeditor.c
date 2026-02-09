@@ -9,6 +9,13 @@
 #include <stdarg.h>
 #include <ctype.h>
 
+#define STBI_NO_HDR
+#ifdef WIN32
+#define STBI_WINDOWS_UTF8
+#endif
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
 #define tkn(x) strtok(x, ",")
 #define nexttkn() strtok(NULL, ",")
 
@@ -418,7 +425,7 @@ static int convert_vaildpath(struct mapinfo *mi)
 }
 #endif
 
-struct mapinfo *read_beatmap(char *mapfile)
+struct mapinfo *read_beatmap(char *mapfile, struct bgdata *bg)
 {
     struct mapinfo *info = (struct mapinfo*) calloc(1, sizeof(struct mapinfo));
     if (info == NULL)
@@ -470,6 +477,31 @@ struct mapinfo *read_beatmap(char *mapfile)
             return NULL;
         }
 #endif
+
+        if (bg != NULL)
+        {
+            char *sepa = strrchr(info->fullpath, PATHSEP);
+            unsigned long newlen = sepa - info->fullpath + 1 + strlen(info->bgname) + 1;
+            char *bgpath = (char*) malloc(newlen);
+            if (bgpath == NULL)
+            {
+                printerr("Error while allocating!");
+                free_mapinfo(info);
+                return NULL;
+            }
+
+            memcpy(bgpath, info->fullpath, sepa - info->fullpath);
+            *(bgpath + (sepa - info->fullpath)) = PATHSEP;
+            memcpy(bgpath + (sepa - info->fullpath + 1), info->bgname, strlen(info->bgname) + 1);
+
+            bg->data = stbi_load(bgpath, &(bg->x), &(bg->y), NULL, 3);
+            if (bg->data == NULL)
+            {
+                printerr("Failed loading a BG");
+            }
+
+            free(bgpath);
+        }
     }
     else
     {
@@ -478,6 +510,11 @@ struct mapinfo *read_beatmap(char *mapfile)
         return NULL;
     }
     return info;
+}
+
+void free_bginfo(struct bgdata *bg)
+{
+    stbi_image_free(bg->data);
 }
 
 void free_mapinfo(struct mapinfo *info)
