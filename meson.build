@@ -8,13 +8,11 @@ mainfiles = ['src/cosuui.cpp', 'src/cosuwindow.cpp', 'src/cuimain.c', 'src/main.
              'src/actualzip.c', 'src/audiospeed.cpp', 'src/buffers.c', 'src/tools.c']
 
 deps = [
-    dependency('libmpg123'),
     dependency('minizip'),
     dependency('soundtouch'),
     dependency('sndfile'),
     dependency('threads'),
-    meson.get_compiler('cpp').find_library('fltk'),
-    meson.get_compiler('c').find_library('mp3lame')
+    meson.get_compiler('cpp').find_library('fltk')
 ]
 
 if host_machine.system() != 'windows'

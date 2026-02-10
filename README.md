@@ -8,8 +8,8 @@ You can use all of its features with commands, so you can even put the command i
 
 `osumem` is a memory reader for osu!, it can read what .osu file is being read and save it to a temp file so that `cosu-trainer` can read.
 
-`cleanup` is a MP3 cleaner that can run in osu! songs folder (`cleanup <osu song folder>`).
-Basically removes every MP3 that is not used as a main audio file in any .osu file in the same folder.
+`cleanup` is a MP3/OGG cleaner that can run in osu! songs folder (`cleanup <osu song folder>`).
+Basically removes every MP3/OGG that is not used as a main audio file in any .osu file in the same folder.
 It's very destructive and experimental, so don't use unless you desperately need it.
 
 ### Features

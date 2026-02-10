@@ -10,9 +10,17 @@ jobs:
         steps:
             - name: Install dependencies
               run: |
+                  sudo sed -i -e 's/# deb-src/deb-src/g' -e 's/Types: /Types: deb-src /g' /etc/apt/sources.list /etc/apt/sources.list.d/*
                   sudo apt update -y
-                  sudo apt install -y g++ libmpg123-dev libmp3lame-dev libsndfile1-dev libsoundtouch-dev libminizip-dev zlib1g-dev \
-                  libfltk1.3-dev meson wget tar zstd gzip file fuse libfuse2
+                  sudo apt install -y g++ libmpg123-dev libmp3lame-dev libsoundtouch-dev libminizip-dev zlib1g-dev \
+                  libfltk1.3-dev meson wget tar zstd gzip file fuse libfuse2 git cmake
+                  sudo apt build-dep -y libsndfile
+
+            - name: Build libsndfile
+              run: |
+                  git clone https://github.com/libsndfile/libsndfile.git && cd libsndfile
+                  cmake -S . -B build -DCMAKE_BUILD_TYPE=MinSizeRel -DBUILD_SHARED_LIBS=ON -GNinja && cmake --build build --config MinSizeRel --parallel
+                  sudo cmake --install build --prefix /usr
 
             - name: Checkout
               uses: actions/checkout@v4
