@@ -76,10 +76,10 @@ int main(int argc, char *argv[])
                 {
                     while (fgets(line, sizeof line, map))
                     {
-                        if (CMPSTR(line, "AudioFilename"))
+                        if (CMPSTR(line, "AudioFilename:"))
                         {
                             remove_newline(line);
-                            char* filename = line + 15;
+                            char* filename = CUTFIRST(line, "AudioFilename:");
                             if (endswith(filename, ".mp3") || endswith(filename, ".ogg"))
                             {
                                 if (++index > 512 || strlen(filename) + 1 > 1024)
@@ -141,7 +141,7 @@ int main(int argc, char *argv[])
 
         if (removed > 0)
         {
-            printf("%s: removed %d mp3(s).\n", ent->d_name, removed);
+            printf("%s: removed %d mp3/ogg(s).\n", ent->d_name, removed);
         }
 
         if (chdir(".."))
