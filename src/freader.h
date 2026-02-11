@@ -47,28 +47,12 @@ private:
         unsigned char *bgdata = NULL;
         int x = 0, y = 0;
 
-        if (newinfo->bgname != NULL)
+        if (newinfo != NULL && newinfo->bgname != NULL)
         {
-            char *sepa = strrchr(newinfo->fullpath, PATHSEP);
-            unsigned long newlen = sepa - newinfo->fullpath + 1 + strlen(newinfo->bgname) + 1;
-            char *bgpath = (char*) malloc(newlen);
-            if (bgpath == NULL)
+            bgdata = stbi_load(newinfo->bgname, &x, &y, NULL, 3);
+            if (bgdata == NULL)
             {
-                printerr("Error while allocating!");
-            }
-            else
-            {
-                memcpy(bgpath, newinfo->fullpath, sepa - newinfo->fullpath);
-                *(bgpath + (sepa - newinfo->fullpath)) = PATHSEP;
-                memcpy(bgpath + (sepa - newinfo->fullpath + 1), newinfo->bgname, strlen(newinfo->bgname) + 1);
-
-                bgdata = stbi_load(bgpath, &x, &y, NULL, 3);
-                if (bgdata == NULL)
-                {
-                    printerr("Failed loading a BG");
-                }
-
-                free(bgpath);
+                printerr("Failed loading a BG");
             }
         }
 
