@@ -5,7 +5,7 @@ project('cosu-trainer', 'c', 'cpp',
 inc_dir = include_directories('./src', './docs')
 
 mainfiles = ['src/cosuui.cpp', 'src/cosuwindow.cpp', 'src/cuimain.c', 'src/main.cpp', 'src/mapeditor.c',
-             'src/actualzip.c', 'src/audiospeed.cpp', 'src/buffers.c', 'src/tools.c']
+             'src/actualzip.c', 'src/audiospeed.cpp', 'src/buffers.c', 'src/tools.c', 'src/stbi.c']
 
 deps = [
     dependency('libmpg123'),

@@ -316,12 +316,6 @@ void CosuWindow::diffch_callb(Fl_Widget *w, void *data)
 
 #ifndef WIN32
 
-#define STBI_NO_HDR
-#ifdef WIN32
-#define STBI_WINDOWS_UTF8
-#endif
-#include "stb_image.h"
-
 static const char iconpaths[3][35] =
 {
     "/usr/share/pixmaps/cosutrainer.png",
@@ -446,8 +440,6 @@ void CosuWindow::start()
     {
         if (!queue_reset)
         {
-            Fl_Image *tempimg = NULL;
-
             struct mapinfo *oldinfo = info;
             struct mapinfo *newinfo = fr.get_mapinfo();
 
@@ -456,12 +448,9 @@ void CosuWindow::start()
                 info = newinfo;
                 free_mapinfo(oldinfo);
 
-                if (info->extra != NULL)
-                    tempimg = (Fl_Image*)info->extra;
-
-                cosuui.infobox->image(tempimg);
+                cosuui.infobox->image((Fl_Image*)info->extra);
                 delete img;
-                img = tempimg;
+                img = (Fl_Image*)info->extra;
             }
             else
             {

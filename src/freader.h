@@ -1,6 +1,8 @@
 #pragma once
 #include "mapeditor.h"
 #include "tools.h"
+#include "stbi_config.h"
+#include "cosuplatform.h"
 #include <thread>
 #include <cstdlib>
 #include <cstring>
@@ -40,20 +42,47 @@ private:
 
     void update_mapinfo(char *fullpath)
     {
-        struct bgdata bgread = { NULL, 0, 0 };
-        struct mapinfo *newinfo = read_beatmap(fullpath, &bgread);
+        struct mapinfo *newinfo = read_beatmap(fullpath);
 
-        if (bgread.data != NULL && bgread.x > 0 && bgread.y > 0)
+        unsigned char *bgdata = NULL;
+        int x = 0, y = 0;
+
+        if (newinfo->bgname != NULL)
         {
-            Fl_RGB_Image img(bgread.data, bgread.x, bgread.y);
-            float newh = (READ_BG_W / (float)bgread.x) * (float)bgread.y;
+            char *sepa = strrchr(newinfo->fullpath, PATHSEP);
+            unsigned long newlen = sepa - newinfo->fullpath + 1 + strlen(newinfo->bgname) + 1;
+            char *bgpath = (char*) malloc(newlen);
+            if (bgpath == NULL)
+            {
+                printerr("Error while allocating!");
+            }
+            else
+            {
+                memcpy(bgpath, newinfo->fullpath, sepa - newinfo->fullpath);
+                *(bgpath + (sepa - newinfo->fullpath)) = PATHSEP;
+                memcpy(bgpath + (sepa - newinfo->fullpath + 1), newinfo->bgname, strlen(newinfo->bgname) + 1);
+
+                bgdata = stbi_load(bgpath, &x, &y, NULL, 3);
+                if (bgdata == NULL)
+                {
+                    printerr("Failed loading a BG");
+                }
+
+                free(bgpath);
+            }
+        }
+
+        if (bgdata != NULL && x > 0 && y > 0)
+        {
+            Fl_RGB_Image img(bgdata, x, y);
+            float newh = (READ_BG_W / (float)x) * (float)y;
             newinfo->extra = (void*)img.copy(READ_BG_W, (int)newh);
+            stbi_image_free(bgdata);
         }
 
         struct mapinfo *oldinfo = mi.exchange(newinfo);
         Fl::awake();
 
-        free_bginfo(&bgread);
         if (oldinfo != NULL && oldinfo->extra != NULL)
             delete (Fl_Image*)oldinfo->extra;
 

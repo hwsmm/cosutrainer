@@ -40,12 +40,6 @@ struct mapinfo
     void *extra;
 };
 
-struct bgdata
-{
-    unsigned char *data;
-    int x, y;
-};
-
 struct editdata // data needed to edit a map
 {
     const struct mapinfo *mi;
@@ -120,8 +114,7 @@ extern "C"
 
 double scale_ar(double ar, double speed, int mode);
 double scale_od(double od, double speed, int mode);
-struct mapinfo *read_beatmap(char *mapfile, struct bgdata *bg);
-void free_bginfo(struct bgdata *bg);
+struct mapinfo *read_beatmap(char *mapfile);
 void free_mapinfo(struct mapinfo *info);
 int edit_beatmap(struct editdata *edit);
 
