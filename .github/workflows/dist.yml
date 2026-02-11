@@ -35,7 +35,7 @@ jobs:
               run: |
                   chmod +x linuxdeploy-x86_64.AppImage
                   ./linuxdeploy-x86_64.AppImage --appimage-extract
-                  ./squashfs-root/usr/bin/linuxdeploy --appdir=AppDir -d AppDir/usr/share/applications/cosu-trainer.desktop -i AppDir/usr/share/pixmaps/cosutrainer.png -o appimage
+                  DISABLE_COPYRIGHT_FILES_DEPLOYMENT=1 ./squashfs-root/usr/bin/linuxdeploy --appdir=AppDir -d AppDir/usr/share/applications/cosu-trainer.desktop -i AppDir/usr/share/pixmaps/cosutrainer.png -o appimage
 
             - name: Pack tarball
               run: |
