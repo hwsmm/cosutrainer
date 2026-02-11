@@ -40,6 +40,7 @@ int change_mp3_speed(const char* source, struct buffers *bufs, double speed, boo
     size_t samplecount = 0;
     size_t done = 0;
     size_t wanted = 0;
+    unsigned int processed = 0;
     unsigned int fulllength = 0;
     bool flush = false;
 
@@ -107,8 +108,6 @@ int change_mp3_speed(const char* source, struct buffers *bufs, double speed, boo
 
         bufsizesample = convbuf_size / sizeof(float) / channels;
 
-        float progress = 0;
-
         while (1)
         {
             if (err == MPG123_DONE) flush = true;
@@ -122,8 +121,8 @@ int change_mp3_speed(const char* source, struct buffers *bufs, double speed, boo
                     samplecount = (done/sizeof(float))/channels;
                     if (callback != NULL)
                     {
-                        progress += (float) samplecount / (float) fulllength;
-                        callback(data, progress);
+                        processed += samplecount;
+                        callback(data, (float)processed / (float)fulllength);
                     }
                     st.putSamples(buffer, samplecount);
                 }
@@ -270,14 +269,10 @@ int change_audio_speed_libsndfile(const char* source, struct buffers *bufs, doub
     float convbuf[256] = { 0.0 };
     int bufsamples = 0;
 
-    sf_count_t readcount = 0;
-    unsigned int convcount = 0;
-
-    float progress = 0;
-
     SoundTouch st;
     bool flush = false;
 
+    sf_count_t processed = 0;
     sf_count_t frames = 0;
 
     if ((in = sf_open(source, SFM_READ, &info)) == NULL)
@@ -303,18 +298,25 @@ int change_audio_speed_libsndfile(const char* source, struct buffers *bufs, doub
 
     while (!flush)
     {
-        readcount = sf_readf_float(in, buffer, bufsamples);
+        unsigned int convcount = 0;
+        sf_count_t readcount = sf_readf_float(in, buffer, bufsamples);
 
         if (callback != NULL)
         {
             if (frames > 0)
-                progress += (float) readcount / (float) frames;
-
-            callback(data, progress);
+            {
+                processed += readcount;
+                callback(data, (float)processed / (float)frames);
+            }
+            else
+            {
+                callback(data, 0);
+            }
         }
 
         if (readcount != 0) st.putSamples(buffer, readcount);
-        else
+
+        if (readcount < bufsamples)
         {
             st.flush();
             flush = true;
