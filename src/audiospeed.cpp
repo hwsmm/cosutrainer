@@ -15,6 +15,8 @@
 using namespace soundtouch;
 using namespace std;
 
+extern double pitch_override;
+
 int change_mp3_speed(const char* source, struct buffers *bufs, double speed, bool pitch, double emuldt, void *data, update_progress_cb callback)
 {
     mpg123_handle *mh = NULL;
@@ -77,8 +79,9 @@ int change_mp3_speed(const char* source, struct buffers *bufs, double speed, boo
         st.setChannels(channels);
         if (pitch && emuldt != 0)
         {
-            st.setRateChange((emuldt - 1.0) * 100.0);
-            st.setTempoChange((speed / emuldt - 1.0) * 100.0);
+            double value = pitch_override != 0.0 ? pitch_override : emuldt;
+            st.setRateChange((value - 1.0) * 100.0);
+            st.setTempoChange((speed / value - 1.0) * 100.0);
         }
         else if (!pitch) st.setTempoChange((speed - 1.0) * 100.0);
         else st.setRateChange((speed - 1.0) * 100.0);
@@ -300,8 +303,9 @@ int change_audio_speed_libsndfile(const char* source, struct buffers *bufs, doub
     st.setChannels(info.channels);
     if (pitch && emuldt != 0)
     {
-        st.setRateChange((emuldt - 1.0) * 100.0);
-        st.setTempoChange((speed / emuldt - 1.0) * 100.0);
+        double value = pitch_override != 0.0 ? pitch_override : emuldt;
+        st.setRateChange((value - 1.0) * 100.0);
+        st.setTempoChange((speed / value - 1.0) * 100.0);
     }
     else if (!pitch) st.setTempoChange((speed - 1.0) * 100.0);
     else st.setRateChange((speed - 1.0) * 100.0);
