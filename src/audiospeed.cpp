@@ -15,7 +15,7 @@
 using namespace soundtouch;
 using namespace std;
 
-int change_mp3_speed(const char* source, struct buffers *bufs, double speed, bool pitch, void *data, update_progress_cb callback)
+int change_mp3_speed(const char* source, struct buffers *bufs, double speed, bool pitch, double emuldt, void *data, update_progress_cb callback)
 {
     mpg123_handle *mh = NULL;
     struct mpg123_frameinfo fi;
@@ -75,7 +75,12 @@ int change_mp3_speed(const char* source, struct buffers *bufs, double speed, boo
         st.setSetting(SETTING_USE_QUICKSEEK, 1);
         st.setSampleRate(rate);
         st.setChannels(channels);
-        if (!pitch) st.setTempoChange((speed - 1.0) * 100.0);
+        if (pitch && emuldt != 0)
+        {
+            st.setRateChange((emuldt - 1.0) * 100.0);
+            st.setTempoChange((speed / emuldt - 1.0) * 100.0);
+        }
+        else if (!pitch) st.setTempoChange((speed - 1.0) * 100.0);
         else st.setRateChange((speed - 1.0) * 100.0);
 
         gfp = lame_init();
@@ -258,7 +263,7 @@ sf_count_t sfvio_tell(void *vbufs)
     return bufs->audcur;
 }
 
-int change_audio_speed_libsndfile(const char* source, struct buffers *bufs, double speed, bool pitch, void *data, update_progress_cb callback)
+int change_audio_speed_libsndfile(const char* source, struct buffers *bufs, double speed, bool pitch, double emuldt, void *data, update_progress_cb callback)
 {
     int success = 1;
     SNDFILE *in = NULL, *out = NULL;
@@ -293,7 +298,12 @@ int change_audio_speed_libsndfile(const char* source, struct buffers *bufs, doub
     st.setSetting(SETTING_USE_QUICKSEEK, 1);
     st.setSampleRate(info.samplerate);
     st.setChannels(info.channels);
-    if (!pitch) st.setTempoChange((speed - 1.0) * 100.0);
+    if (pitch && emuldt != 0)
+    {
+        st.setRateChange((emuldt - 1.0) * 100.0);
+        st.setTempoChange((speed / emuldt - 1.0) * 100.0);
+    }
+    else if (!pitch) st.setTempoChange((speed - 1.0) * 100.0);
     else st.setRateChange((speed - 1.0) * 100.0);
 
     while (!flush)
@@ -337,7 +347,7 @@ sndfclose:
     return success;
 }
 
-int change_audio_speed(const char* source, struct buffers *bufs, double speed, bool pitch, void *data, update_progress_cb callback)
+int change_audio_speed(const char* source, struct buffers *bufs, double speed, bool pitch, double emuldt, void *data, update_progress_cb callback)
 {
     try
     {
@@ -346,7 +356,7 @@ int change_audio_speed(const char* source, struct buffers *bufs, double speed, b
             // using mpg123/lame backend exclusively to make bug fixing easier
             // and there are some distros that has libsndfile without mp3 support since it's only released recently
             // libsndfile also uses mpg123/lame anyway
-            int ret = change_mp3_speed(source, bufs, speed, pitch, data, callback);
+            int ret = change_mp3_speed(source, bufs, speed, pitch, emuldt, data, callback);
 
             if (ret == 0)
             {
@@ -359,7 +369,7 @@ int change_audio_speed(const char* source, struct buffers *bufs, double speed, b
             }
         }
 
-        return change_audio_speed_libsndfile(source, bufs, speed, pitch, data, callback);
+        return change_audio_speed_libsndfile(source, bufs, speed, pitch, emuldt, data, callback);
     }
     catch (const std::runtime_error &e)
     {

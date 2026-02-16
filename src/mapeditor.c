@@ -955,27 +955,26 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
                 putsstr("Version:");
             }
 
-            if (!ep->emuldt)
+            if (ep->emuldt == 0)
             {
                 snpedit("%.2lfx %.0lfbpm", speed, ep->ed->mi->maxbpm * speed);
             }
             else
             {
-                double dtspeed = speed * 1.5;
-                snpedit("%.2lfx %.0lfbpm (DT)", dtspeed, ep->ed->mi->maxbpm * dtspeed);
+                snpedit("%.2lfx %.0lfbpm (DT)", ep->emuldt, ep->ed->mi->maxbpm * ep->emuldt);
             }
 
             if ((ep->ed->mi->mode != 1 && ep->ed->mi->mode != 3) && ep->ed->mi->cs != ep->ed->cs) snpedit(" CS%.1lf", ep->ed->cs);
 
-            if (ep->emuldt)
-            {
-                if (ep->ed->mi->mode != 1 && ep->ed->mi->mode != 3) snpedit(" AR%.1lf", scale_ar(ep->ed->ar, 1.5, ep->ed->mi->mode));
-                if (ep->ed->mi->mode != 2) snpedit(" OD%.1lf", scale_od(ep->ed->od, 1.5, ep->ed->mi->mode));
-            }
-            else
+            if (ep->emuldt == 0)
             {
                 if ((ep->ed->mi->mode != 1 && ep->ed->mi->mode != 3) && ep->ed->mi->ar != ep->ed->ar) snpedit(" AR%.1lf", ep->ed->ar);
                 if (ep->ed->mi->mode != 2 && ep->ed->mi->od != ep->ed->od) snpedit(" OD%.1lf", ep->ed->od);
+            }
+            else
+            {
+                if (ep->ed->mi->mode != 1 && ep->ed->mi->mode != 3) snpedit(" AR%.1lf", scale_ar(ep->ed->ar, 1.5, ep->ed->mi->mode));
+                if (ep->ed->mi->mode != 2) snpedit(" OD%.1lf", scale_od(ep->ed->od, 1.5, ep->ed->mi->mode));
             }
 
             if (ep->ed->mi->hp != ep->ed->hp) snpedit(" HP%.1lf", ep->ed->hp);
@@ -1152,7 +1151,7 @@ int edit_beatmap(struct editdata *edit)
     if (edit->ar > 10 || edit->od > 10)
     {
         puts("AR/OD is higher than 10. Emulating DT...");
-        ep.emuldt = true;
+        ep.emuldt = edit->speed;
         edit->speed /= 1.5;
         edit->ar = scale_ar(edit->ar, 1.0/1.5, edit->mi->mode);
         edit->od = scale_od(edit->od, 1.0/1.5, edit->mi->mode);
@@ -1162,7 +1161,7 @@ int edit_beatmap(struct editdata *edit)
     }
     else
     {
-        ep.emuldt = false;
+        ep.emuldt = 0;
     }
 
     CLAMP(edit->od, 0.0, 10.0);
@@ -1247,7 +1246,7 @@ int edit_beatmap(struct editdata *edit)
         }
         strcpy(bufs.audname, fcaudpath + folderlen);
 
-        ret = change_audio_speed(edit->mi->audioname, &bufs, edit->speed, edit->pitch, edit->data, edit->progress_callback);
+        ret = change_audio_speed(edit->mi->audioname, &bufs, edit->speed, edit->pitch, ep.emuldt, edit->data, edit->progress_callback);
         if (ret != 0)
         {
             printerr("Failed converting audio!");

@@ -81,7 +81,7 @@ struct editpass // temporary data that's only needed in editing (only passed wit
 {
     unsigned int editsize;
     char *editline;
-    bool emuldt;
+    double emuldt;
     bool arexists;
     bool tagexists;
     bool diffexists;

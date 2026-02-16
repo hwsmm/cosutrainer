@@ -8,7 +8,7 @@ extern "C"
 
 typedef void (*update_progress_cb)(void *data, float progress);
 
-int change_audio_speed(const char* source, struct buffers *bufs, double speed, bool pitch, void *data, update_progress_cb callback);
+int change_audio_speed(const char* source, struct buffers *bufs, double speed, bool pitch, double emuldt, void *data, update_progress_cb callback);
 
 #ifdef __cplusplus
 }
