@@ -1333,7 +1333,7 @@ int edit_beatmap(struct editdata *edit)
     }
     else
     {
-        FILE *mapfd = fopen(fcmappath, "w");
+        FILE *mapfd = fopen(fcmappath, "wb");
         if (mapfd == NULL || fwrite(bufs.mapbuf, 1, bufs.maplast, mapfd) < bufs.maplast)
         {
             printerr("Error writing a map");
@@ -1343,7 +1343,7 @@ int edit_beatmap(struct editdata *edit)
         {
             if (fcaudpath)
             {
-                FILE *audfd = fopen(fcaudpath, "w");
+                FILE *audfd = fopen(fcaudpath, "wb");
                 if (audfd == NULL || fwrite(bufs.audbuf, 1, bufs.audlast, audfd) < bufs.audlast)
                 {
                     printerr("Error writing an audio file");
