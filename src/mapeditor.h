@@ -107,6 +107,10 @@ struct editpass // temporary data that's only needed in editing (only passed wit
     int max_combo;
 };
 
+#define DEFAULT_FMT "@diffname@ @rate@ @bpm@ @emuldt@ @cs@ @ar@ @od@ @hp@ @cut@ @flip@ @nosv@"
+
+#define CUSTOM_DIFF_VAR "COSU_CUSTOM_DIFF_FORMAT"
+
 #ifdef __cplusplus
 extern "C"
 {

@@ -943,97 +943,160 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
         else if (!ep->diffexists || CMPSTR(line, "Version:"))
         {
             edited = true;
-            if (ep->diffexists)
+            const char *customfmt = getenv(CUSTOM_DIFF_VAR);
+            const char *usefmt = DEFAULT_FMT;
+            if (customfmt != NULL)
+                usefmt = customfmt;
+
+            int fmtlen = strlen(usefmt);
+
+            if (!ep->diffexists)
             {
-                remove_newline(line);
-                putdstr(line);
-                putsstr(" ");
-            }
-            else
-            {
-                ep->diffexists = true;
                 ret = -20;
-                putsstr("Version:");
+                ep->diffexists = true;
             }
 
-            if (ep->emuldt == 0)
-            {
-                snpedit("%.2lfx %.0lfbpm", speed, ep->ed->mi->maxbpm * speed);
-            }
-            else
-            {
-                snpedit("%.2lfx %.0lfbpm (DT)", ep->emuldt, ep->ed->mi->maxbpm * ep->emuldt);
-            }
+            putsstr("Version:");
 
-            if ((ep->ed->mi->mode != 1 && ep->ed->mi->mode != 3) && ep->ed->mi->cs != ep->ed->cs) snpedit(" CS%.1lf", ep->ed->cs);
-
-            if (ep->emuldt == 0)
+#define _CMPSTR(a, b) (CMPSTR(a, b) && (i += sizeof(b) - 1))
+            for (int i = 0; i < fmtlen;)
             {
-                if ((ep->ed->mi->mode != 1 && ep->ed->mi->mode != 3) && ep->ed->mi->ar != ep->ed->ar) snpedit(" AR%.1lf", ep->ed->ar);
-                if (ep->ed->mi->mode != 2 && ep->ed->mi->od != ep->ed->od) snpedit(" OD%.1lf", ep->ed->od);
-            }
-            else
-            {
-                if (ep->ed->mi->mode != 1 && ep->ed->mi->mode != 3) snpedit(" AR%.1lf", scale_ar(ep->ed->ar, 1.5, ep->ed->mi->mode));
-                if (ep->ed->mi->mode != 2) snpedit(" OD%.1lf", scale_od(ep->ed->od, 1.5, ep->ed->mi->mode));
-            }
+                const char *cur = usefmt + i;
 
-            if (ep->ed->mi->hp != ep->ed->hp) snpedit(" HP%.1lf", ep->ed->hp);
-
-            if (ep->ed->cut_start > 0 || ep->ed->cut_end < LONG_MAX)
-            {
-                putsstr(" Cut:");
-                if (ep->ed->cut_start > 0)
+                if (_CMPSTR(cur, "@diffname@"))
                 {
-                    if (ep->ed->cut_combo)
+                    if (ep->ed->mi->diffname != NULL)
+                        putdstr(ep->ed->mi->diffname);
+                }
+                else if (_CMPSTR(cur, "@rate@"))
+                {
+                    snpedit("%.2lfx", ep->emuldt == 0 ? speed : ep->emuldt);
+                }
+                else if (_CMPSTR(cur, "@bpm@"))
+                {
+                    snpedit("%.0lfbpm", ep->ed->mi->maxbpm * (ep->emuldt == 0 ? speed : ep->emuldt));
+                }
+                else if (_CMPSTR(cur, "@emuldt@"))
+                {
+                    if (ep->emuldt != 0)
+                        putsstr("(DT)");
+                }
+                else if (_CMPSTR(cur, "@cs@") || _CMPSTR(cur, "@CS@"))
+                {
+                    if ((ep->ed->mi->mode != 1 && ep->ed->mi->mode != 3) && (ep->ed->mi->cs != ep->ed->cs || CMPSTR(cur, "@CS@")))
+                        snpedit("CS%.1lf", ep->ed->cs);
+                }
+                else if (_CMPSTR(cur, "@ar@") || _CMPSTR(cur, "@AR@"))
+                {
+                    if (ep->ed->mi->mode != 1 && ep->ed->mi->mode != 3)
                     {
-                        snpedit("%ld", ep->ed->cut_start);
-                    }
-                    else
-                    {
-                        long t = ep->ed->cut_start / 1000;
-                        snpedit("%ld:%02ld", t / 60, t % 60);
+                        if (ep->emuldt != 0)
+                        {
+                            snpedit("AR%.1lf", scale_ar(ep->ed->ar, 1.5, ep->ed->mi->mode));
+                        }
+                        else if (ep->ed->mi->ar != ep->ed->ar || CMPSTR(cur, "@AR@"))
+                        {
+                            snpedit("AR%.1lf", ep->ed->ar);
+                        }
                     }
                 }
-
-                putsstr("~");
-
-                if (ep->ed->cut_end < LONG_MAX)
+                else if (_CMPSTR(cur, "@od@") || _CMPSTR(cur, "@OD@"))
                 {
-                    if (ep->ed->cut_combo)
+                    if (ep->ed->mi->mode != 2)
                     {
-                        snpedit("%ld", ep->ed->cut_end);
-                    }
-                    else
-                    {
-                        long t = ep->ed->cut_end / 1000;
-                        snpedit("%ld:%02ld", t / 60, t % 60);
+                        if (ep->emuldt != 0)
+                        {
+                            snpedit("OD%.1lf", scale_od(ep->ed->od, 1.5, ep->ed->mi->mode));
+                        }
+                        else if (ep->ed->mi->od != ep->ed->od || CMPSTR(cur, "@OD@"))
+                        {
+                            snpedit("OD%.1lf", ep->ed->od);
+                        }
                     }
                 }
-            }
+                else if (_CMPSTR(cur, "@hp@") || _CMPSTR(cur, "@HP@"))
+                {
+                    if (ep->ed->mi->hp != ep->ed->hp || CMPSTR(cur, "@HP@")) snpedit("HP%.1lf", ep->ed->hp);
+                }
+                else if (_CMPSTR(cur, "@cut@"))
+                {
+                    if (ep->ed->cut_start > 0 || ep->ed->cut_end < LONG_MAX)
+                    {
+                        putsstr("Cut:");
+                        if (ep->ed->cut_start > 0)
+                        {
+                            if (ep->ed->cut_combo)
+                            {
+                                snpedit("%ld", ep->ed->cut_start);
+                            }
+                            else
+                            {
+                                long t = ep->ed->cut_start / 1000;
+                                snpedit("%ld:%02ld", t / 60, t % 60);
+                            }
+                        }
 
-            switch (ep->ed->flip)
-            {
-            case xflip:
-                putsstr(" X(invert)");
-                break;
-            case yflip:
-                putsstr(" Y(invert)");
-                break;
-            case transpose:
-                putsstr(" TRANSPOSE");
-                break;
-            case invert:
-                putsstr(" INVERT");
-                break;
-            default:
-                break;
-            }
+                        putsstr("~");
 
-            if (ep->ed->remove_sv)
-            {
-                putsstr(" NO SV");
+                        if (ep->ed->cut_end < LONG_MAX)
+                        {
+                            if (ep->ed->cut_combo)
+                            {
+                                snpedit("%ld", ep->ed->cut_end);
+                            }
+                            else
+                            {
+                                long t = ep->ed->cut_end / 1000;
+                                snpedit("%ld:%02ld", t / 60, t % 60);
+                            }
+                        }
+                    }
+                }
+                else if (_CMPSTR(cur, "@flip@"))
+                {
+                    switch (ep->ed->flip)
+                    {
+                    case xflip:
+                        putsstr("X(invert)");
+                        break;
+                    case yflip:
+                        putsstr("Y(invert)");
+                        break;
+                    case transpose:
+                        putsstr("TRANSPOSE");
+                        break;
+                    case invert:
+                        putsstr("INVERT");
+                        break;
+                    default:
+                        break;
+                    }
+                }
+                else if (_CMPSTR(cur, "@nosv@"))
+                {
+                    if (ep->ed->remove_sv)
+                    {
+                        putsstr("NO SV");
+                    }
+                    else if (ep->ed->nospinner)
+                    {
+                        putsstr("NO SPIN");
+                    }
+                }
+                else
+                {
+                    if (*cur != ' ' || ep->editline[ecur - 1] != ' ')
+                    {
+                        char a[] = { *cur, '\0' };
+                        putsstr(a);
+                    }
+
+                    i++;
+                }
             }
+#undef _CMPSTR
+            if (ep->editline[ecur - 1] == ' ')
+                ep->editline[--ecur] = '\0';
 
             putsstr("\r\n");
         }

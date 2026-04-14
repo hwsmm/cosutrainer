@@ -396,10 +396,48 @@ static void set_cosu_icon(Fl_Window *fwin)
 
 #endif
 
+static char envstr[32767];
+
+static int handle_fltk_ev(int event)
+{
+    if (event == FL_SHORTCUT)
+    {
+        if (Fl::event_state(FL_CTRL) && Fl::event_key('f'))
+        {
+            const char *customfmt = getenv(CUSTOM_DIFF_VAR);
+            const char *defaultfmt = DEFAULT_FMT;
+            const char *usefmt = customfmt != NULL ? customfmt : defaultfmt;
+            const char msg[] = "Define your custom difficulty name format:";
+
+            const char *got = fl_input(msg, usefmt);
+            if (got == NULL)
+                return 1;
+
+            snprintf(envstr, sizeof(envstr), CUSTOM_DIFF_VAR "=%s", got);
+
+            if (putenv(envstr) != 0)
+            {
+                perror("putenv");
+                fl_alert("Failed setting an environment variable.\nCheck console for details.");
+            }
+            else
+            {
+                fprintf(stderr, "New difficulty format is %s\n", getenv(CUSTOM_DIFF_VAR));
+
+            }
+
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
 void CosuWindow::start()
 {
     Fl::scheme("plastic");
     Fl::visual(FL_RGB);
+    Fl::add_handler(handle_fltk_ev);
     Fl_Image::RGB_scaling(FL_RGB_SCALING_BILINEAR);
 
     Fl_Window *window = cosuui.make_window();
@@ -559,6 +597,7 @@ void CosuWindow::start()
 
         cosuui.infobox->redraw();
     }
+    Fl::remove_handler(handle_fltk_ev);
     if (img != NULL) delete img;
 #ifndef WIN32
     if (icon != NULL) delete icon;

@@ -23,6 +23,7 @@ It's very destructive and experimental, so don't use unless you desperately need
 - Generates a practice difficulty by cutting
 - Generates an osz file for easier import
 - An user-defined osz handler can be set for seamless integration with osu!
+- Custom difficulty name format
 
 ### Linux requirements
 - osu! must run on WINE with dotnet 4.5+ for proper memory scanning
@@ -90,6 +91,12 @@ This works out of box on Windows, and is pretty reliable, but it's a bit flaky o
 `osumem` tries to get the song directory once osu! is found, and it will show you the found directory. `cosu-trainer` will use the found one even if you have set `OSU_SONG_FOLDER` or `~/.cosu_songsfd`.
 
 Please let me know if it works well or not!
+
+### Custom difficulty name format
+You can edit the difficulty name format by opening the dialog with Ctrl+F, or by setting `COSU_CUSTOM_DIFF_FORMAT` environment variable.
+
+Default format is `"@diffname@ @rate@ @bpm@ @emuldt@ @cs@ @ar@ @od@ @hp@ @cut@ @flip@ @nosv@"`.
+`%cs%`/`%ar%`/`%od%`/`%hp%` are not added if the values don't change. Use uppercase ones (such as `%OD%`) if you want them regardless of their status.
 
 ## Thanks a lot to
 - Thanks a lot to developers of libraries I used in this program!!!
