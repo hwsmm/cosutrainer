@@ -75,9 +75,8 @@ int cuimain(int argc, char *argv[])
 #ifndef WIN32
     if (osumem) songpath_free(&st); // no longer needed since mi has fullpath
 #endif
-    if (ret != 0)
+    if (mi == NULL)
     {
-        printerr("Failed reading a map!");
         return 1;
     }
     struct editdata edit;
