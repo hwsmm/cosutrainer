@@ -86,8 +86,11 @@ static int _snpedit(struct editpass *ep, unsigned int *ecur, const char *format,
     return 0;
 }
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wgnu-zero-variadic-macro-arguments"
 #define snpedit(fmt, ...) \
 if (_snpedit(ep, &ecur, fmt, ##__VA_ARGS__) != 0) return -1;
+#pragma clang diagnostic pop
 
 static char *find_null(char *str)
 {
