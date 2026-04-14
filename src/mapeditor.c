@@ -92,11 +92,7 @@ static int _snpedit(struct editpass *ep, unsigned int *ecur, const char *format,
 if (_snpedit(ep, &ecur, fmt, ##__VA_ARGS__) != 0) return -1;
 #pragma clang diagnostic pop
 
-static char *find_null(char *str)
-{
-    while (*(str++)) {}
-    return str;
-}
+#define find_null(str) (str + strlen(str) + 1)
 
 double scale_ar(double ar, double speed, int mode)
 {
