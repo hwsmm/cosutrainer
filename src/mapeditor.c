@@ -96,7 +96,7 @@ if (_snpedit(ep, &ecur, fmt, ##__VA_ARGS__) != 0) return -1;
 
 double scale_ar(double ar, double speed, int mode)
 {
-    if (mode == 1 || mode == 3) return ar;
+    if (mode == 1 || mode == 3 || speed == 1.0) return ar;
 
     double ms = ar <= 5.0 ? 1800.0 - 120.0 * ar : 1950.0 - 150.0 * ar;
     ms /= speed;
@@ -107,6 +107,8 @@ double scale_ar(double ar, double speed, int mode)
 // fix mania od
 double scale_od(double od, double speed, int mode)
 {
+    if (speed == 1.0) return od;
+
     double base;
     double multiplier;
 
