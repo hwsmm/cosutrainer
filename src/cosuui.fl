@@ -8,10 +8,10 @@ class CosuUI {open
   } {
     Fl_Window window {
       label {cosu-trainer} open selected
-      xywh {91 461 390 530} type Single size_range {390 530 390 530} visible
+      xywh {91 461 390 565} type Single size_range {390 565 390 565} visible
     } {
       Fl_Group mainbox {open
-        xywh {10 10 370 510}
+        xywh {10 10 370 545}
       } {
         Fl_Box infobox {
           xywh {10 10 370 130} align 64
@@ -145,6 +145,13 @@ class CosuUI {open
         Fl_Input cutend {
           label {~ }
           xywh {130 419 70 25}
+        }
+        Fl_Box customfmtlabel {
+          label {Diff fmt}
+          xywh {10 530 75 25} align 20
+        }
+        Fl_Input customfmtinput {
+          xywh {85 530 295 25}
         }
       }
       Fl_Progress progress {

@@ -20,10 +20,10 @@ Fl_Menu_Item* CosuUI::invert = CosuUI::menu_flipbox + 4;
 Fl_Window* CosuUI::make_window()
 {
     {
-        window = new Fl_Window(390, 530, "cosu-trainer");
+        window = new Fl_Window(390, 565, "cosu-trainer");
         window->user_data((void*)(this));
         {
-            mainbox = new Fl_Group(10, 10, 370, 510);
+            mainbox = new Fl_Group(10, 10, 370, 545);
             {
                 infobox = new Fl_Box(10, 10, 370, 130);
                 infobox->align(Fl_Align(FL_ALIGN_CLIP));
@@ -180,6 +180,13 @@ Fl_Window* CosuUI::make_window()
             {
                 cutend = new Fl_Input(130, 419, 70, 25, "~ ");
             } // Fl_Input* cutend
+            {
+                customfmtlabel = new Fl_Box(10, 530, 75, 25, "Diff fmt");
+                customfmtlabel->align(Fl_Align(FL_ALIGN_LEFT|FL_ALIGN_INSIDE));
+            } // Fl_Box* customfmtlabel
+            {
+                customfmtinput = new Fl_Input(85, 530, 295, 25);
+            } // Fl_Input* customfmtinput
             mainbox->end();
         } // Fl_Group* mainbox
         {
@@ -189,7 +196,7 @@ Fl_Window* CosuUI::make_window()
             progress->minimum(0);
             progress->value(0);
         } // Fl_Progress* progress
-        window->size_range(390, 530, 390, 530);
+        window->size_range(390, 565, 390, 565);
         window->end();
     } // Fl_Window* window
     return window;

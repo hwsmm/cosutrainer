@@ -48,6 +48,9 @@ char arstr[] = "Scale AR to xx.x";
 char odstr[] = "Scale OD to xx.x";
 const int offset = 12;
 
+static const char *get_custom_diff_format();
+static bool set_custom_diff_format(const char *format);
+
 void CosuWindow::update_ar_label()
 {
     if (info == NULL || info->mode == 1 || info->mode == 3)
@@ -280,6 +283,12 @@ void CosuWindow::convbtn_callb(Fl_Widget *w, void *data)
     edit.data = data;
     edit.progress_callback = update_progress;
 
+    const char *customfmt = win->cosuui.customfmtinput->value();
+    if (strcmp(customfmt, get_custom_diff_format()) != 0 && !set_custom_diff_format(customfmt))
+    {
+        fl_alert("Failed setting the difficulty name format.\nConversion will use the previous format.");
+    }
+
     int ret = edit_beatmap(&edit);
     if (ret != 0)
     {
@@ -397,6 +406,30 @@ static void set_cosu_icon(Fl_Window *fwin)
 #endif
 
 static char envstr[32767];
+static Fl_Input *customfmt_widget = NULL;
+
+static const char *get_custom_diff_format()
+{
+    const char *customfmt = getenv(CUSTOM_DIFF_VAR);
+    return customfmt != NULL ? customfmt : DEFAULT_FMT;
+}
+
+static bool set_custom_diff_format(const char *format)
+{
+    if (format == NULL)
+        return false;
+
+    snprintf(envstr, sizeof(envstr), CUSTOM_DIFF_VAR "=%s", format);
+
+    if (putenv(envstr) != 0)
+    {
+        perror("putenv");
+        return false;
+    }
+
+    fprintf(stderr, "New difficulty format is %s\n", getenv(CUSTOM_DIFF_VAR));
+    return true;
+}
 
 static int handle_fltk_ev(int event)
 {
@@ -404,26 +437,19 @@ static int handle_fltk_ev(int event)
     {
         if (Fl::event_state(FL_CTRL) && Fl::event_key('f'))
         {
-            const char *customfmt = getenv(CUSTOM_DIFF_VAR);
-            const char *defaultfmt = DEFAULT_FMT;
-            const char *usefmt = customfmt != NULL ? customfmt : defaultfmt;
             const char msg[] = "Define your custom difficulty name format:";
 
-            const char *got = fl_input(msg, usefmt);
+            const char *got = fl_input(msg, get_custom_diff_format());
             if (got == NULL)
                 return 1;
 
-            snprintf(envstr, sizeof(envstr), CUSTOM_DIFF_VAR "=%s", got);
-
-            if (putenv(envstr) != 0)
+            if (!set_custom_diff_format(got))
             {
-                perror("putenv");
                 fl_alert("Failed setting an environment variable.\nCheck console for details.");
             }
-            else
+            else if (customfmt_widget != NULL)
             {
-                fprintf(stderr, "New difficulty format is %s\n", getenv(CUSTOM_DIFF_VAR));
-
+                customfmt_widget->value(got);
             }
 
             return 1;
@@ -461,10 +487,17 @@ void CosuWindow::start()
                                "Blanking the first box makes the converted map start from 0, and blanking the second makes it end at the end of an original map.\n"
                                "Note that combo count works properly only on the standard mode.\n"
                                "Example: 2385 for combo count, and 1:30 or 0:30 for time";
+    const char fmt_tooltip[] = "Custom difficulty name format.\n"
+                               "Available tags: @diffname@ @rate@ @bpm@ @emuldt@ @cs@ @ar@ @od@ @hp@ @cut@ @flip@ @nosv@\n"
+                               "Use uppercase tags like @AR@ if you want them even when unchanged.";
 
     cosuui.cutlabel->tooltip(cut_tooltip);
     cosuui.cutstart->tooltip(cut_tooltip);
     cosuui.cutend->tooltip(cut_tooltip);
+    cosuui.customfmtlabel->tooltip(fmt_tooltip);
+    cosuui.customfmtinput->tooltip(fmt_tooltip);
+    cosuui.customfmtinput->value(get_custom_diff_format());
+    customfmt_widget = cosuui.customfmtinput;
     cosuui.mainbox->deactivate();
 
     Fl::lock();
@@ -598,6 +631,7 @@ void CosuWindow::start()
         cosuui.infobox->redraw();
     }
     Fl::remove_handler(handle_fltk_ev);
+    customfmt_widget = NULL;
     if (img != NULL) delete img;
 #ifndef WIN32
     if (icon != NULL) delete icon;
