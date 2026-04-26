@@ -3,6 +3,10 @@ cosu-trainer is a replacement for [FunOrange's osu-trainer](https://github.com/F
 
 You can use all of its features with commands, so you can even put the command in your DE/WM key shortcuts for easy conversion on the fly. GUI is also provided within a single executable.
 
+*Edit version changes:*
+- *You can change custom difficulty name in GUI*
+- *Supports using main BPM in difficulty name (GUI only)*
+
 ## Description
 `cosu-trainer` is an actual program, which can speed up/down audio/map, and edit difficulty.
 
