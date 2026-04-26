@@ -489,7 +489,7 @@ void CosuWindow::start()
                                "Example: 2385 for combo count, and 1:30 or 0:30 for time";
     const char fmt_tooltip[] = "Custom difficulty name format.\n"
                                "Available tags: @diffname@ @rate@ @bpm@ @emuldt@ @cs@ @ar@ @od@ @hp@ @cut@ @flip@ @nosv@\n"
-                               "Use uppercase tags like @AR@ if you want them even when unchanged.";
+                               "Use uppercase tags like @RATE@, @BPM@ or @AR@ if you want them even when unchanged.";
 
     cosuui.cutlabel->tooltip(cut_tooltip);
     cosuui.cutstart->tooltip(cut_tooltip);

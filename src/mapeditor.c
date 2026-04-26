@@ -968,13 +968,18 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
                     if (ep->ed->mi->diffname != NULL)
                         putdstr(ep->ed->mi->diffname);
                 }
-                else if (_CMPSTR(cur, "@rate@"))
+                else if (_CMPSTR(cur, "@rate@") || _CMPSTR(cur, "@RATE@"))
                 {
-                    snpedit("%.2lfx", ep->emuldt == 0 ? speed : ep->emuldt);
+                    double disprate = ep->emuldt == 0 ? speed : ep->emuldt;
+                    if (fabs(disprate - 1.0) >= 1e-3 || CMPSTR(cur, "@RATE@"))
+                        snpedit("%.2lfx", disprate);
                 }
-                else if (_CMPSTR(cur, "@bpm@"))
+                else if (_CMPSTR(cur, "@bpm@") || _CMPSTR(cur, "@BPM@"))
                 {
-                    snpedit("%.0lfbpm", ep->ed->mi->maxbpm * (ep->emuldt == 0 ? speed : ep->emuldt));
+                    double disprate = ep->emuldt == 0 ? speed : ep->emuldt;
+                    double dispbpm = ep->ed->mi->maxbpm * disprate;
+                    if (fabs(dispbpm - ep->ed->mi->maxbpm) >= 1e-3 || CMPSTR(cur, "@BPM@"))
+                        snpedit("%.0lfbpm", dispbpm);
                 }
                 else if (_CMPSTR(cur, "@emuldt@"))
                 {
