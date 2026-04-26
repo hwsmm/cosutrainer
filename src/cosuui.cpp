@@ -34,21 +34,21 @@ Fl_Window* CosuUI::make_window()
                 flipbox->menu(menu_flipbox);
             } // Fl_Choice* flipbox
             {
-                scale_ar = new Fl_Check_Button(210, 248, 170, 15, "Scale AR");
+                scale_ar = new Fl_Check_Button(210, 248, 170, 25, "Scale AR");
                 scale_ar->down_box(FL_DOWN_BOX);
                 scale_ar->value(1);
             } // Fl_Check_Button* scale_ar
             {
-                scale_od = new Fl_Check_Button(210, 276, 170, 15, "Scale OD");
+                scale_od = new Fl_Check_Button(210, 276, 170, 25, "Scale OD");
                 scale_od->down_box(FL_DOWN_BOX);
                 scale_od->value(1);
             } // Fl_Check_Button* scale_od
             {
-                pitch = new Fl_Check_Button(210, 304, 170, 15, "Adjust Pitch");
+                pitch = new Fl_Check_Button(210, 304, 170, 25, "Adjust Pitch");
                 pitch->down_box(FL_DOWN_BOX);
             } // Fl_Check_Button* pitch
             {
-                nospinner = new Fl_Check_Button(210, 332, 170, 15, "No Spinner");
+                nospinner = new Fl_Check_Button(210, 332, 170, 25, "No Spinner");
                 nospinner->down_box(FL_DOWN_BOX);
             } // Fl_Check_Button* nospinner
             {
