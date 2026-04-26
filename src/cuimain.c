@@ -94,6 +94,7 @@ int cuimain(int argc, char *argv[])
     char *identifier = NULL;
     edit.speed = strtod(argv[argstart++], &identifier);
     edit.bpmmode = guess;
+    edit.bpmrefmode = max_bpm_mode;
     if (identifier != NULL)
     {
         if (*identifier == 'x')

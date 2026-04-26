@@ -19,13 +19,18 @@ enum SPEED_MODE
     bpm, rate, guess
 };
 
+enum BPM_MODE
+{
+    main_bpm_mode, max_bpm_mode
+};
+
 struct mapinfo
 {
     char *fullpath; // should be absolute path if it's returned from read_beatmap
     char *audioname, *bgname;
     char *diffname, *songname;
 
-    double maxbpm, minbpm;
+    double maxbpm, minbpm, mainbpm;
     float hp, cs, ar, od;
     float slider_multiplier, slider_tick_rate;
 
@@ -49,6 +54,7 @@ struct editdata // data needed to edit a map
 
     double speed;
     enum SPEED_MODE bpmmode;
+    enum BPM_MODE bpmrefmode;
     bool pitch;
     bool nospinner;
     bool remove_sv;

@@ -34,6 +34,8 @@ public:
     Fl_Check_Button *scale_od;
     Fl_Check_Button *pitch;
     Fl_Check_Button *nospinner;
+    Fl_Round_Button *mainbpm;
+    Fl_Round_Button *maxbpm;
     Fl_Round_Button *rate;
     Fl_Round_Button *bpm;
     Fl_Spinner *speedval;

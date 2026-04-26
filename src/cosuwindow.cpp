@@ -24,12 +24,20 @@ CosuWindow::~CosuWindow()
     free_mapinfo(info);
 }
 
+double CosuWindow::get_selected_bpm()
+{
+    if (info == NULL)
+        return 1;
+
+    return cosuui.maxbpm->value() >= 1 ? info->maxbpm : info->mainbpm;
+}
+
 double CosuWindow::get_relative_speed()
 {
     if (cosuui.rate->value() >= 1)
         return cosuui.speedval->value();
     else if (cosuui.bpm->value() >= 1)
-        return cosuui.speedval->value() / info->maxbpm;
+        return cosuui.speedval->value() / get_selected_bpm();
 
     return 1;
 }
@@ -38,7 +46,7 @@ char bpmstr[] = "xxxxxxxxxxxxxxbpm";
 
 void CosuWindow::update_rate_bpm()
 {
-    double bpm = info->maxbpm * cosuui.speedval->value();
+    double bpm = get_selected_bpm() * cosuui.speedval->value();
     snprintf(bpmstr, sizeof(bpmstr), "%.0lfbpm", bpm);
 
     cosuui.ratebpm->label(bpmstr);
@@ -108,7 +116,7 @@ void CosuWindow::bpmradio_callb(Fl_Widget *w, void *data)
         win->cosuui.speedval->step(1);
         if (win->info != NULL)
         {
-            win->cosuui.speedval->value(win->info->maxbpm);
+            win->cosuui.speedval->value(win->get_selected_bpm());
         }
         else
         {
@@ -118,6 +126,32 @@ void CosuWindow::bpmradio_callb(Fl_Widget *w, void *data)
         win->update_ar_label();
         win->update_od_label();
     }
+}
+
+void CosuWindow::bpmmoderadio_callb(Fl_Widget *w, void *data)
+{
+    CosuWindow *win = (CosuWindow*) data;
+    Fl_Round_Button *btn = (Fl_Round_Button*) w;
+    if (btn->value() <= 0)
+        return;
+
+    if (btn == win->cosuui.mainbpm)
+        win->cosuui.maxbpm->clear();
+    else
+        win->cosuui.mainbpm->clear();
+
+    if (win->cosuui.bpm->value() >= 1)
+    {
+        if (win->info != NULL && win->cosuui.lock->value() <= 0)
+            win->cosuui.speedval->value(win->get_selected_bpm());
+    }
+    else
+    {
+        win->update_rate_bpm();
+    }
+
+    win->update_ar_label();
+    win->update_od_label();
 }
 
 void CosuWindow::speedval_callb(Fl_Widget *w, void *data)
@@ -144,6 +178,8 @@ void CosuWindow::resetbtn_callb(Fl_Widget *w, void *data)
     win->cosuui.scale_od->set();
     win->cosuui.pitch->clear();
     win->cosuui.nospinner->clear();
+    win->cosuui.mainbpm->set();
+    win->cosuui.maxbpm->clear();
     win->cosuui.flipbox->value(0);
     win->cosuui.cutstart->value("");
     win->cosuui.cutend->value("");
@@ -248,6 +284,7 @@ void CosuWindow::convbtn_callb(Fl_Widget *w, void *data)
 
     edit.speed = win->cosuui.speedval->value();
     edit.bpmmode = win->cosuui.bpm->value() >= 1 ? bpm : rate;
+    edit.bpmrefmode = win->cosuui.maxbpm->value() >= 1 ? max_bpm_mode : main_bpm_mode;
     edit.pitch = win->cosuui.pitch->value() >= 1;
 
     if (edit.mi->mode != 3)
@@ -473,6 +510,8 @@ void CosuWindow::start()
 
     cosuui.rate->callback(rateradio_callb, (void*) this);
     cosuui.bpm->callback(bpmradio_callb, (void*) this);
+    cosuui.mainbpm->callback(bpmmoderadio_callb, (void*) this);
+    cosuui.maxbpm->callback(bpmmoderadio_callb, (void*) this);
     cosuui.reset->callback(resetbtn_callb, (void*) this);
     cosuui.convert->callback(convbtn_callb, (void*) this);
     cosuui.speedval->callback(speedval_callb, (void*) this);
@@ -617,7 +656,7 @@ void CosuWindow::start()
 
         if (cosuui.bpm->value() >= 1 && cosuui.lock->value() <= 0)
         {
-            cosuui.speedval->value(info->maxbpm);
+            cosuui.speedval->value(get_selected_bpm());
         }
         if (cosuui.rate->value() >= 1)
         {

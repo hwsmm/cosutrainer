@@ -345,6 +345,231 @@ static int write_mapinfo(char *line, void *vinfo, enum SECTION sect)
     return 0;
 }
 
+struct mainbpm_duration
+{
+    double beatlength;
+    long duration;
+    long first_time;
+};
+
+struct mainbpm_pass
+{
+    struct mapinfo *info;
+    struct timingpoint *timingpoints;
+    int timingpoints_num;
+    int timingpoints_size;
+    int timingpoints_idx;
+    int uninherited_tp_idx;
+
+    struct mainbpm_duration *durations;
+    int durations_num;
+    int durations_size;
+
+    long last_end_time;
+};
+
+static int add_mainbpm_timingpoint(struct mainbpm_pass *pass, long time, double beatlength)
+{
+    if (pass->timingpoints == NULL || pass->timingpoints_size < pass->timingpoints_num + 1)
+    {
+        struct timingpoint *newarr = (struct timingpoint*) realloc(pass->timingpoints, (pass->timingpoints_size + 16) * sizeof(struct timingpoint));
+        if (newarr == NULL)
+        {
+            printerr("Failed timingpoint allocation");
+            return -99;
+        }
+
+        pass->timingpoints = newarr;
+        pass->timingpoints_size += 16;
+    }
+
+    pass->timingpoints[pass->timingpoints_num].time = time;
+    pass->timingpoints[pass->timingpoints_num].beatlength = beatlength;
+    pass->timingpoints_num++;
+    return 0;
+}
+
+static int add_mainbpm_duration(struct mainbpm_pass *pass, double beatlength, long duration, long first_time)
+{
+    if (beatlength <= 0 || duration <= 0)
+        return 0;
+
+    for (int i = 0; i < pass->durations_num; i++)
+    {
+        if (fabs(pass->durations[i].beatlength - beatlength) < 1e-6)
+        {
+            pass->durations[i].duration += duration;
+            return 0;
+        }
+    }
+
+    if (pass->durations == NULL || pass->durations_size < pass->durations_num + 1)
+    {
+        struct mainbpm_duration *newarr =
+            (struct mainbpm_duration*) realloc(pass->durations, (pass->durations_size + 8) * sizeof(struct mainbpm_duration));
+        if (newarr == NULL)
+        {
+            printerr("Failed main BPM allocation");
+            return -99;
+        }
+
+        pass->durations = newarr;
+        pass->durations_size += 8;
+    }
+
+    pass->durations[pass->durations_num].beatlength = beatlength;
+    pass->durations[pass->durations_num].duration = duration;
+    pass->durations[pass->durations_num].first_time = first_time;
+    pass->durations_num++;
+    return 0;
+}
+
+static long get_slider_duration(struct mainbpm_pass *pass, int repeat, int pixel_length)
+{
+    if (pass->timingpoints_num <= 0)
+        return 0;
+
+    double sv_multiplier = 1.0;
+    double timing_real_beatlength = pass->timingpoints[pass->timingpoints_idx].beatlength;
+    if (timing_real_beatlength < 0)
+        sv_multiplier = 100.0 / -timing_real_beatlength;
+
+    double ms_per_beat = pass->timingpoints[pass->uninherited_tp_idx].beatlength;
+    if (ms_per_beat <= 0)
+        return 0;
+
+    double pixels_per_beat = pass->info->slider_multiplier * 100.0;
+    if (pass->info->version >= 8)
+        pixels_per_beat *= sv_multiplier;
+
+    if (pixels_per_beat <= 0.0)
+        return 0;
+
+    double num_beats = pixel_length * repeat / pixels_per_beat;
+    return (long) llround(num_beats * ms_per_beat);
+}
+
+static int read_mainbpm_data(char *line, void *vpass, enum SECTION sect)
+{
+    struct mainbpm_pass *pass = (struct mainbpm_pass*) vpass;
+
+    if (sect == timingpoints)
+    {
+        long time = atol(tkn(line));
+        char *beatlengthstr;
+        fail_nulltkn(beatlengthstr);
+        return add_mainbpm_timingpoint(pass, time, atof(beatlengthstr));
+    }
+    else if (sect == hitobjects)
+    {
+        char *xstr = tkn(line);
+        char *ystr;
+        fail_nulltkn(ystr);
+        char *timestr;
+        fail_nulltkn(timestr);
+        long time = atol(timestr);
+
+        char *typestr;
+        fail_nulltkn(typestr);
+        int type = atoi(typestr);
+
+        while (pass->timingpoints_idx + 1 < pass->timingpoints_num &&
+               time >= pass->timingpoints[pass->timingpoints_idx + 1].time)
+        {
+            pass->timingpoints_idx++;
+
+            if (pass->timingpoints[pass->timingpoints_idx].beatlength > 0)
+                pass->uninherited_tp_idx = pass->timingpoints_idx;
+        }
+
+        long end_time = time;
+
+        if (type & (1 << 1))
+        {
+            char *hitsoundstr;
+            fail_nulltkn(hitsoundstr);
+            char *curvestr;
+            fail_nulltkn(curvestr);
+            char *slidestr;
+            fail_nulltkn(slidestr);
+            char *lengthstr;
+            fail_nulltkn(lengthstr);
+
+            long duration = get_slider_duration(pass, atoi(slidestr), atoi(lengthstr));
+            end_time += duration;
+        }
+        else if (type & (1 << 3 | 1 << 7))
+        {
+            char *hitsoundstr;
+            fail_nulltkn(hitsoundstr);
+            char *endstr = strtok(NULL, ":,");
+            if (endstr != NULL)
+                end_time = atol(endstr);
+        }
+
+        if (end_time > pass->last_end_time)
+            pass->last_end_time = end_time;
+    }
+
+    return 0;
+}
+
+static int calculate_mainbpm(struct mapinfo *info)
+{
+    struct mainbpm_pass pass = { 0, };
+    pass.info = info;
+
+    int ret = loop_map(info->fullpath, &read_mainbpm_data, &pass);
+    if (ret != 0)
+        goto done;
+
+    for (int i = 0; i < pass.timingpoints_num; i++)
+    {
+        double beatlength = pass.timingpoints[i].beatlength;
+        if (beatlength <= 0)
+            continue;
+
+        long start_time = pass.timingpoints[i].time;
+        long end_time = pass.last_end_time;
+
+        for (int j = i + 1; j < pass.timingpoints_num; j++)
+        {
+            if (pass.timingpoints[j].beatlength > 0)
+            {
+                end_time = pass.timingpoints[j].time;
+                break;
+            }
+        }
+
+        if (end_time > pass.last_end_time)
+            end_time = pass.last_end_time;
+
+        ret = add_mainbpm_duration(&pass, beatlength, end_time - start_time, start_time);
+        if (ret != 0)
+            goto done;
+    }
+
+    int best_idx = -1;
+    for (int i = 0; i < pass.durations_num; i++)
+    {
+        if (best_idx < 0 ||
+            pass.durations[i].duration > pass.durations[best_idx].duration ||
+            (pass.durations[i].duration == pass.durations[best_idx].duration &&
+             pass.durations[i].first_time < pass.durations[best_idx].first_time))
+        {
+            best_idx = i;
+        }
+    }
+
+    if (best_idx >= 0)
+        info->mainbpm = 60000.0 / pass.durations[best_idx].beatlength;
+
+done:
+    free(pass.timingpoints);
+    free(pass.durations);
+    return ret;
+}
+
 static void convert_vaildpath(struct mapinfo *mi)
 {
     bool audok = false;
@@ -480,8 +705,16 @@ struct mapinfo *read_beatmap(char *mapfile)
             return NULL;
         }
 
+        if (calculate_mainbpm(info) != 0)
+        {
+            free_mapinfo(info);
+            return NULL;
+        }
+
         info->maxbpm = 1 / info->maxbpm * 1000 * 60;
         info->minbpm = 1 / info->minbpm * 1000 * 60;
+        if (info->mainbpm <= 0.0)
+            info->mainbpm = info->maxbpm;
 
         if (!info->arexists) info->ar = info->od;
 
@@ -523,6 +756,7 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
     bool edited = false;
     unsigned int ecur = 0;
     double speed = ep->ed->speed;
+    double basebpm = ep->ed->bpmrefmode == max_bpm_mode ? ep->ed->mi->maxbpm : ep->ed->mi->mainbpm;
     bool prior_read = ep->prior_read && !ep->done_saving;
 
     if (!prior_read && sect == root)
@@ -977,8 +1211,8 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
                 else if (_CMPSTR(cur, "@bpm@") || _CMPSTR(cur, "@BPM@"))
                 {
                     double disprate = ep->emuldt == 0 ? speed : ep->emuldt;
-                    double dispbpm = ep->ed->mi->maxbpm * disprate;
-                    if (fabs(dispbpm - ep->ed->mi->maxbpm) >= 1e-3 || CMPSTR(cur, "@BPM@"))
+                    double dispbpm = basebpm * disprate;
+                    if (fabs(dispbpm - basebpm) >= 1e-3 || CMPSTR(cur, "@BPM@"))
                         snpedit("%.0lfbpm", dispbpm);
                 }
                 else if (_CMPSTR(cur, "@emuldt@"))
@@ -1164,7 +1398,8 @@ int edit_beatmap(struct editdata *edit)
 
     if (edit->bpmmode == guess)
     {
-        double esti = edit->speed * edit->mi->maxbpm;
+        double refbpm = edit->bpmrefmode == max_bpm_mode ? edit->mi->maxbpm : edit->mi->mainbpm;
+        double esti = edit->speed * refbpm;
         if (esti > 10000)
         {
             puts("Using input value as BPM");
@@ -1179,7 +1414,8 @@ int edit_beatmap(struct editdata *edit)
 
     if (edit->bpmmode == bpm)
     {
-        edit->speed /= edit->mi->maxbpm;
+        double refbpm = edit->bpmrefmode == max_bpm_mode ? edit->mi->maxbpm : edit->mi->mainbpm;
+        edit->speed /= refbpm;
 
         if (fabs(edit->speed - 1.0) < 1e-3)
             edit->speed = 1.0;
