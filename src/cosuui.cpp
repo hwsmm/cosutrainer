@@ -88,10 +88,10 @@ Fl_Window* CosuUI::make_window()
                 odlock->down_box(FL_DOWN_BOX);
             } // Fl_Check_Button* odlock
             {
-                reset = new Fl_Button(10, 465, 100, 55, "Reset");
+                reset = new Fl_Button(10, 500, 100, 55, "Reset");
             } // Fl_Button* reset
             {
-                convert = new Fl_Button(120, 465, 260, 55, "Convert now");
+                convert = new Fl_Button(120, 500, 260, 55, "Convert now");
             } // Fl_Button* convert
             {
                 songtitlelabel = new Fl_Box(10, 155, 370, 25, "Select a map");
@@ -181,11 +181,11 @@ Fl_Window* CosuUI::make_window()
                 cutend = new Fl_Input(130, 419, 70, 25, "~ ");
             } // Fl_Input* cutend
             {
-                customfmtlabel = new Fl_Box(10, 530, 75, 25, "Diff fmt");
-                customfmtlabel->align(Fl_Align(FL_ALIGN_LEFT|FL_ALIGN_INSIDE));
+                customfmtlabel = new Fl_Box(10, 465, 60, 25, "Format");
+                customfmtlabel->align(Fl_Align(FL_ALIGN_INSIDE));
             } // Fl_Box* customfmtlabel
             {
-                customfmtinput = new Fl_Input(85, 530, 295, 25);
+                customfmtinput = new Fl_Input(75, 465, 305, 25);
             } // Fl_Input* customfmtinput
             mainbox->end();
         } // Fl_Group* mainbox
