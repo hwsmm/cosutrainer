@@ -188,16 +188,16 @@ Fl_Window* CosuUI::make_window()
                 cutend = new Fl_Input(130, 416, 70, 25, "~ ");
             } // Fl_Input* cutend
             {
-                customfmtlabel = new Fl_Box(10, 465, 60, 25, "Format");
+                customfmtlabel = new Fl_Box(10, 450, 60, 25, "Format");
                 customfmtlabel->align(Fl_Align(FL_ALIGN_INSIDE));
             } // Fl_Box* customfmtlabel
             {
-                customfmtinput = new Fl_Input(75, 465, 305, 25);
+                customfmtinput = new Fl_Input(75, 450, 305, 25);
             } // Fl_Input* customfmtinput
             mainbox->end();
         } // Fl_Group* mainbox
         {
-            progress = new Fl_Progress(10, 450, 370, 10);
+            progress = new Fl_Progress(10, 480, 370, 10);
             progress->selection_color((Fl_Color)181);
             progress->maximum(1);
             progress->minimum(0);

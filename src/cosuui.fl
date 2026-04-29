@@ -156,14 +156,14 @@ class CosuUI {open
         }
         Fl_Box customfmtlabel {
           label Format
-          xywh {10 465 60 25} align 16
+          xywh {10 450 60 25} align 16
         }
         Fl_Input customfmtinput {
-          xywh {75 465 305 25}
+          xywh {75 450 305 25}
         }
       }
       Fl_Progress progress {
-        xywh {10 450 370 10} selection_color 181
+        xywh {10 480 370 10} selection_color 181
         code0 {progress->maximum(1);}
         code1 {progress->minimum(0);}
         code2 {progress->value(0);}
