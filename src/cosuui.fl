@@ -39,6 +39,10 @@ class CosuUI {open
             label {Invert (Full LN)}
             xywh {0 0 100 20}
           }
+          MenuItem fullrc {
+            label {Full RC (No LN)}
+            xywh {0 0 100 20}
+          }
         }
         Fl_Check_Button scale_ar {
           label {Scale AR}

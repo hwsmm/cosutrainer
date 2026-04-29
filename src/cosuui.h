@@ -29,6 +29,7 @@ public:
     static Fl_Menu_Item *y_flip;
     static Fl_Menu_Item *transpose;
     static Fl_Menu_Item *invert;
+    static Fl_Menu_Item *fullrc;
     Fl_Check_Button *scale_ar;
     Fl_Check_Button *scale_od;
     Fl_Check_Button *pitch;

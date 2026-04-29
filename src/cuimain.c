@@ -140,6 +140,9 @@ int cuimain(int argc, char *argv[])
             case 'i':
                 edit.flip = invert;
                 continue;
+            case 'r':
+                edit.flip = fullrc;
+                continue;
             case 'h':
                 diffv = &(edit.hp);
                 break;

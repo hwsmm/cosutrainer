@@ -4,8 +4,9 @@ cosu-trainer is a replacement for [FunOrange's osu-trainer](https://github.com/F
 You can use all of its features with commands, so you can even put the command in your DE/WM key shortcuts for easy conversion on the fly. GUI is also provided within a single executable.
 
 *Edit version changes:*
-- *You can change custom difficulty name in GUI*
-- *Supports using main BPM in difficulty name (GUI only)*
+- *Change custom difficulty name in GUI*
+- *Supports using main BPM (GUI only)*
+- *Converts LN to full RC*
 
 ## Description
 `cosu-trainer` is an actual program, which can speed up/down audio/map, and edit difficulty.
@@ -62,7 +63,7 @@ Run `cosu-trainer` with no arguments to launch GUI. You can use below arguments 
 
 ### `cosu-trainer` command usage
 ```
-./cosu-trainer <filename|auto> <rate|bpm> [a/o/h/c] [p] [x/y/t] [eMM:SS-MM:SS] [wCOMBO-COMBO]
+./cosu-trainer <filename|auto> <rate|bpm> [a/o/h/c] [p] [x/y/t/i/r] [eMM:SS-MM:SS] [wCOMBO-COMBO]
 <> are requirements, [] are optional
 <filename|auto> : specify file name like 'songfolder/diff.osu' or just put 'auto' if you are running `osumem`
 <rate|bpm> : '1.2x' if you want to use rate, '220bpm' if you want to use bpm (it uses max bpm of map to calculate, so be careful)
@@ -71,7 +72,7 @@ Run `cosu-trainer` with no arguments to launch GUI. You can use below arguments 
             cosu-trainer scales ar/od by default. use af/of to fix them
             you can add 'c' at the end to cap the value, it still scales, but won't scale over the value you put
 [p] : if you want daycore/nightcore
-[x/y/t/i] : xflip, yflip, transpose and invert(mania-only full LN) respectively.
+[x/y/t/i/r] : xflip, yflip, transpose, invert(mania-only full LN), and full RC(mania-only LN to single notes) respectively.
 [eMM:SS-MM:SS] : extracts specified section from the map, [e-MM:SS] removes all hitobjects after the specified time,
                  either [eMM:SS] or [eMM:SS-] removes all hitobjects before the time. you can omit MM, so you can do eSS
                  note that time you give should be in pre-rate-adjusted time.

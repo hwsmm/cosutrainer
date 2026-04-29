@@ -312,6 +312,9 @@ void CosuWindow::convbtn_callb(Fl_Widget *w, void *data)
     case 4:
         edit.flip = invert;
         break;
+    case 5:
+        edit.flip = fullrc;
+        break;
     default:
         edit.flip = none;
         break;
@@ -640,14 +643,16 @@ void CosuWindow::start()
         if (info->mode == 3)
         {
             (cosuui.invert)->activate();
+            (cosuui.fullrc)->activate();
             (cosuui.nospinner)->label("No SV");
         }
         else
         {
-            if ((cosuui.flipbox)->value() == 4)
+            if ((cosuui.flipbox)->value() == 4 || (cosuui.flipbox)->value() == 5)
                 (cosuui.flipbox)->value(0);
 
             (cosuui.invert)->deactivate();
+            (cosuui.fullrc)->deactivate();
             (cosuui.nospinner)->label("No Spinner");
         }
 

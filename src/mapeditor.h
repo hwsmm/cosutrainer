@@ -11,7 +11,7 @@ enum SECTION
 
 enum FLIP
 {
-    none, xflip, yflip, transpose, invert
+    none, xflip, yflip, transpose, invert, fullrc
 };
 
 enum SPEED_MODE

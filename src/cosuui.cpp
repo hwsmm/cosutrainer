@@ -9,6 +9,7 @@ Fl_Menu_Item CosuUI::menu_flipbox[] =
     {"Y(flip)", 0,  0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
     {"Transpose", 0,  0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
     {"Invert (Full LN)", 0,  0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
+    {"Full RC (No LN)", 0,  0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
     {0,0,0,0,0,0,0,0,0}
 };
 Fl_Menu_Item* CosuUI::no_flip = CosuUI::menu_flipbox + 0;
@@ -16,7 +17,7 @@ Fl_Menu_Item* CosuUI::x_flip = CosuUI::menu_flipbox + 1;
 Fl_Menu_Item* CosuUI::y_flip = CosuUI::menu_flipbox + 2;
 Fl_Menu_Item* CosuUI::transpose = CosuUI::menu_flipbox + 3;
 Fl_Menu_Item* CosuUI::invert = CosuUI::menu_flipbox + 4;
-
+Fl_Menu_Item* CosuUI::fullrc = CosuUI::menu_flipbox + 5;
 Fl_Window* CosuUI::make_window()
 {
     {

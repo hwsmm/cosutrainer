@@ -992,7 +992,32 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
 
             if (!used)
             {
-                if (type & (1<<3 | 1<<7))
+                if (ep->ed->flip == fullrc && (type & (1<<7)))
+                {
+                    char *hitsoundstr;
+                    fail_nulltkn(hitsoundstr);
+                    char *endstr = strtok(NULL, ":,");
+                    if (endstr == NULL)
+                    {
+                        printerr("Failed parsing long note!");
+                        return 1;
+                    }
+                    char *afnul = find_null(endstr);
+
+                    int rctype = (type & ~(1<<7)) | 1;
+                    snpedit("%d,%d,%ld,%d,%s", x, y, time, rctype, hitsoundstr);
+
+                    if (*(afnul - 2) == '\r' || *(afnul - 2) == '\n')
+                    {
+                        putsstr("\r\n");
+                    }
+                    else
+                    {
+                        putsstr(",");
+                        putdstr(afnul);
+                    }
+                }
+                else if (type & (1<<3 | 1<<7))
                 {
                     char spinnertoken[] = { (type & (1<<7)) ? ':' : ',', '\0' };
                     char *hitsoundstr;
@@ -1307,6 +1332,9 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
                     case invert:
                         putsstr("INVERT");
                         break;
+                    case fullrc:
+                        putsstr("FULL RC");
+                        break;
                     default:
                         break;
                     }
@@ -1575,7 +1603,13 @@ int edit_beatmap(struct editdata *edit)
             edit->flip = none;
         }
     }
-    else if (edit->cut_combo)
+    else if (edit->flip == fullrc && edit->mi->mode != 3)
+    {
+        printerr("Full RC is only available on osu!mania!");
+        edit->flip = none;
+    }
+
+    if (edit->cut_combo)
     {
         needs_preread = true;
     }
