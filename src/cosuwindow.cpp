@@ -96,7 +96,7 @@ void CosuWindow::rateradio_callb(Fl_Widget *w, void *data)
         win->cosuui.ratebpm->show();
         win->cosuui.lock->hide();
         win->cosuui.speedval->value(1);
-        win->cosuui.speedval->step(0.1);
+        win->cosuui.speedval->step(0.01);
 
         win->update_ar_label();
         win->update_od_label();

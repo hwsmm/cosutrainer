@@ -3,11 +3,6 @@ cosu-trainer is a replacement for [FunOrange's osu-trainer](https://github.com/F
 
 You can use all of its features with commands, so you can even put the command in your DE/WM key shortcuts for easy conversion on the fly. GUI is also provided within a single executable.
 
-*Edit version changes:*
-- *Change custom difficulty name in GUI*
-- *Supports using main BPM (GUI only)*
-- *Converts LN to full RC*
-
 ## Description
 `cosu-trainer` is an actual program, which can speed up/down audio/map, and edit difficulty.
 
@@ -29,6 +24,10 @@ It's very destructive and experimental, so don't use unless you desperately need
 - Generates an osz file for easier import
 - An user-defined osz handler can be set for seamless integration with osu!
 - Custom difficulty name format
+*Edit version changes:*
+- *You can change custom difficulty name in GUI*
+- *Supports using main BPM (GUI only)*
+- *Add LN to full RC for mania*
 
 ### Linux requirements
 - osu! must run on WINE with dotnet 4.5+ for proper memory scanning
@@ -100,7 +99,7 @@ Please let me know if it works well or not!
 ### Custom difficulty name format
 You can edit the difficulty name format by opening the dialog with Ctrl+F, or by setting `COSU_CUSTOM_DIFF_FORMAT` environment variable.
 
-Default format is `"@diffname@ @rate@ @bpm@ @emuldt@ @cs@ @ar@ @od@ @hp@ @cut@ @flip@ @nosv@"`.
+Default format is `"@diffname@ @rate@ @(bpm)@ @emuldt@ @cs@ @ar@ @od@ @hp@ @cut@ @flip@ @nosv@"`.
 `%cs%`/`%ar%`/`%od%`/`%hp%` are not added if the values don't change. Use uppercase ones (such as `%OD%`) if you want them regardless of their status.
 
 ## Thanks a lot to

@@ -1231,7 +1231,7 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
                 {
                     double disprate = ep->emuldt == 0 ? speed : ep->emuldt;
                     if (fabs(disprate - 1.0) >= 1e-3 || CMPSTR(cur, "@RATE@"))
-                        snpedit("%.2lfx", disprate);
+                        snpedit("%gx", disprate);
                 }
                 else if (_CMPSTR(cur, "@bpm@") || _CMPSTR(cur, "@BPM@"))
                 {
@@ -1239,6 +1239,13 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
                     double dispbpm = basebpm * disprate;
                     if (fabs(dispbpm - basebpm) >= 1e-3 || CMPSTR(cur, "@BPM@"))
                         snpedit("%.0lfbpm", dispbpm);
+                }
+                else if (_CMPSTR(cur, "@(bpm)@") || _CMPSTR(cur, "@(BPM)@"))
+                {
+                    double disprate = ep->emuldt == 0 ? speed : ep->emuldt;
+                    double dispbpm = basebpm * disprate;
+                    if (fabs(dispbpm - basebpm) >= 1e-3 || CMPSTR(cur, "@(BPM)@"))
+                        snpedit("(%.0lfbpm)", dispbpm);
                 }
                 else if (_CMPSTR(cur, "@emuldt@"))
                 {

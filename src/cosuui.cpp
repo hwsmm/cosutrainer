@@ -73,7 +73,7 @@ Fl_Window* CosuUI::make_window()
                 speedval->type(1);
                 speedval->minimum(0.1);
                 speedval->maximum(99999);
-                speedval->step(0.1);
+                speedval->step(0.01);
             } // Fl_Spinner* speedval
             {
                 lock = new Fl_Check_Button(295, 416, 85, 25, "Lock");
