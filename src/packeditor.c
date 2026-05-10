@@ -21,9 +21,6 @@ int edit_beatmap_pack(struct editdata *edit)
     }
     *fsep = '\0';
 
-    char *foldername = strrchr(folderpath, PATHSEP);
-    foldername = foldername != NULL ? foldername + 1 : folderpath;
-
     DIR *d = opendir(folderpath);
     if (d == NULL)
     {
@@ -59,9 +56,6 @@ int edit_beatmap_pack(struct editdata *edit)
             continue;
         }
 
-        free(mi->diffname);
-        mi->diffname = _strdup(foldername);
-
         struct editdata packed = orig;
         packed.mi = mi;
         packed.speed = user_speed;
@@ -81,5 +75,5 @@ int edit_beatmap_pack(struct editdata *edit)
     free(folderpath);
 
     printf("Edited %d beatmap(s) in the pack.\n", edited_count);
-    return edited_count;
+    return edited_count > 0 ? 0 : -1;
 }
