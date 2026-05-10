@@ -5,6 +5,7 @@
 #include <limits.h>
 #include <math.h>
 #include "mapeditor.h"
+#include "packeditor.h"
 #include "tools.h"
 #include "cuimain.h"
 #include "cosuplatform.h"
@@ -109,6 +110,7 @@ int cuimain(int argc, char *argv[])
 
     edit.pitch = false;
     edit.flip = none;
+    bool fullpack = false;
     edit.nospinner = false;
 
     edit.cut_combo = false;
@@ -160,6 +162,9 @@ int cuimain(int argc, char *argv[])
                 continue;
             case 'v':
                 edit.remove_sv = true;
+                continue;
+            case 'f':
+                fullpack = true;
                 continue;
             default:
                 break;
@@ -278,7 +283,10 @@ int cuimain(int argc, char *argv[])
     float progv = 0.0f;
     edit.data = &progv;
     edit.progress_callback = showprog;
-    ret = edit_beatmap(&edit);
+    if (fullpack)
+        ret = edit_beatmap_pack(&edit);
+    else
+        ret = edit_beatmap(&edit);
 
     fprintf(stderr, "\r100%%\n");
 

@@ -24,10 +24,10 @@ It's very destructive and experimental, so don't use unless you desperately need
 - Generates an osz file for easier import
 - An user-defined osz handler can be set for seamless integration with osu!
 - Custom difficulty name format
-*Edit version changes:*
-- *You can change custom difficulty name in GUI*
-- *Supports using main BPM (GUI only)*
-- *Add LN to full RC for mania*
+- Change custom difficulty name in GUI
+- Switch main BPM and max BPM (GUI only)
+- Generates a full RC difficulty for rice enjoyers
+- Convert an entire beatmap pack at once
 
 ### Linux requirements
 - osu! must run on WINE with dotnet 4.5+ for proper memory scanning
@@ -62,7 +62,7 @@ Run `cosu-trainer` with no arguments to launch GUI. You can use below arguments 
 
 ### `cosu-trainer` command usage
 ```
-./cosu-trainer <filename|auto> <rate|bpm> [a/o/h/c] [p] [x/y/t/i/r] [eMM:SS-MM:SS] [wCOMBO-COMBO]
+./cosu-trainer <filename|auto> <rate|bpm> [a/o/h/c] [p] [x/y/t/i/r] [f] [eMM:SS-MM:SS] [wCOMBO-COMBO] [s] [v]
 <> are requirements, [] are optional
 <filename|auto> : specify file name like 'songfolder/diff.osu' or just put 'auto' if you are running `osumem`
 <rate|bpm> : '1.2x' if you want to use rate, '220bpm' if you want to use bpm (it uses max bpm of map to calculate, so be careful)
@@ -72,6 +72,7 @@ Run `cosu-trainer` with no arguments to launch GUI. You can use below arguments 
             you can add 'c' at the end to cap the value, it still scales, but won't scale over the value you put
 [p] : if you want daycore/nightcore
 [x/y/t/i/r] : xflip, yflip, transpose, invert(mania-only full LN), and full RC(mania-only LN to single notes) respectively.
+[f] : convert the entire beatmap pack (all .osu files in the same folder). @diffname@ in the format string will use the pack name.
 [eMM:SS-MM:SS] : extracts specified section from the map, [e-MM:SS] removes all hitobjects after the specified time,
                  either [eMM:SS] or [eMM:SS-] removes all hitobjects before the time. you can omit MM, so you can do eSS
                  note that time you give should be in pre-rate-adjusted time.
@@ -100,7 +101,8 @@ Please let me know if it works well or not!
 You can edit the difficulty name format by opening the dialog with Ctrl+F, or by setting `COSU_CUSTOM_DIFF_FORMAT` environment variable.
 
 Default format is `"@diffname@ @rate@ @(bpm)@ @emuldt@ @cs@ @ar@ @od@ @hp@ @cut@ @flip@ @nosv@"`.
-`%cs%`/`%ar%`/`%od%`/`%hp%` are not added if the values don't change. Use uppercase ones (such as `%OD%`) if you want them regardless of their status.
+`@cs@`/`@ar@`/`@od@`/`@hp@`/`@bpm@` are suppressed if the values don't change. Use uppercase ones (such as `@CS@`/`@AR@`/`@BPM@`) to force display regardless of status.
+Use `@(bpm)@` or `@(BPM)@` to wrap the BPM value in parentheses, e.g. `(200bpm)`.
 
 ## Thanks a lot to
 - Thanks a lot to developers of libraries I used in this program!!!

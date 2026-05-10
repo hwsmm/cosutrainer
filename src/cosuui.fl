@@ -8,10 +8,10 @@ class CosuUI {open
   } {
     Fl_Window window {
       label {cosu-trainer} open selected
-      xywh {91 461 390 565} type Single size_range {390 565 390 565} visible
+      xywh {91 461 390 590} type Single size_range {390 590 390 590} visible
     } {
       Fl_Group mainbox {open
-        xywh {10 10 370 545}
+        xywh {10 10 370 570}
       } {
         Fl_Box infobox {
           xywh {10 10 370 130} align 64
@@ -97,11 +97,11 @@ class CosuUI {open
         }
         Fl_Button reset {
           label Reset
-          xywh {10 500 100 55}
+          xywh {10 530 100 55}
         }
         Fl_Button convert {
           label {Convert now}
-          xywh {120 500 260 55}
+          xywh {120 530 260 55}
         }
         Fl_Box songtitlelabel {
           label {Select a map}
@@ -165,9 +165,13 @@ class CosuUI {open
         Fl_Input customfmtinput {
           xywh {75 450 305 25}
         }
+        Fl_Check_Button fullpack {
+          label {Convert Full Pack}
+          xywh {10 478 200 25} down_box DOWN_BOX
+        }
       }
       Fl_Progress progress {
-        xywh {10 480 370 10} selection_color 181
+        xywh {10 510 370 10} selection_color 181
         code0 {progress->maximum(1);}
         code1 {progress->minimum(0);}
         code2 {progress->value(0);}

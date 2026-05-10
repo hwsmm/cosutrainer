@@ -63,6 +63,7 @@ public:
     Fl_Input *cutend;
     Fl_Box *customfmtlabel;
     Fl_Input *customfmtinput;
+    Fl_Check_Button *fullpack;
     Fl_Progress *progress;
 };
 #endif

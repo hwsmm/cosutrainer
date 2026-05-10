@@ -1,4 +1,5 @@
 #include "cosuwindow.h"
+#include "packeditor.h"
 #include "tools.h"
 #include "cosuplatform.h"
 #include <cstdio>
@@ -181,6 +182,7 @@ void CosuWindow::resetbtn_callb(Fl_Widget *w, void *data)
     win->cosuui.mainbpm->set();
     win->cosuui.maxbpm->clear();
     win->cosuui.flipbox->value(0);
+    win->cosuui.fullpack->clear();
     win->cosuui.cutstart->value("");
     win->cosuui.cutend->value("");
     win->queue_reset = true;
@@ -329,8 +331,13 @@ void CosuWindow::convbtn_callb(Fl_Widget *w, void *data)
         fl_alert("Failed setting the difficulty name format.\nConversion will use the previous format.");
     }
 
-    int ret = edit_beatmap(&edit);
-    if (ret != 0)
+    int ret;
+    if (win->cosuui.fullpack->value() >= 1)
+        ret = edit_beatmap_pack(&edit);
+    else
+        ret = edit_beatmap(&edit);
+
+    if (ret != 0 && ret != -1/**/)
     {
         fl_alert("Editing a beatmap failed: %d\nCheck console for details.", ret);
     }
