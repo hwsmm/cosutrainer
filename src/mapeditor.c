@@ -979,7 +979,16 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
                 else if (_CMPSTR(cur, "@emuldt@"))
                 {
                     if (ep->emuldt != 0)
-                        putsstr("(DT)");
+                    {
+                        if (ep->orig_ar > 10 || ep->orig_od > 10)
+                        {
+                            putsstr("(DT)");
+                        }
+                        else
+                        {
+                            putsstr("(HT)");
+                        }
+                    }
                 }
                 else if (_CMPSTR(cur, "@cs@") || _CMPSTR(cur, "@CS@"))
                 {
@@ -988,30 +997,17 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
                 }
                 else if (_CMPSTR(cur, "@ar@") || _CMPSTR(cur, "@AR@"))
                 {
-                    if (ep->ed->mi->mode != 1 && ep->ed->mi->mode != 3)
+                    if (ep->ed->mi->mode != 1 && ep->ed->mi->mode != 3
+                        && (ep->emuldt != 0 || ep->ed->mi->ar != ep->ed->ar || CMPSTR(cur, "@AR@")))
                     {
-                        if (ep->emuldt != 0)
-                        {
-                            snpedit("AR%.1lf", scale_ar(ep->ed->ar, 1.5, ep->ed->mi->mode));
-                        }
-                        else if (ep->ed->mi->ar != ep->ed->ar || CMPSTR(cur, "@AR@"))
-                        {
-                            snpedit("AR%.1lf", ep->ed->ar);
-                        }
+                        snpedit("AR%.1lf", ep->orig_ar);
                     }
                 }
                 else if (_CMPSTR(cur, "@od@") || _CMPSTR(cur, "@OD@"))
                 {
-                    if (ep->ed->mi->mode != 2)
+                    if (ep->ed->mi->mode != 2 && (ep->emuldt != 0 || ep->ed->mi->od != ep->ed->od || CMPSTR(cur, "@OD@")))
                     {
-                        if (ep->emuldt != 0)
-                        {
-                            snpedit("OD%.1lf", scale_od(ep->ed->od, 1.5, ep->ed->mi->mode));
-                        }
-                        else if (ep->ed->mi->od != ep->ed->od || CMPSTR(cur, "@OD@"))
-                        {
-                            snpedit("OD%.1lf", ep->ed->od);
-                        }
+                        snpedit("OD%.1lf", ep->orig_od);
                     }
                 }
                 else if (_CMPSTR(cur, "@hp@") || _CMPSTR(cur, "@HP@"))
@@ -1128,6 +1124,12 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
 
 int edit_beatmap(struct editdata *edit)
 {
+    if (edit->speed <= 0)
+    {
+        printerr("Use proper speed value instead!");
+        return 1;
+    }
+
     int ret = 0;
     struct buffers bufs;
     struct editpass ep;
@@ -1182,9 +1184,9 @@ int edit_beatmap(struct editdata *edit)
 
     if (edit->scale_ar)
     {
-        double origar = fabs(edit->ar);
+        double origar = edit->ar;
         double tempar = scale_ar(origar, edit->speed, edit->mi->mode);
-        if (edit->ar < 0) // capping
+        if (edit->cap_ar)
         {
             edit->ar = tempar > origar ? origar : tempar;
         }
@@ -1196,9 +1198,9 @@ int edit_beatmap(struct editdata *edit)
 
     if (edit->scale_od)
     {
-        double origod = fabs(edit->od);
+        double origod = edit->od;
         double tempod = scale_od(origod, edit->speed, edit->mi->mode);
-        if (edit->od < 0) // capping
+        if (edit->cap_od)
         {
             edit->od = tempod > origod ? origod : tempod;
         }
@@ -1212,13 +1214,35 @@ int edit_beatmap(struct editdata *edit)
 
     if (edit->mi->mode == 1 || edit->mi->mode == 3) edit->ar = 0;
 
+    ep.orig_ar = edit->ar;
+    ep.orig_od = edit->od;
+
     if (edit->ar > 10 || edit->od > 10)
     {
-        puts("AR/OD is higher than 10. Emulating DT...");
         ep.emuldt = edit->speed;
         edit->speed /= 1.5;
         edit->ar = scale_ar(edit->ar, 1.0/1.5, edit->mi->mode);
         edit->od = scale_od(edit->od, 1.0/1.5, edit->mi->mode);
+        printf("AR/OD is higher than 10. Emulating DT...\n");
+
+        double cap_od = scale_od(10.0, 1.5, edit->mi->mode);
+        CLAMP(ep.orig_ar, 0, 11);
+        CLAMP(ep.orig_od, 0, cap_od);
+
+        if (fabs(edit->speed - 1.0) < 1e-3)
+            edit->speed = 1.0;
+    }
+    else if (edit->ar < 0 || edit->od < 0)
+    {
+        ep.emuldt = edit->speed;
+        edit->speed /= 0.75;
+        edit->ar = scale_ar(edit->ar, 1.0/0.75, edit->mi->mode);
+        edit->od = scale_od(edit->od, 1.0/0.75, edit->mi->mode);
+        printf("AR/OD is lower than 0. Emulating HT...\n");
+
+        double cap_od = scale_od(0.0, 0.75, edit->mi->mode);
+        CLAMP(ep.orig_ar, -5, 0);
+        CLAMP(ep.orig_od, cap_od, 0);
 
         if (fabs(edit->speed - 1.0) < 1e-3)
             edit->speed = 1.0;

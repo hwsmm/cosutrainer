@@ -87,8 +87,8 @@ int cuimain(int argc, char *argv[])
     edit.od = mi->od;
     edit.ar = mi->ar;
 
-    edit.scale_ar = true;
-    edit.scale_od = true;
+    edit.scale_ar = edit.scale_od = true;
+    edit.cap_ar = edit.cap_od = false;
     edit.makezip = osumem;
 
     char *identifier = NULL;
@@ -248,20 +248,19 @@ int cuimain(int argc, char *argv[])
                 if (*(curarg + 1) != 'f')
                 {
                     *diffv = strtof(curarg + 1, &iden);
-                    if (*diffv < 0) *diffv = 0;
                 }
 
                 if (*curarg == 'a')
                 {
                     if (iden != NULL && *iden == 'c')
-                        *diffv *= -1;
+                        edit.cap_ar = true;
                     else
                         edit.scale_ar = false;
                 }
                 else if (*curarg == 'o')
                 {
                     if (iden != NULL && *iden == 'c')
-                        *diffv *= -1;
+                        edit.cap_od = true;
                     else
                         edit.scale_od = false;
                 }
@@ -276,7 +275,8 @@ int cuimain(int argc, char *argv[])
     edit.progress_callback = showprog;
     ret = edit_beatmap(&edit);
 
-    fprintf(stderr, "\r100%%\n");
+    if (ret == 0)
+        fprintf(stderr, "\r100%%\n");
 
     free_mapinfo(mi);
 

@@ -13,8 +13,17 @@
 
 using namespace std;
 
+static double lod_table[4] = { 0.0, };
+static double od_table[4] = { 10.0, };
+
 CosuWindow::CosuWindow()
 {
+    for (int i = 0; i < 4; i++)
+    {
+        lod_table[i] = scale_od(0.0, 0.75, i);
+        od_table[i] = scale_od(10.0, 1.5, i);
+    }
+
     info = NULL;
     first = true;
 }
@@ -54,7 +63,7 @@ void CosuWindow::update_ar_label()
         return;
 
     double scaled = scale_ar(cosuui.arslider->value(), get_relative_speed(), info->mode);
-    CLAMP(scaled, 0, 11);
+    CLAMP(scaled, -5, 11);
 
     snprintf(arstr + offset, sizeof(arstr) - offset, "%.1lf", scaled);
     cosuui.scale_ar->label(arstr);
@@ -66,7 +75,7 @@ void CosuWindow::update_od_label()
         return;
 
     double scaled = scale_od(cosuui.odslider->value(), get_relative_speed(), info->mode);
-    CLAMP(scaled, 0, 11.11);
+    CLAMP(scaled, lod_table[info->mode], od_table[info->mode]);
 
     snprintf(odstr + offset, sizeof(odstr) - offset, "%.1lf", scaled);
     cosuui.scale_od->label(odstr);
@@ -535,6 +544,11 @@ void CosuWindow::start()
         }
         else
         {
+            (cosuui.odslider)->minimum(lod_table[info->mode]);
+            (cosuui.odinput)->minimum(lod_table[info->mode]);
+            (cosuui.odslider)->maximum(od_table[info->mode]);
+            (cosuui.odinput)->maximum(od_table[info->mode]);
+
             (cosuui.odslider)->activate();
             (cosuui.odinput)->activate();
             (cosuui.odlock)->activate();

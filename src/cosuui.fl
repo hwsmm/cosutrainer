@@ -1,5 +1,5 @@
 # data file for the Fltk User Interface Designer (fluid)
-version 1.0311
+version 1.0404
 header_name {.h}
 code_name {.cpp}
 class CosuUI {open
@@ -7,8 +7,8 @@ class CosuUI {open
   Function {make_window()} {open
   } {
     Fl_Window window {
-      label {cosu-trainer} open selected
-      xywh {91 461 390 530} type Single size_range {390 530 390 530} visible
+      label {cosu-trainer} open
+      xywh {0 0 390 530} type Single size_range {390 530 390 530} visible
     } {
       Fl_Group mainbox {open
         xywh {10 10 370 510}
@@ -112,11 +112,11 @@ class CosuUI {open
           }
           Fl_Slider arslider {
             label AR
-            xywh {110 245 40 150} align 16 maximum 11 step 0.1 value 5
+            xywh {110 245 40 150} align 16 minimum -5 maximum 11 step 0.1 value 5
           }
           Fl_Slider odslider {
             label OD
-            xywh {160 245 40 150} align 16 maximum 11 step 0.1 value 5
+            xywh {160 245 40 150} align 16 minimum -4.4 maximum 11.1 step 0.1 value 5
           }
           Fl_Value_Input hpinput {
             xywh {10 220 40 25} box THIN_DOWN_BOX color 23 maximum 10 step 0.1 value 5
@@ -125,10 +125,10 @@ class CosuUI {open
             xywh {60 220 40 25} box THIN_DOWN_BOX color 23 maximum 10 step 0.1 value 5
           }
           Fl_Value_Input arinput {
-            xywh {110 220 40 25} box THIN_DOWN_BOX color 23 maximum 11 step 0.1 value 5
+            xywh {110 220 40 25} box THIN_DOWN_BOX color 23 minimum -5 maximum 11 step 0.1 value 5
           }
-          Fl_Value_Input odinput {
-            xywh {160 220 40 25} box THIN_DOWN_BOX color 23 maximum 11 step 0.1 value 5
+          Fl_Value_Input odinput {selected
+            xywh {160 220 40 25} box THIN_DOWN_BOX color 23 minimum -4.4 maximum 11.1 step 0.1 value 5
           }
         }
         Fl_Box ratebpm {
