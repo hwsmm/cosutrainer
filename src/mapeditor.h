@@ -50,6 +50,7 @@ struct editdata // data needed to edit a map
     const struct mapinfo *mi;
     double hp, cs, ar, od;
     bool scale_ar, scale_od;
+    bool cap_ar, cap_od;
     bool makezip;
 
     double speed;
@@ -111,6 +112,8 @@ struct editpass // temporary data that's only needed in editing (only passed wit
     int uninherited_tp_idx;
 
     int max_combo;
+
+    double orig_ar, orig_od;
 };
 
 #define DEFAULT_FMT "@diffname@ @rate@ @(bpm)@ @emuldt@ @cs@ @ar@ @od@ @hp@ @cut@ @flip@ @nosv@"
