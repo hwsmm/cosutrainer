@@ -21,7 +21,7 @@ Fl_Menu_Item* CosuUI::fullrc = CosuUI::menu_flipbox + 5;
 Fl_Window* CosuUI::make_window()
 {
     {
-        window = new Fl_Window(390, 535, "cosu-trainer");
+        window = new Fl_Window(390, 530, "cosu-trainer");
         window->user_data((void*)(this));
         {
             mainbox = new Fl_Group(10, 10, 370, 570);
