@@ -21,7 +21,7 @@ Fl_Menu_Item* CosuUI::fullrc = CosuUI::menu_flipbox + 5;
 Fl_Window* CosuUI::make_window()
 {
     {
-        window = new Fl_Window(390, 590, "cosu-trainer");
+        window = new Fl_Window(390, 535, "cosu-trainer");
         window->user_data((void*)(this));
         {
             mainbox = new Fl_Group(10, 10, 370, 570);
@@ -51,13 +51,19 @@ Fl_Window* CosuUI::make_window()
                 nospinner->down_box(FL_DOWN_BOX);
             } // Fl_Check_Button* nospinner
             {
+                fullpack = new Fl_Check_Button(210, 360, 170, 25, "Convert Full Pack");
+                fullpack->down_box(FL_DOWN_BOX);
+            } // Fl_Check_Button* fullpack
+            {
                 mainbpm = new Fl_Round_Button(210, 360, 85, 25, "Main BPM");
                 mainbpm->down_box(FL_ROUND_DOWN_BOX);
                 mainbpm->value(1);
+                mainbpm->hide();
             } // Fl_Round_Button* mainbpm
             {
                 maxbpm = new Fl_Round_Button(295, 360, 85, 25, "Max BPM");
                 maxbpm->down_box(FL_ROUND_DOWN_BOX);
+                maxbpm->hide();
             } // Fl_Round_Button* maxbpm
             {
                 rate = new Fl_Round_Button(210, 388, 85, 25, "Rate");
@@ -96,10 +102,10 @@ Fl_Window* CosuUI::make_window()
                 odlock->down_box(FL_DOWN_BOX);
             } // Fl_Check_Button* odlock
             {
-                reset = new Fl_Button(10, 530, 100, 55, "Reset");
+                reset = new Fl_Button(10, 465, 100, 55, "Reset");
             } // Fl_Button* reset
             {
-                convert = new Fl_Button(120, 530, 260, 55, "Convert now");
+                convert = new Fl_Button(120, 465, 260, 55, "Convert now");
             } // Fl_Button* convert
             {
                 songtitlelabel = new Fl_Box(10, 155, 370, 25, "Select a map");
@@ -192,27 +198,16 @@ Fl_Window* CosuUI::make_window()
             {
                 cutend = new Fl_Input(130, 416, 70, 25, "~ ");
             } // Fl_Input* cutend
-            {
-                customfmtlabel = new Fl_Box(10, 450, 60, 25, "Format");
-                customfmtlabel->align(Fl_Align(FL_ALIGN_INSIDE));
-            } // Fl_Box* customfmtlabel
-            {
-                customfmtinput = new Fl_Input(75, 450, 305, 25);
-            } // Fl_Input* customfmtinput
-            {
-                fullpack = new Fl_Check_Button(10, 478, 200, 25, "Convert Full Pack");
-                fullpack->down_box(FL_DOWN_BOX);
-            } // Fl_Check_Button* fullpack
             mainbox->end();
         } // Fl_Group* mainbox
         {
-            progress = new Fl_Progress(10, 510, 370, 10);
+            progress = new Fl_Progress(10, 450, 370, 10);
             progress->selection_color((Fl_Color)181);
             progress->maximum(1);
             progress->minimum(0);
             progress->value(0);
         } // Fl_Progress* progress
-        window->size_range(390, 590, 390, 590);
+        window->size_range(390, 535, 390, 535);
         window->end();
     } // Fl_Window* window
     return window;

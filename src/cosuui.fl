@@ -8,7 +8,7 @@ class CosuUI {open
   } {
     Fl_Window window {
       label {cosu-trainer} open selected
-      xywh {91 461 390 590} type Single size_range {390 590 390 590} visible
+      xywh {91 461 390 535} type Single size_range {390 535 390 535} visible
     } {
       Fl_Group mainbox {open
         xywh {10 10 370 570}
@@ -60,13 +60,17 @@ class CosuUI {open
           label {No Spinner}
           xywh {210 332 170 25} down_box DOWN_BOX
         }
+        Fl_Check_Button fullpack {
+          label {Convert Full Pack}
+          xywh {210 360 170 25} down_box DOWN_BOX
+        }
         Fl_Round_Button mainbpm {
           label {Main BPM}
-          xywh {210 360 85 25} down_box ROUND_DOWN_BOX value 1
+          xywh {210 360 85 25} down_box ROUND_DOWN_BOX value 1 hide
         }
         Fl_Round_Button maxbpm {
           label {Max BPM}
-          xywh {295 360 85 25} down_box ROUND_DOWN_BOX
+          xywh {295 360 85 25} down_box ROUND_DOWN_BOX hide
         }
         Fl_Round_Button rate {
           label Rate
@@ -97,11 +101,11 @@ class CosuUI {open
         }
         Fl_Button reset {
           label Reset
-          xywh {10 530 100 55}
+          xywh {10 465 100 55}
         }
         Fl_Button convert {
           label {Convert now}
-          xywh {120 530 260 55}
+          xywh {120 465 260 55}
         }
         Fl_Box songtitlelabel {
           label {Select a map}
@@ -158,20 +162,9 @@ class CosuUI {open
           label {~ }
           xywh {130 416 70 25}
         }
-        Fl_Box customfmtlabel {
-          label Format
-          xywh {10 450 60 25} align 16
-        }
-        Fl_Input customfmtinput {
-          xywh {75 450 305 25}
-        }
-        Fl_Check_Button fullpack {
-          label {Convert Full Pack}
-          xywh {10 478 200 25} down_box DOWN_BOX
-        }
       }
       Fl_Progress progress {
-        xywh {10 510 370 10} selection_color 181
+        xywh {10 450 370 10} selection_color 181
         code0 {progress->maximum(1);}
         code1 {progress->minimum(0);}
         code2 {progress->value(0);}

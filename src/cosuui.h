@@ -61,8 +61,6 @@ public:
     Fl_Box *cutlabel;
     Fl_Input *cutstart;
     Fl_Input *cutend;
-    Fl_Box *customfmtlabel;
-    Fl_Input *customfmtinput;
     Fl_Check_Button *fullpack;
     Fl_Progress *progress;
 };

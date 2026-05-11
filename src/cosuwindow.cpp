@@ -164,6 +164,27 @@ void CosuWindow::bpmmoderadio_callb(Fl_Widget *w, void *data)
     win->update_od_label();
 }
 
+void CosuWindow::toggle_bpm()
+{
+    if (cosuui.mainbpm->value() >= 1)
+        cosuui.maxbpm->set();
+    else
+        cosuui.mainbpm->set();
+}
+
+int CosuWindow::get_bpm_mode()
+{
+    return cosuui.maxbpm->value() >= 1 ? 1 : 0;
+}
+
+void CosuWindow::set_bpm_mode(int mode)
+{
+    if (mode == 1)
+        cosuui.maxbpm->set();
+    else
+        cosuui.mainbpm->set();
+}
+
 void CosuWindow::speedval_callb(Fl_Widget *w, void *data)
 {
     CosuWindow *win = (CosuWindow*) data;
@@ -184,8 +205,8 @@ void CosuWindow::resetbtn_callb(Fl_Widget *w, void *data)
     win->cosuui.arlock->clear();
     win->cosuui.odlock->clear();
     win->cosuui.lock->clear();
-    win->cosuui.scale_ar->clear();
-    win->cosuui.scale_od->clear();
+    win->cosuui.scale_ar->set();
+    win->cosuui.scale_od->set();
     win->cosuui.pitch->clear();
     win->cosuui.nospinner->clear();
     win->cosuui.mainbpm->set();
@@ -334,12 +355,6 @@ void CosuWindow::convbtn_callb(Fl_Widget *w, void *data)
     edit.data = data;
     edit.progress_callback = update_progress;
 
-    const char *customfmt = win->cosuui.customfmtinput->value();
-    if (strcmp(customfmt, get_custom_diff_format()) != 0 && !set_custom_diff_format(customfmt))
-    {
-        fl_alert("Failed setting the difficulty name format.\nConversion will use the previous format.");
-    }
-
     int ret;
     if (win->cosuui.fullpack->value() >= 1)
         ret = edit_beatmap_pack(&edit);
@@ -463,6 +478,7 @@ static void set_cosu_icon(Fl_Window *fwin)
 
 static char envstr[32767];
 static Fl_Input *customfmt_widget = NULL;
+static CosuWindow *bpm_win = NULL;
 
 static const char *get_custom_diff_format()
 {
@@ -485,6 +501,42 @@ static bool set_custom_diff_format(const char *format)
 
     fprintf(stderr, "New difficulty format is %s\n", getenv(CUSTOM_DIFF_VAR));
     return true;
+}
+
+static int show_bpm_mode_dialog(int current_mode)
+{
+    int result = current_mode;
+
+    Fl_Window *dlg = new Fl_Window(280, 115, "Select BPM Mode");
+    dlg->set_modal();
+
+    Fl_Round_Button *main_btn = new Fl_Round_Button(20, 15, 240, 25, "Main BPM");
+    Fl_Round_Button *max_btn = new Fl_Round_Button(20, 45, 240, 25, "Max BPM");
+    Fl_Button *ok = new Fl_Button(200, 80, 60, 25, "OK");
+
+    if (current_mode == 0)
+        main_btn->set();
+    else
+        max_btn->set();
+
+    main_btn->callback([](Fl_Widget *, void *d) {
+        ((Fl_Round_Button*)d)->clear();
+    }, max_btn);
+    max_btn->callback([](Fl_Widget *, void *d) {
+        ((Fl_Round_Button*)d)->clear();
+    }, main_btn);
+
+    ok->callback([](Fl_Widget *w, void *) {
+        w->window()->hide();
+    });
+
+    dlg->show();
+    while (dlg->shown())
+        Fl::wait();
+
+    result = max_btn->value() >= 1 ? 1 : 0;
+    delete dlg;
+    return result;
 }
 
 static int handle_fltk_ev(int event)
@@ -510,6 +562,15 @@ static int handle_fltk_ev(int event)
 
             return 1;
         }
+        if (Fl::event_state(FL_CTRL) && Fl::event_key('b'))
+        {
+            if (bpm_win != NULL)
+            {
+                int mode = show_bpm_mode_dialog(bpm_win->get_bpm_mode());
+                bpm_win->set_bpm_mode(mode);
+            }
+            return 1;
+        }
     }
 
     return 0;
@@ -517,6 +578,7 @@ static int handle_fltk_ev(int event)
 
 void CosuWindow::start()
 {
+    bpm_win = this;
     Fl::scheme("plastic");
     Fl::visual(FL_RGB);
     Fl::add_handler(handle_fltk_ev);
@@ -545,17 +607,9 @@ void CosuWindow::start()
                                "Blanking the first box makes the converted map start from 0, and blanking the second makes it end at the end of an original map.\n"
                                "Note that combo count works properly only on the standard mode.\n"
                                "Example: 2385 for combo count, and 1:30 or 0:30 for time";
-    const char fmt_tooltip[] = "Custom difficulty name format.\n"
-                               "Available tags: @diffname@ @rate@ @bpm@ @emuldt@ @cs@ @ar@ @od@ @hp@ @cut@ @flip@ @nosv@\n"
-                               "Use uppercase tags like @RATE@, @BPM@ or @AR@ if you want them even when unchanged.";
-
     cosuui.cutlabel->tooltip(cut_tooltip);
     cosuui.cutstart->tooltip(cut_tooltip);
     cosuui.cutend->tooltip(cut_tooltip);
-    cosuui.customfmtlabel->tooltip(fmt_tooltip);
-    cosuui.customfmtinput->tooltip(fmt_tooltip);
-    cosuui.customfmtinput->value(get_custom_diff_format());
-    customfmt_widget = cosuui.customfmtinput;
     cosuui.mainbox->deactivate();
 
     Fl::lock();

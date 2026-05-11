@@ -30,5 +30,8 @@ public:
     CosuWindow();
     ~CosuWindow();
     void start();
+    void toggle_bpm();
+    int get_bpm_mode();
+    void set_bpm_mode(int mode);
     void update_progress(float progress);
 };
