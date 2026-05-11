@@ -424,30 +424,6 @@ static int add_mainbpm_duration(struct mainbpm_pass *pass, double beatlength, lo
     return 0;
 }
 
-static long get_slider_duration(struct mainbpm_pass *pass, int repeat, int pixel_length)
-{
-    if (pass->timingpoints_num <= 0)
-        return 0;
-
-    double sv_multiplier = 1.0;
-    double timing_real_beatlength = pass->timingpoints[pass->timingpoints_idx].beatlength;
-    if (timing_real_beatlength < 0)
-        sv_multiplier = 100.0 / -timing_real_beatlength;
-
-    double ms_per_beat = pass->timingpoints[pass->uninherited_tp_idx].beatlength;
-    if (ms_per_beat <= 0)
-        return 0;
-
-    double pixels_per_beat = pass->info->slider_multiplier * 100.0;
-    if (pass->info->version >= 8)
-        pixels_per_beat *= sv_multiplier;
-
-    if (pixels_per_beat <= 0.0)
-        return 0;
-
-    double num_beats = pixel_length * repeat / pixels_per_beat;
-    return (long) llround(num_beats * ms_per_beat);
-}
 
 static int read_mainbpm_data(char *line, void *vpass, enum SECTION sect)
 {
@@ -494,9 +470,6 @@ static int read_mainbpm_data(char *line, void *vpass, enum SECTION sect)
             fail_nulltkn(slidestr);
             char *lengthstr;
             fail_nulltkn(lengthstr);
-
-            long duration = get_slider_duration(pass, atoi(slidestr), atoi(lengthstr));
-            end_time += duration;
         }
         else if (type & (1 << 3 | 1 << 7))
         {
