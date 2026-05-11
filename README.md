@@ -24,8 +24,7 @@ It's very destructive and experimental, so don't use unless you desperately need
 - Generates an osz file for easier import
 - An user-defined osz handler can be set for seamless integration with osu!
 - Custom difficulty name format
-- Change custom difficulty name in GUI
-- Switch main BPM and max BPM (GUI only)
+- Switch main BPM and max BPM (Ctrl+B)
 - Generates a full RC difficulty for rice enjoyers
 - Convert an entire beatmap pack at once
 
