@@ -30,7 +30,8 @@ struct mapinfo
     char *audioname, *bgname;
     char *diffname, *songname;
 
-    double maxbpm, minbpm, mainbpm;
+    double maxbpm, minbpm;
+    int tp_count;
     float hp, cs, ar, od;
     float slider_multiplier, slider_tick_rate;
 
@@ -53,9 +54,11 @@ struct editdata // data needed to edit a map
     bool cap_ar, cap_od;
     bool makezip;
 
+    unsigned char cv_mapset;
+
     double speed;
+    double base_bpm;
     enum SPEED_MODE bpmmode;
-    enum BPM_MODE bpmrefmode;
     bool pitch;
     bool nospinner;
     bool remove_sv;
@@ -113,12 +116,18 @@ struct editpass // temporary data that's only needed in editing (only passed wit
 
     int max_combo;
 
-    double orig_ar, orig_od;
+    float orig_ar, orig_od;
 };
 
-#define DEFAULT_FMT "@diffname@ @rate@ @(bpm)@ @emuldt@ @cs@ @ar@ @od@ @hp@ @cut@ @flip@ @nosv@"
+#define DEFAULT_FMT "@diffname@ @rate@ @bpm@ @emuldt@ @cs@ @ar@ @od@ @hp@ @cut@ @flip@ @nosv@"
 
 #define CUSTOM_DIFF_VAR "COSU_CUSTOM_DIFF_FORMAT"
+
+#define BPM_MODE_VAR "COSU_BPM_MODE"
+
+#define GET_DEFAULT_BPM_MODE() ((getenv(BPM_MODE_VAR) && strcmp(getenv(BPM_MODE_VAR), "main") == 0) ? main_bpm_mode : max_bpm_mode)
+
+#define BTLEN_BPM(x) (1.0 / (x) * 1000.0 * 60.0)
 
 #ifdef __cplusplus
 extern "C"
@@ -128,6 +137,7 @@ extern "C"
 float scale_ar(float ar, double speed, int mode);
 float scale_od(float od, double speed, int mode);
 struct mapinfo *read_beatmap(char *mapfile);
+double read_main_bpm(struct mapinfo *info);
 void free_mapinfo(struct mapinfo *info);
 int edit_beatmap(struct editdata *edit);
 
