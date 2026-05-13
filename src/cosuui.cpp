@@ -9,6 +9,7 @@ Fl_Menu_Item CosuUI::menu_flipbox[] =
     {"Y(flip)", 0,  0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
     {"Transpose", 0,  0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
     {"Invert (Full LN)", 0,  0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
+    {"Full RC (No LN)", 0,  0, 0, 0, (uchar)FL_NORMAL_LABEL, 0, 14, 0},
     {0,0,0,0,0,0,0,0,0}
 };
 Fl_Menu_Item* CosuUI::no_flip = CosuUI::menu_flipbox + 0;
@@ -16,14 +17,14 @@ Fl_Menu_Item* CosuUI::x_flip = CosuUI::menu_flipbox + 1;
 Fl_Menu_Item* CosuUI::y_flip = CosuUI::menu_flipbox + 2;
 Fl_Menu_Item* CosuUI::transpose = CosuUI::menu_flipbox + 3;
 Fl_Menu_Item* CosuUI::invert = CosuUI::menu_flipbox + 4;
-
+Fl_Menu_Item* CosuUI::fullrc = CosuUI::menu_flipbox + 5;
 Fl_Window* CosuUI::make_window()
 {
     {
         window = new Fl_Window(390, 530, "cosu-trainer");
         window->user_data((void*)(this));
         {
-            mainbox = new Fl_Group(10, 10, 370, 510);
+            mainbox = new Fl_Group(10, 10, 370, 570);
             {
                 infobox = new Fl_Box(10, 10, 370, 130);
                 infobox->align(Fl_Align(FL_ALIGN_CLIP));
@@ -34,41 +35,56 @@ Fl_Window* CosuUI::make_window()
                 flipbox->menu(menu_flipbox);
             } // Fl_Choice* flipbox
             {
-                scale_ar = new Fl_Check_Button(210, 260, 170, 15, "Scale AR");
+                scale_ar = new Fl_Check_Button(210, 248, 170, 25, "Scale AR");
                 scale_ar->down_box(FL_DOWN_BOX);
                 scale_ar->value(1);
             } // Fl_Check_Button* scale_ar
             {
-                scale_od = new Fl_Check_Button(210, 290, 170, 15, "Scale OD");
+                scale_od = new Fl_Check_Button(210, 276, 170, 25, "Scale OD");
                 scale_od->down_box(FL_DOWN_BOX);
                 scale_od->value(1);
             } // Fl_Check_Button* scale_od
             {
-                pitch = new Fl_Check_Button(210, 320, 170, 15, "Adjust Pitch");
+                pitch = new Fl_Check_Button(210, 304, 170, 25, "Adjust Pitch");
                 pitch->down_box(FL_DOWN_BOX);
             } // Fl_Check_Button* pitch
             {
-                nospinner = new Fl_Check_Button(210, 350, 170, 15, "No Spinner");
+                nospinner = new Fl_Check_Button(210, 332, 170, 25, "No Spinner");
                 nospinner->down_box(FL_DOWN_BOX);
             } // Fl_Check_Button* nospinner
             {
-                rate = new Fl_Round_Button(210, 389, 85, 25, "Rate");
+                fullpack = new Fl_Check_Button(210, 360, 170, 25, "Convert Full Pack");
+                fullpack->down_box(FL_DOWN_BOX);
+            } // Fl_Check_Button* fullpack
+            {
+                mainbpm = new Fl_Round_Button(210, 360, 85, 25, "Main BPM");
+                mainbpm->down_box(FL_ROUND_DOWN_BOX);
+                mainbpm->value(1);
+                mainbpm->hide();
+            } // Fl_Round_Button* mainbpm
+            {
+                maxbpm = new Fl_Round_Button(295, 360, 85, 25, "Max BPM");
+                maxbpm->down_box(FL_ROUND_DOWN_BOX);
+                maxbpm->hide();
+            } // Fl_Round_Button* maxbpm
+            {
+                rate = new Fl_Round_Button(210, 388, 85, 25, "Rate");
                 rate->down_box(FL_ROUND_DOWN_BOX);
                 rate->value(1);
             } // Fl_Round_Button* rate
             {
-                bpm = new Fl_Round_Button(295, 389, 85, 25, "BPM");
+                bpm = new Fl_Round_Button(295, 388, 85, 25, "BPM");
                 bpm->down_box(FL_ROUND_DOWN_BOX);
             } // Fl_Round_Button* bpm
             {
-                speedval = new Fl_Spinner(210, 419, 80, 25);
+                speedval = new Fl_Spinner(210, 416, 80, 25);
                 speedval->type(1);
                 speedval->minimum(0.1);
                 speedval->maximum(99999);
-                speedval->step(0.1);
+                speedval->step(0.01);
             } // Fl_Spinner* speedval
             {
-                lock = new Fl_Check_Button(295, 419, 85, 25, "Lock");
+                lock = new Fl_Check_Button(295, 416, 85, 25, "Lock");
                 lock->down_box(FL_DOWN_BOX);
             } // Fl_Check_Button* lock
             {
@@ -171,18 +187,18 @@ Fl_Window* CosuUI::make_window()
                 diffgroup->end();
             } // Fl_Group* diffgroup
             {
-                ratebpm = new Fl_Box(295, 419, 85, 25, "0bpm");
+                ratebpm = new Fl_Box(295, 416, 85, 25, "0bpm");
                 ratebpm->align(Fl_Align(FL_ALIGN_LEFT|FL_ALIGN_INSIDE));
             } // Fl_Box* ratebpm
             {
-                cutlabel = new Fl_Box(10, 419, 30, 25, "Cut");
+                cutlabel = new Fl_Box(10, 416, 30, 25, "Cut");
                 cutlabel->align(Fl_Align(FL_ALIGN_LEFT|FL_ALIGN_INSIDE));
             } // Fl_Box* cutlabel
             {
-                cutstart = new Fl_Input(41, 419, 70, 25);
+                cutstart = new Fl_Input(41, 416, 70, 25);
             } // Fl_Input* cutstart
             {
-                cutend = new Fl_Input(130, 419, 70, 25, "~ ");
+                cutend = new Fl_Input(130, 416, 70, 25, "~ ");
             } // Fl_Input* cutend
             mainbox->end();
         } // Fl_Group* mainbox
@@ -193,7 +209,7 @@ Fl_Window* CosuUI::make_window()
             progress->minimum(0);
             progress->value(0);
         } // Fl_Progress* progress
-        window->size_range(390, 530, 390, 530);
+        window->size_range(390, 535, 390, 535);
         window->end();
     } // Fl_Window* window
     return window;

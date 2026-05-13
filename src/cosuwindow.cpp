@@ -1,4 +1,5 @@
 #include "cosuwindow.h"
+#include "packeditor.h"
 #include "tools.h"
 #include "cosuplatform.h"
 #include <cstdio>
@@ -33,12 +34,20 @@ CosuWindow::~CosuWindow()
     free_mapinfo(info);
 }
 
+double CosuWindow::get_selected_bpm()
+{
+    if (info == NULL)
+        return 1;
+
+    return cosuui.maxbpm->value() >= 1 ? info->maxbpm : info->mainbpm;
+}
+
 double CosuWindow::get_relative_speed()
 {
     if (cosuui.rate->value() >= 1)
         return cosuui.speedval->value();
     else if (cosuui.bpm->value() >= 1)
-        return cosuui.speedval->value() / info->maxbpm;
+        return cosuui.speedval->value() / get_selected_bpm();
 
     return 1;
 }
@@ -47,7 +56,7 @@ char bpmstr[] = "xxxxxxxxxxxxxxbpm";
 
 void CosuWindow::update_rate_bpm()
 {
-    double bpm = info->maxbpm * cosuui.speedval->value();
+    double bpm = get_selected_bpm() * cosuui.speedval->value();
     snprintf(bpmstr, sizeof(bpmstr), "%.0lfbpm", bpm);
 
     cosuui.ratebpm->label(bpmstr);
@@ -56,6 +65,9 @@ void CosuWindow::update_rate_bpm()
 char arstr[] = "Scale AR to xx.x";
 char odstr[] = "Scale OD to xx.x";
 const int offset = 12;
+
+static const char *get_custom_diff_format();
+static bool set_custom_diff_format(const char *format);
 
 void CosuWindow::update_ar_label()
 {
@@ -94,7 +106,7 @@ void CosuWindow::rateradio_callb(Fl_Widget *w, void *data)
         win->cosuui.ratebpm->show();
         win->cosuui.lock->hide();
         win->cosuui.speedval->value(1);
-        win->cosuui.speedval->step(0.1);
+        win->cosuui.speedval->step(0.01);
 
         win->update_ar_label();
         win->update_od_label();
@@ -114,7 +126,7 @@ void CosuWindow::bpmradio_callb(Fl_Widget *w, void *data)
         win->cosuui.speedval->step(1);
         if (win->info != NULL)
         {
-            win->cosuui.speedval->value(win->info->maxbpm);
+            win->cosuui.speedval->value(win->get_selected_bpm());
         }
         else
         {
@@ -124,6 +136,53 @@ void CosuWindow::bpmradio_callb(Fl_Widget *w, void *data)
         win->update_ar_label();
         win->update_od_label();
     }
+}
+
+void CosuWindow::bpmmoderadio_callb(Fl_Widget *w, void *data)
+{
+    CosuWindow *win = (CosuWindow*) data;
+    Fl_Round_Button *btn = (Fl_Round_Button*) w;
+    if (btn->value() <= 0)
+        return;
+
+    if (btn == win->cosuui.mainbpm)
+        win->cosuui.maxbpm->clear();
+    else
+        win->cosuui.mainbpm->clear();
+
+    if (win->cosuui.bpm->value() >= 1)
+    {
+        if (win->info != NULL && win->cosuui.lock->value() <= 0)
+            win->cosuui.speedval->value(win->get_selected_bpm());
+    }
+    else
+    {
+        win->update_rate_bpm();
+    }
+
+    win->update_ar_label();
+    win->update_od_label();
+}
+
+void CosuWindow::toggle_bpm()
+{
+    if (cosuui.mainbpm->value() >= 1)
+        cosuui.maxbpm->set();
+    else
+        cosuui.mainbpm->set();
+}
+
+int CosuWindow::get_bpm_mode()
+{
+    return cosuui.maxbpm->value() >= 1 ? 1 : 0;
+}
+
+void CosuWindow::set_bpm_mode(int mode)
+{
+    if (mode == 1)
+        cosuui.maxbpm->set();
+    else
+        cosuui.mainbpm->set();
 }
 
 void CosuWindow::speedval_callb(Fl_Widget *w, void *data)
@@ -150,7 +209,10 @@ void CosuWindow::resetbtn_callb(Fl_Widget *w, void *data)
     win->cosuui.scale_od->set();
     win->cosuui.pitch->clear();
     win->cosuui.nospinner->clear();
+    win->cosuui.mainbpm->set();
+    win->cosuui.maxbpm->clear();
     win->cosuui.flipbox->value(0);
+    win->cosuui.fullpack->clear();
     win->cosuui.cutstart->value("");
     win->cosuui.cutend->value("");
     win->queue_reset = true;
@@ -254,6 +316,7 @@ void CosuWindow::convbtn_callb(Fl_Widget *w, void *data)
 
     edit.speed = win->cosuui.speedval->value();
     edit.bpmmode = win->cosuui.bpm->value() >= 1 ? bpm : rate;
+    edit.bpmrefmode = win->cosuui.maxbpm->value() >= 1 ? max_bpm_mode : main_bpm_mode;
     edit.pitch = win->cosuui.pitch->value() >= 1;
 
     if (edit.mi->mode != 3)
@@ -281,6 +344,9 @@ void CosuWindow::convbtn_callb(Fl_Widget *w, void *data)
     case 4:
         edit.flip = invert;
         break;
+    case 5:
+        edit.flip = fullrc;
+        break;
     default:
         edit.flip = none;
         break;
@@ -289,8 +355,13 @@ void CosuWindow::convbtn_callb(Fl_Widget *w, void *data)
     edit.data = data;
     edit.progress_callback = update_progress;
 
-    int ret = edit_beatmap(&edit);
-    if (ret != 0)
+    int ret;
+    if (win->cosuui.fullpack->value() >= 1)
+        ret = edit_beatmap_pack(&edit);
+    else
+        ret = edit_beatmap(&edit);
+
+    if (ret != 0 && ret != -1/**/)
     {
         fl_alert("Editing a beatmap failed: %d\nCheck console for details.", ret);
     }
@@ -406,6 +477,67 @@ static void set_cosu_icon(Fl_Window *fwin)
 #endif
 
 static char envstr[32767];
+static Fl_Input *customfmt_widget = NULL;
+static CosuWindow *bpm_win = NULL;
+
+static const char *get_custom_diff_format()
+{
+    const char *customfmt = getenv(CUSTOM_DIFF_VAR);
+    return customfmt != NULL ? customfmt : DEFAULT_FMT;
+}
+
+static bool set_custom_diff_format(const char *format)
+{
+    if (format == NULL)
+        return false;
+
+    snprintf(envstr, sizeof(envstr), CUSTOM_DIFF_VAR "=%s", format);
+
+    if (putenv(envstr) != 0)
+    {
+        perror("putenv");
+        return false;
+    }
+
+    fprintf(stderr, "New difficulty format is %s\n", getenv(CUSTOM_DIFF_VAR));
+    return true;
+}
+
+static int show_bpm_mode_dialog(int current_mode)
+{
+    int result = current_mode;
+
+    Fl_Window *dlg = new Fl_Window(280, 115, "Select BPM Mode");
+    dlg->set_modal();
+
+    Fl_Round_Button *main_btn = new Fl_Round_Button(20, 15, 240, 25, "Main BPM");
+    Fl_Round_Button *max_btn = new Fl_Round_Button(20, 45, 240, 25, "Max BPM");
+    Fl_Button *ok = new Fl_Button(200, 80, 60, 25, "OK");
+
+    if (current_mode == 0)
+        main_btn->set();
+    else
+        max_btn->set();
+
+    main_btn->callback([](Fl_Widget *, void *d) {
+        ((Fl_Round_Button*)d)->clear();
+    }, max_btn);
+    max_btn->callback([](Fl_Widget *, void *d) {
+        ((Fl_Round_Button*)d)->clear();
+    }, main_btn);
+
+    ok->callback([](Fl_Widget *w, void *) {
+        w->window()->hide();
+    });
+
+    dlg->show();
+    while (dlg->shown())
+        Fl::wait();
+
+    result = max_btn->value() >= 1 ? 1 : 0;
+    delete dlg;
+    return result;
+}
 
 static int handle_fltk_ev(int event)
 {
@@ -413,28 +545,30 @@ static int handle_fltk_ev(int event)
     {
         if (Fl::event_state(FL_CTRL) && Fl::event_key('f'))
         {
-            const char *customfmt = getenv(CUSTOM_DIFF_VAR);
-            const char *defaultfmt = DEFAULT_FMT;
-            const char *usefmt = customfmt != NULL ? customfmt : defaultfmt;
             const char msg[] = "Define your custom difficulty name format:";
 
-            const char *got = fl_input(msg, usefmt);
+            const char *got = fl_input(msg, get_custom_diff_format());
             if (got == NULL)
                 return 1;
 
-            snprintf(envstr, sizeof(envstr), CUSTOM_DIFF_VAR "=%s", got);
-
-            if (putenv(envstr) != 0)
+            if (!set_custom_diff_format(got))
             {
-                perror("putenv");
                 fl_alert("Failed setting an environment variable.\nCheck console for details.");
             }
-            else
+            else if (customfmt_widget != NULL)
             {
-                fprintf(stderr, "New difficulty format is %s\n", getenv(CUSTOM_DIFF_VAR));
-
+                customfmt_widget->value(got);
             }
 
+            return 1;
+        }
+        if (Fl::event_state(FL_CTRL) && Fl::event_key('b'))
+        {
+            if (bpm_win != NULL)
+            {
+                int mode = show_bpm_mode_dialog(bpm_win->get_bpm_mode());
+                bpm_win->set_bpm_mode(mode);
+            }
             return 1;
         }
     }
@@ -444,6 +578,7 @@ static int handle_fltk_ev(int event)
 
 void CosuWindow::start()
 {
+    bpm_win = this;
     Fl::scheme("plastic");
     Fl::visual(FL_RGB);
     Fl::add_handler(handle_fltk_ev);
@@ -456,6 +591,8 @@ void CosuWindow::start()
 
     cosuui.rate->callback(rateradio_callb, (void*) this);
     cosuui.bpm->callback(bpmradio_callb, (void*) this);
+    cosuui.mainbpm->callback(bpmmoderadio_callb, (void*) this);
+    cosuui.maxbpm->callback(bpmmoderadio_callb, (void*) this);
     cosuui.reset->callback(resetbtn_callb, (void*) this);
     cosuui.convert->callback(convbtn_callb, (void*) this);
     cosuui.speedval->callback(speedval_callb, (void*) this);
@@ -470,7 +607,6 @@ void CosuWindow::start()
                                "Blanking the first box makes the converted map start from 0, and blanking the second makes it end at the end of an original map.\n"
                                "Note that combo count works properly only on the standard mode.\n"
                                "Example: 2385 for combo count, and 1:30 or 0:30 for time";
-
     cosuui.cutlabel->tooltip(cut_tooltip);
     cosuui.cutstart->tooltip(cut_tooltip);
     cosuui.cutend->tooltip(cut_tooltip);
@@ -582,14 +718,16 @@ void CosuWindow::start()
         if (info->mode == 3)
         {
             (cosuui.invert)->activate();
+            (cosuui.fullrc)->activate();
             (cosuui.nospinner)->label("No SV");
         }
         else
         {
-            if ((cosuui.flipbox)->value() == 4)
+            if ((cosuui.flipbox)->value() == 4 || (cosuui.flipbox)->value() == 5)
                 (cosuui.flipbox)->value(0);
 
             (cosuui.invert)->deactivate();
+            (cosuui.fullrc)->deactivate();
             (cosuui.nospinner)->label("No Spinner");
         }
 
@@ -598,7 +736,7 @@ void CosuWindow::start()
 
         if (cosuui.bpm->value() >= 1 && cosuui.lock->value() <= 0)
         {
-            cosuui.speedval->value(info->maxbpm);
+            cosuui.speedval->value(get_selected_bpm());
         }
         if (cosuui.rate->value() >= 1)
         {
@@ -612,6 +750,7 @@ void CosuWindow::start()
         cosuui.infobox->redraw();
     }
     Fl::remove_handler(handle_fltk_ev);
+    customfmt_widget = NULL;
     if (img != NULL) delete img;
 #ifndef WIN32
     if (icon != NULL) delete icon;

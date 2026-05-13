@@ -8,6 +8,7 @@ class CosuWindow
 private:
     CosuUI cosuui;
     Freader fr;
+    double get_selected_bpm();
     double get_relative_speed();
     void update_rate_bpm();
 
@@ -19,6 +20,7 @@ private:
     void update_od_label();
     static void update_progress(void *data, float progress);
     static void bpmradio_callb(Fl_Widget *w, void *data);
+    static void bpmmoderadio_callb(Fl_Widget *w, void *data);
     static void rateradio_callb(Fl_Widget *w, void *data);
     static void resetbtn_callb(Fl_Widget *w, void *data);
     static void convbtn_callb(Fl_Widget *w, void *data);
@@ -28,5 +30,8 @@ public:
     CosuWindow();
     ~CosuWindow();
     void start();
+    void toggle_bpm();
+    int get_bpm_mode();
+    void set_bpm_mode(int mode);
     void update_progress(float progress);
 };

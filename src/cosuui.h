@@ -16,8 +16,7 @@
 #include <FL/Fl_Input.H>
 #include <FL/Fl_Progress.H>
 
-class CosuUI
-{
+class CosuUI {
 public:
     Fl_Window* make_window();
     Fl_Window *window;
@@ -30,10 +29,13 @@ public:
     static Fl_Menu_Item *y_flip;
     static Fl_Menu_Item *transpose;
     static Fl_Menu_Item *invert;
+    static Fl_Menu_Item *fullrc;
     Fl_Check_Button *scale_ar;
     Fl_Check_Button *scale_od;
     Fl_Check_Button *pitch;
     Fl_Check_Button *nospinner;
+    Fl_Round_Button *mainbpm;
+    Fl_Round_Button *maxbpm;
     Fl_Round_Button *rate;
     Fl_Round_Button *bpm;
     Fl_Spinner *speedval;
@@ -59,6 +61,7 @@ public:
     Fl_Box *cutlabel;
     Fl_Input *cutstart;
     Fl_Input *cutend;
+    Fl_Check_Button *fullpack;
     Fl_Progress *progress;
 };
 #endif

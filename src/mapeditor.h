@@ -11,12 +11,17 @@ enum SECTION
 
 enum FLIP
 {
-    none, xflip, yflip, transpose, invert
+    none, xflip, yflip, transpose, invert, fullrc
 };
 
 enum SPEED_MODE
 {
     bpm, rate, guess
+};
+
+enum BPM_MODE
+{
+    main_bpm_mode, max_bpm_mode
 };
 
 struct mapinfo
@@ -25,7 +30,7 @@ struct mapinfo
     char *audioname, *bgname;
     char *diffname, *songname;
 
-    double maxbpm, minbpm;
+    double maxbpm, minbpm, mainbpm;
     float hp, cs, ar, od;
     float slider_multiplier, slider_tick_rate;
 
@@ -50,6 +55,7 @@ struct editdata // data needed to edit a map
 
     double speed;
     enum SPEED_MODE bpmmode;
+    enum BPM_MODE bpmrefmode;
     bool pitch;
     bool nospinner;
     bool remove_sv;
@@ -110,7 +116,7 @@ struct editpass // temporary data that's only needed in editing (only passed wit
     double orig_ar, orig_od;
 };
 
-#define DEFAULT_FMT "@diffname@ @rate@ @bpm@ @emuldt@ @cs@ @ar@ @od@ @hp@ @cut@ @flip@ @nosv@"
+#define DEFAULT_FMT "@diffname@ @rate@ @(bpm)@ @emuldt@ @cs@ @ar@ @od@ @hp@ @cut@ @flip@ @nosv@"
 
 #define CUSTOM_DIFF_VAR "COSU_CUSTOM_DIFF_FORMAT"
 
