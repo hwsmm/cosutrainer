@@ -11,6 +11,7 @@ extern "C"
 #include <io.h>
 #include <synchapi.h>
 #define PATHSEP '\\'
+#define FOREIGN_PATHSEP '/'
 #define STR_PATHSEP "\\"
 #define F_OK 0
 
@@ -18,6 +19,7 @@ extern "C"
 
 #include <unistd.h>
 #define PATHSEP '/'
+#define FOREIGN_PATHSEP '\\'
 #define STR_PATHSEP "/"
 #define _access access
 #define _strdup strdup

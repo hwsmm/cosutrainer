@@ -537,13 +537,12 @@ static void convert_vaildpath(struct mapinfo *mi)
         goto skip;
     }
 
-
     if (mi->audioname != NULL)
     {
 #ifndef WIN32
         char *ill;
-        while ((ill = strchr(mi->audioname, '\\')) != NULL)
-            *ill = '/';
+        while ((ill = strchr(mi->audioname, FOREIGN_PATHSEP)) != NULL)
+            *ill = PATHSEP;
 #endif
 
         int solen = strlen(mi->audioname);
@@ -566,7 +565,7 @@ static void convert_vaildpath(struct mapinfo *mi)
         }
         else if (ares < 0)
         {
-            printerr("Failed checking path of audio file, make sure that it exists (not fatal)");
+            fprintf(stderr, "Failed checking path of audio file, make sure that it exists (not fatal): %s\n", temp);
             free(temp);
         }
     }
@@ -576,8 +575,8 @@ audskip:
     {
 #ifndef WIN32
         char *ill;
-        while ((ill = strchr(mi->bgname, '\\')) != NULL)
-            *ill = '/';
+        while ((ill = strchr(mi->bgname, FOREIGN_PATHSEP)) != NULL)
+            *ill = PATHSEP;
 #endif
 
         int solen = strlen(mi->bgname);
