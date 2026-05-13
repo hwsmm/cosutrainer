@@ -1429,6 +1429,24 @@ int edit_beatmap(struct editdata *edit)
 
     buffers_init(&bufs);
 
+    if (edit->cv_mapset & 1)
+    {
+        if (!(edit->cv_mapset & 1<<1))
+            edit->hp = edit->mi->hp;
+
+        if (!(edit->cv_mapset & 1<<2))
+            edit->cs = edit->mi->cs;
+
+        if (!(edit->cv_mapset & 1<<3))
+            edit->ar = edit->mi->ar;
+
+        if (!(edit->cv_mapset & 1<<4))
+            edit->od = edit->mi->od;
+    }
+
+    if (edit->base_bpm <= 0)
+        edit->base_bpm = edit->mi->maxbpm;
+
     if (edit->bpmmode == guess)
     {
         double refbpm = edit->bpmrefmode == max_bpm_mode ? edit->mi->maxbpm : edit->mi->mainbpm;
@@ -1708,7 +1726,7 @@ int edit_beatmap(struct editdata *edit)
     {
         ret = create_actual_zip(zipf, &bufs);
 
-        if (ret == 0)
+        if (ret == 0 && !(edit->cv_mapset & 1))
             ret = execute_file(zipf);
     }
     else

@@ -29,9 +29,7 @@ int edit_beatmap_pack(struct editdata *edit)
         return -1;
     }
 
-    struct editdata orig = *edit;
-    double user_speed = edit->speed;
-
+    int ret = 0;
     int edited_count = 0;
     struct dirent *ent;
 
@@ -40,40 +38,61 @@ int edit_beatmap_pack(struct editdata *edit)
         if (!endswith(ent->d_name, ".osu"))
             continue;
 
-        int pathlen = strlen(folderpath) + 1 + strlen(ent->d_name) + 1;
-        char *osupath = (char*) malloc(pathlen);
-        if (osupath == NULL)
-        {
-            printerr("Failed allocation");
-            continue;
-        }
-        snprintf(osupath, pathlen, "%s%c%s", folderpath, PATHSEP, ent->d_name);
+        struct editdata packed = *edit;
 
-        struct mapinfo *mi = read_beatmap(osupath);
-        if (mi == NULL)
+        if (strcmp(ent->d_name, fsep + 1) != 0)
         {
+            int pathlen = strlen(folderpath) + 1 + strlen(ent->d_name) + 1;
+            char *osupath = (char*) malloc(pathlen);
+            if (osupath == NULL)
+            {
+                printerr("Failed allocation");
+                continue;
+            }
+            snprintf(osupath, pathlen, "%s" STR_PATHSEP "%s", folderpath, ent->d_name);
+
+            struct mapinfo *mi = read_beatmap(osupath);
+            if (mi == NULL)
+            {
+                free(osupath);
+                continue;
+            }
+
+            packed.mi = mi;
             free(osupath);
-            continue;
         }
-
-        struct editdata packed = orig;
-        packed.mi = mi;
-        packed.speed = user_speed;
-        packed.makezip = false;
 
         printf("Editing %s...\n", ent->d_name);
 
-        int ret = edit_beatmap(&packed);
-        if (ret == 0)
-            edited_count++;
+        ret = edit_beatmap(&packed);
 
-        free_mapinfo(mi);
-        free(osupath);
+        if (edit->mi != packed.mi)
+            free_mapinfo((struct mapinfo*)packed.mi);
+
+        if (ret == 0)
+        {
+            edited_count++;
+        }
+        else
+        {
+            fprintf(stderr, "Failed editing %s: %d\n", ent->d_name, ret);
+            break;
+        }
     }
 
     closedir(d);
-    free(folderpath);
 
-    printf("Edited %d beatmap(s) in the pack.\n", edited_count);
-    return edited_count > 0 ? 0 : -1;
+    if (edited_count > 0 && edit->makezip)
+    {
+        long zipflen = strlen(folderpath) + sizeof(".osz");
+        char *zipf = (char*) malloc(zipflen);
+        snprintf(zipf, zipflen, "%s.osz", folderpath);
+
+        ret = execute_file(zipf);
+        free(zipf);
+    }
+
+    free(folderpath);
+    printf("Edited %d beatmap(s) in the mapset.\n", edited_count);
+    return ret;
 }
