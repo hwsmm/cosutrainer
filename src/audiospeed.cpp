@@ -351,16 +351,16 @@ sndfclose:
     return success;
 }
 
-int change_audio_speed(const char* source, struct buffers *bufs, double speed, bool pitch, double emuldt, void *data, update_progress_cb callback)
+int change_audio_speed(struct audiospeed_config cfg, struct buffers *bufs, void *data, update_progress_cb callback)
 {
     try
     {
-        if (endswith(source, ".mp3"))
+        if (endswith(cfg.source, ".mp3"))
         {
             // using mpg123/lame backend exclusively to make bug fixing easier
             // and there are some distros that has libsndfile without mp3 support since it's only released recently
             // libsndfile also uses mpg123/lame anyway
-            int ret = change_mp3_speed(source, bufs, speed, pitch, emuldt, data, callback);
+            int ret = change_mp3_speed(cfg.source, bufs, cfg.speed, cfg.pitch, cfg.emuldt, data, callback);
 
             if (ret == 0)
             {
@@ -368,12 +368,12 @@ int change_audio_speed(const char* source, struct buffers *bufs, double speed, b
             }
             else
             {
-                fprintf(stderr, "Your MP3 (%s) may not actually be an MP3: %d\nTrying an alternative method\n", source, ret);
+                fprintf(stderr, "Your MP3 (%s) may not actually be an MP3: %d\nTrying an alternative method\n", cfg.source, ret);
                 buffers_aud_reset(bufs);
             }
         }
 
-        return change_audio_speed_libsndfile(source, bufs, speed, pitch, emuldt, data, callback);
+        return change_audio_speed_libsndfile(cfg.source, bufs, cfg.speed, cfg.pitch, cfg.emuldt, data, callback);
     }
     catch (const std::runtime_error &e)
     {

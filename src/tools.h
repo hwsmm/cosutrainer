@@ -19,8 +19,6 @@ extern "C"
 {
 #endif
 
-void randominit();
-void randomstr(char *string, int size);
 void remove_newline(char* line);
 int endswith(const char *str, const char *suffix);
 char *replace_string(const char *source, const char *match, const char *replace);

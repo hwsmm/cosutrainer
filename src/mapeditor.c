@@ -1349,6 +1349,49 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
     return ret;
 }
 
+#define HASH_INIT(x) unsigned int hash = 0x811c9dc5; unsigned char *byte = (unsigned char*)x;
+#define HASH_FUNC(type, field) for (size_t e = 0; e < sizeof(((type*)0)->field); e++) \
+    hash = (hash ^ *(byte + offsetof(type, field) + e)) * 0x01000193;
+
+static unsigned int hash_editdata(const struct editdata *edit)
+{
+    HASH_INIT(edit);
+
+    HASH_FUNC(struct editdata, hp);
+    HASH_FUNC(struct editdata, cs);
+    HASH_FUNC(struct editdata, ar);
+    HASH_FUNC(struct editdata, od);
+    HASH_FUNC(struct editdata, scale_ar);
+    HASH_FUNC(struct editdata, scale_od);
+    HASH_FUNC(struct editdata, cap_ar);
+    HASH_FUNC(struct editdata, cap_od);
+    HASH_FUNC(struct editdata, makezip);
+    HASH_FUNC(struct editdata, cv_mapset);
+    HASH_FUNC(struct editdata, speed);
+    HASH_FUNC(struct editdata, base_bpm);
+    HASH_FUNC(struct editdata, bpmmode);
+    HASH_FUNC(struct editdata, pitch);
+    HASH_FUNC(struct editdata, nospinner);
+    HASH_FUNC(struct editdata, remove_sv);
+    HASH_FUNC(struct editdata, flip);
+    HASH_FUNC(struct editdata, cut_combo);
+    HASH_FUNC(struct editdata, cut_start);
+    HASH_FUNC(struct editdata, cut_end);
+
+    return hash;
+}
+
+static unsigned int hash_audiocfg(const struct audiospeed_config *cfg)
+{
+    HASH_INIT(cfg);
+
+    HASH_FUNC(struct audiospeed_config, speed);
+    HASH_FUNC(struct audiospeed_config, pitch);
+    HASH_FUNC(struct audiospeed_config, emuldt);
+
+    return hash;
+}
+
 int edit_beatmap(struct editdata *edit)
 {
     if (edit->speed <= 0)
@@ -1499,16 +1542,15 @@ int edit_beatmap(struct editdata *edit)
     {
         printerr("Failed allocating!");
         buffers_free(&bufs);
+        free(ep.editline);
         return -99;
     }
 
-    bool name_conflict = true;
-    char prefix[8] = {0};
-
-    long mapnlen = strlen(edit->mi->fullpath) + 1 + 7 + 1;
+    long mapnlen = strlen(edit->mi->fullpath) + 1 + 8 + 1;
     long audnlen = 0;
     char *fcmappath = (char*) malloc(mapnlen);
     char *fcaudpath = NULL;
+    char *zipf = NULL;
     if (aname)
     {
         if (edit->speed != 1.0)
@@ -1529,18 +1571,30 @@ int edit_beatmap(struct editdata *edit)
         goto tryfree;
     }
 
-    snprintf(fcmappath, mapnlen, "%s" STR_PATHSEP "xxxxxxx_%s", folderpath, fname);
-    if (fcaudpath) snprintf(fcaudpath, audnlen, "%s" STR_PATHSEP "xxxxxxx_%s", folderpath, aname);
-
-    randominit();
-
-    while (name_conflict == true)
+    if (edit->makezip)
     {
-        randomstr(prefix, 7);
-        memcpy(fcmappath + folderlen, prefix, 7);
-        if (fcaudpath) memcpy(fcaudpath + folderlen, prefix, 7);
-        if (_access(fcmappath, F_OK) != 0 && (fcaudpath == NULL || _access(fcaudpath, F_OK) != 0))
-            name_conflict = false;
+        long zipflen = folderlen + sizeof(".osz") - 1;
+        zipf = (char*) malloc(zipflen);
+
+        if (zipf == NULL)
+        {
+            printerr("Failed allocating memory");
+            ret = -99;
+            goto tryfree;
+        }
+
+        snprintf(zipf, zipflen, "%s.osz", folderpath);
+    }
+
+    struct audiospeed_config cfg = { edit->mi->audioname, edit->speed, edit->pitch, ep.emuldt };
+
+    unsigned int hashed = hash_editdata(edit);
+    snprintf(fcmappath, mapnlen, "%s" STR_PATHSEP "%08x_%s", folderpath, hashed, fname);
+
+    if (fcaudpath)
+    {
+        unsigned int audhashed = hash_audiocfg(&cfg);
+        snprintf(fcaudpath, audnlen, "%s" STR_PATHSEP "%08x_%s", folderpath, audhashed, aname);
     }
 
     bufs.mapname = (char*) malloc(strlen(fcmappath + folderlen) + 1);
@@ -1563,12 +1617,21 @@ int edit_beatmap(struct editdata *edit)
         }
         strcpy(bufs.audname, fcaudpath + folderlen);
 
-        ret = change_audio_speed(edit->mi->audioname, &bufs, edit->speed, edit->pitch, ep.emuldt, edit->data, edit->progress_callback);
+        if (access(fcaudpath, F_OK) == 0 || (edit->makezip && check_zip_file(zipf, bufs.audname) > 0))
+        {
+            printerr("A compatible audio file already exists! skipping audio conversion");
+            free(fcaudpath);
+            fcaudpath = NULL;
+        }
+        else
+        {
+            ret = change_audio_speed(cfg, &bufs, edit->data, edit->progress_callback);
         if (ret != 0)
         {
             printerr("Failed converting audio!");
             ret = -80;
             goto tryfree;
+            }
         }
     }
 
@@ -1643,15 +1706,10 @@ int edit_beatmap(struct editdata *edit)
 
     if (edit->makezip)
     {
-        long zipflen = folderlen + sizeof(".osz") - 1;
-        char *zipf = (char*) malloc(zipflen);
-        snprintf(zipf, zipflen, "%s.osz", folderpath);
         ret = create_actual_zip(zipf, &bufs);
 
         if (ret == 0)
             ret = execute_file(zipf);
-
-        free(zipf);
     }
     else
     {
@@ -1663,7 +1721,7 @@ int edit_beatmap(struct editdata *edit)
         }
         else
         {
-            if (fcaudpath)
+            if (fcaudpath && bufs.audlast > 0)
             {
                 FILE *audfd = fopen(fcaudpath, "wb");
                 if (audfd == NULL || fwrite(bufs.audbuf, 1, bufs.audlast, audfd) < bufs.audlast)
@@ -1678,9 +1736,10 @@ int edit_beatmap(struct editdata *edit)
     }
 
 tryfree:
+    free(zipf);
     free(folderpath);
     free(fcmappath);
-    if (fcaudpath) free(fcaudpath);
+    free(fcaudpath);
     free(ep.editline);
     free(ep.hitobjects);
     free(ep.timingpoints);

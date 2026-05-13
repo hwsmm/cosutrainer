@@ -1,4 +1,5 @@
 #include <minizip/zip.h>
+#include <minizip/unzip.h>
 #include <time.h>
 #include "actualzip.h"
 #include "tools.h"
@@ -45,7 +46,7 @@ int create_actual_zip(char *zipfile, struct buffers *bufs)
 
     char *cvname;
 
-    if (bufs->audname)
+    if (bufs->audname && bufs->audlast > 0)
     {
         zip_fileinfo audf = mapf;
         char *cvname = convert_to_cp932(bufs->audname);
@@ -96,6 +97,25 @@ zipc:
     {
         printerr("Error closing a zip file");
         return 2;
+    }
+
+    return ret;
+}
+
+int check_zip_file(char* zipfile, char *file)
+{
+    int ret = 0;
+
+    unzFile zf = unzOpen(zipfile);
+    if (zf != NULL)
+    {
+        char *cvname = convert_to_cp932(file);
+
+        if (unzLocateFile(zf, cvname, 1) == UNZ_OK)
+            ret = 1;
+
+        free(cvname);
+        unzClose(zf);
     }
 
     return ret;

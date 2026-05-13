@@ -5,32 +5,12 @@
 
 #ifdef WIN32
 #include <windows.h>
-#define gtime() GetTickCount()
 #ifndef strncasecmp
 #define strncasecmp(x,y,z) _strnicmp(x,y,z)
 #endif
 #else
-#include <time.h>
-#define gtime() time(NULL)
 #include <strings.h>
 #endif
-
-void randominit()
-{
-    srand(gtime());
-}
-
-// generate random string with alphabets and save it to 'string'
-void randomstr(char *string, int size)
-{
-    int i;
-    for (i = 0; i < size; i++)
-    {
-        int randomnum = rand() % 26;
-        randomnum += 97;
-        *(string + i) = randomnum;
-    }
-}
 
 void remove_newline(char* line)
 {
