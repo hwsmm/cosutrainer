@@ -24,9 +24,9 @@ It's very destructive and experimental, so don't use unless you desperately need
 - Generates an osz file for easier import
 - An user-defined osz handler can be set for seamless integration with osu!
 - Custom difficulty name format
-- Switch main BPM and max BPM (Ctrl+B)
+- Switch main BPM and max BPM (Ctrl+B or `COSU_BPM_MODE=<main or max>`)
 - Generates a full RC difficulty for rice enjoyers
-- Convert an entire beatmap pack at once
+- Convert an entire beatmap set at once
 
 ### Linux requirements
 - osu! must run on WINE with dotnet 4.5+ for proper memory scanning
@@ -99,7 +99,7 @@ Please let me know if it works well or not!
 ### Custom difficulty name format
 You can edit the difficulty name format by opening the dialog with Ctrl+F, or by setting `COSU_CUSTOM_DIFF_FORMAT` environment variable.
 
-Default format is `"@diffname@ @rate@ @(bpm)@ @emuldt@ @cs@ @ar@ @od@ @hp@ @cut@ @flip@ @nosv@"`.
+Default format is `"@diffname@ @rate@ @bpm@ @emuldt@ @cs@ @ar@ @od@ @hp@ @cut@ @flip@ @nosv@"`.
 `@cs@`/`@ar@`/`@od@`/`@hp@`/`@bpm@` are suppressed if the values don't change. Use uppercase ones (such as `@CS@`/`@AR@`/`@BPM@`) to force display regardless of status.
 Use `@(bpm)@` or `@(BPM)@` to wrap the BPM value in parentheses, e.g. `(200bpm)`.
 
