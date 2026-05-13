@@ -48,7 +48,7 @@ struct mapinfo
 struct editdata // data needed to edit a map
 {
     const struct mapinfo *mi;
-    double hp, cs, ar, od;
+    float hp, cs, ar, od;
     bool scale_ar, scale_od;
     bool cap_ar, cap_od;
     bool makezip;
@@ -125,8 +125,8 @@ extern "C"
 {
 #endif
 
-double scale_ar(double ar, double speed, int mode);
-double scale_od(double od, double speed, int mode);
+float scale_ar(float ar, double speed, int mode);
+float scale_od(float od, double speed, int mode);
 struct mapinfo *read_beatmap(char *mapfile);
 void free_mapinfo(struct mapinfo *info);
 int edit_beatmap(struct editdata *edit);

@@ -94,7 +94,7 @@ if (_snpedit(ep, &ecur, fmt, ##__VA_ARGS__) != 0) return -1;
 
 #define find_null(str) (str + strlen(str) + 1)
 
-double scale_ar(double ar, double speed, int mode)
+float scale_ar(float ar, double speed, int mode)
 {
     if (mode == 1 || mode == 3 || speed == 1.0) return ar;
 
@@ -104,8 +104,7 @@ double scale_ar(double ar, double speed, int mode)
     return round(ms * 10.0) / 10.0;
 }
 
-// fix mania od
-double scale_od(double od, double speed, int mode)
+float scale_od(float od, double speed, int mode)
 {
     if (speed == 1.0) return od;
 
@@ -1122,27 +1121,27 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
             ret = -20;
             ep->arexists = true;
             edited = true;
-            snpedit("ApproachRate:%.1lf\r\n", ep->ed->ar);
+            snpedit("ApproachRate:%.1f\r\n", ep->ed->ar);
         }
         else if (CMPSTR(line, "HPDrainRate:"))
         {
             edited = true;
-            snpedit("HPDrainRate:%.1lf\r\n", ep->ed->hp);
+            snpedit("HPDrainRate:%.1f\r\n", ep->ed->hp);
         }
         else if (CMPSTR(line, "CircleSize:"))
         {
             edited = true;
-            snpedit("CircleSize:%.1lf\r\n", ep->ed->cs);
+            snpedit("CircleSize:%.1f\r\n", ep->ed->cs);
         }
         else if (CMPSTR(line, "OverallDifficulty:"))
         {
             edited = true;
-            snpedit("OverallDifficulty:%.1lf\r\n", ep->ed->od);
+            snpedit("OverallDifficulty:%.1f\r\n", ep->ed->od);
         }
         else if (CMPSTR(line, "ApproachRate:"))
         {
             edited = true;
-            snpedit("ApproachRate:%.1lf\r\n", ep->ed->ar);
+            snpedit("ApproachRate:%.1f\r\n", ep->ed->ar);
         }
     }
     else if (!prior_read && sect == metadata)
