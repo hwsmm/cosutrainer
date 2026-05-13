@@ -600,8 +600,7 @@ audskip:
         }
         else if (bres < 0)
         {
-            printerr("Failed checking path of BG file, make sure that it exists (not fatal)");
-            mi->bgname = NULL;
+            fprintf(stderr, "Failed checking path of BG file, make sure that it exists (not fatal): %s\n", temp);
             free(temp);
         }
     }
