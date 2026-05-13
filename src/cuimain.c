@@ -80,6 +80,7 @@ int cuimain(int argc, char *argv[])
     {
         return 1;
     }
+
     struct editdata edit;
 
     edit.mi = mi;
@@ -95,7 +96,8 @@ int cuimain(int argc, char *argv[])
     char *identifier = NULL;
     edit.speed = strtod(argv[argstart++], &identifier);
     edit.bpmmode = guess;
-    edit.bpmrefmode = max_bpm_mode;
+    edit.base_bpm = GET_DEFAULT_BPM_MODE() == max_bpm_mode ? mi->maxbpm : read_main_bpm(mi);
+
     if (identifier != NULL)
     {
         if (*identifier == 'x')
@@ -110,7 +112,6 @@ int cuimain(int argc, char *argv[])
 
     edit.pitch = false;
     edit.flip = none;
-    bool fullpack = false;
     edit.nospinner = false;
 
     edit.cut_combo = false;
@@ -118,12 +119,14 @@ int cuimain(int argc, char *argv[])
     edit.cut_end = LONG_MAX;
     edit.remove_sv = false;
 
+    unsigned char cv_mapset = 0;
+
     if (argstart < argc)
     {
         int i;
         for (i = argstart; i < argc; i++)
         {
-            double *diffv = NULL;
+            float *diffv = NULL;
             char *curarg = argv[i];
             switch (*curarg)
             {
@@ -147,15 +150,19 @@ int cuimain(int argc, char *argv[])
                 continue;
             case 'h':
                 diffv = &(edit.hp);
+                cv_mapset |= 1<<1;
                 break;
             case 'c':
                 diffv = &(edit.cs);
-                break;
-            case 'o':
-                diffv = &(edit.od);
+                cv_mapset |= 1<<2;
                 break;
             case 'a':
                 diffv = &(edit.ar);
+                cv_mapset |= 1<<3;
+                break;
+            case 'o':
+                diffv = &(edit.od);
+                cv_mapset |= 1<<4;
                 break;
             case 's':
                 edit.nospinner = true;
@@ -164,7 +171,7 @@ int cuimain(int argc, char *argv[])
                 edit.remove_sv = true;
                 continue;
             case 'f':
-                fullpack = true;
+                cv_mapset |= 1;
                 continue;
             default:
                 break;
@@ -282,10 +289,16 @@ int cuimain(int argc, char *argv[])
     float progv = 0.0f;
     edit.data = &progv;
     edit.progress_callback = showprog;
-    if (fullpack)
+    if (cv_mapset & 1)
+    {
+        edit.cv_mapset = cv_mapset;
         ret = edit_beatmap_pack(&edit);
+    }
     else
+    {
+        edit.cv_mapset = 0;
         ret = edit_beatmap(&edit);
+    }
 
     if (ret == 0)
         fprintf(stderr, "\r100%%\n");

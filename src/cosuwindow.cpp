@@ -27,6 +27,8 @@ CosuWindow::CosuWindow()
 
     info = NULL;
     first = true;
+    queue_reset = false;
+    bpm_mode = GET_DEFAULT_BPM_MODE();
 }
 
 CosuWindow::~CosuWindow()
@@ -39,7 +41,7 @@ double CosuWindow::get_selected_bpm()
     if (info == NULL)
         return 1;
 
-    return cosuui.maxbpm->value() >= 1 ? info->maxbpm : info->mainbpm;
+    return bpm_mode == max_bpm_mode ? info->maxbpm : main_bpm;
 }
 
 double CosuWindow::get_relative_speed()
@@ -65,9 +67,6 @@ void CosuWindow::update_rate_bpm()
 char arstr[] = "Scale AR to xx.x";
 char odstr[] = "Scale OD to xx.x";
 const int offset = 12;
-
-static const char *get_custom_diff_format();
-static bool set_custom_diff_format(const char *format);
 
 void CosuWindow::update_ar_label()
 {
@@ -138,53 +137,6 @@ void CosuWindow::bpmradio_callb(Fl_Widget *w, void *data)
     }
 }
 
-void CosuWindow::bpmmoderadio_callb(Fl_Widget *w, void *data)
-{
-    CosuWindow *win = (CosuWindow*) data;
-    Fl_Round_Button *btn = (Fl_Round_Button*) w;
-    if (btn->value() <= 0)
-        return;
-
-    if (btn == win->cosuui.mainbpm)
-        win->cosuui.maxbpm->clear();
-    else
-        win->cosuui.mainbpm->clear();
-
-    if (win->cosuui.bpm->value() >= 1)
-    {
-        if (win->info != NULL && win->cosuui.lock->value() <= 0)
-            win->cosuui.speedval->value(win->get_selected_bpm());
-    }
-    else
-    {
-        win->update_rate_bpm();
-    }
-
-    win->update_ar_label();
-    win->update_od_label();
-}
-
-void CosuWindow::toggle_bpm()
-{
-    if (cosuui.mainbpm->value() >= 1)
-        cosuui.maxbpm->set();
-    else
-        cosuui.mainbpm->set();
-}
-
-int CosuWindow::get_bpm_mode()
-{
-    return cosuui.maxbpm->value() >= 1 ? 1 : 0;
-}
-
-void CosuWindow::set_bpm_mode(int mode)
-{
-    if (mode == 1)
-        cosuui.maxbpm->set();
-    else
-        cosuui.mainbpm->set();
-}
-
 void CosuWindow::speedval_callb(Fl_Widget *w, void *data)
 {
     CosuWindow *win = (CosuWindow*) data;
@@ -209,10 +161,8 @@ void CosuWindow::resetbtn_callb(Fl_Widget *w, void *data)
     win->cosuui.scale_od->set();
     win->cosuui.pitch->clear();
     win->cosuui.nospinner->clear();
-    win->cosuui.mainbpm->set();
-    win->cosuui.maxbpm->clear();
     win->cosuui.flipbox->value(0);
-    win->cosuui.fullpack->clear();
+    win->cosuui.cv_mapset->clear();
     win->cosuui.cutstart->value("");
     win->cosuui.cutend->value("");
     win->queue_reset = true;
@@ -223,7 +173,7 @@ void CosuWindow::update_progress(void *data, float progress)
 {
     CosuWindow *win = (CosuWindow*) data;
     float current = win->cosuui.progress->value();
-    if (progress > 0 && progress - current > 0.005)
+    if (progress > 0 && fabsf(progress - current) > 0.005)
     {
         win->cosuui.progress->value(progress);
         Fl::check();
@@ -315,8 +265,8 @@ void CosuWindow::convbtn_callb(Fl_Widget *w, void *data)
     edit.makezip = true;
 
     edit.speed = win->cosuui.speedval->value();
+    edit.base_bpm = win->get_selected_bpm();
     edit.bpmmode = win->cosuui.bpm->value() >= 1 ? bpm : rate;
-    edit.bpmrefmode = win->cosuui.maxbpm->value() >= 1 ? max_bpm_mode : main_bpm_mode;
     edit.pitch = win->cosuui.pitch->value() >= 1;
 
     if (edit.mi->mode != 3)
@@ -354,14 +304,33 @@ void CosuWindow::convbtn_callb(Fl_Widget *w, void *data)
 
     edit.data = data;
     edit.progress_callback = update_progress;
+    edit.cv_mapset = 0;
 
     int ret;
-    if (win->cosuui.fullpack->value() >= 1)
-        ret = edit_beatmap_pack(&edit);
-    else
-        ret = edit_beatmap(&edit);
+    if (win->cosuui.cv_mapset->value() >= 1)
+    {
+        edit.cv_mapset |= 1;
 
-    if (ret != 0 && ret != -1/**/)
+        if (win->cosuui.hplock->value() >= 1)
+            edit.cv_mapset |= 1<<1;
+
+        if (win->cosuui.cslock->value() >= 1)
+            edit.cv_mapset |= 1<<2;
+
+        if (win->cosuui.arlock->value() >= 1)
+            edit.cv_mapset |= 1<<3;
+
+        if (win->cosuui.odlock->value() >= 1)
+            edit.cv_mapset |= 1<<4;
+
+        ret = edit_beatmap_pack(&edit);
+    }
+    else
+    {
+        ret = edit_beatmap(&edit);
+    }
+
+    if (ret != 0)
     {
         fl_alert("Editing a beatmap failed: %d\nCheck console for details.", ret);
     }
@@ -476,100 +445,107 @@ static void set_cosu_icon(Fl_Window *fwin)
 
 #endif
 
-static char envstr[32767];
-static Fl_Input *customfmt_widget = NULL;
-static CosuWindow *bpm_win = NULL;
-
-static const char *get_custom_diff_format()
+static enum BPM_MODE show_bpm_mode_dialog(enum BPM_MODE current_mode)
 {
-    const char *customfmt = getenv(CUSTOM_DIFF_VAR);
-    return customfmt != NULL ? customfmt : DEFAULT_FMT;
-}
+    enum BPM_MODE result = current_mode;
 
-static bool set_custom_diff_format(const char *format)
-{
-    if (format == NULL)
-        return false;
+    Fl_Window dlg(280, 115, "Select BPM Mode");
+    dlg.set_modal();
 
-    snprintf(envstr, sizeof(envstr), CUSTOM_DIFF_VAR "=%s", format);
+    Fl_Round_Button main_btn(20, 15, 240, 25, "Main BPM");
+    Fl_Round_Button max_btn(20, 45, 240, 25, "Max BPM");
+    Fl_Button ok(200, 80, 60, 25, "OK");
 
-    if (putenv(envstr) != 0)
-    {
-        perror("putenv");
-        return false;
-    }
-
-    fprintf(stderr, "New difficulty format is %s\n", getenv(CUSTOM_DIFF_VAR));
-    return true;
-}
-
-static int show_bpm_mode_dialog(int current_mode)
-{
-    int result = current_mode;
-
-    Fl_Window *dlg = new Fl_Window(280, 115, "Select BPM Mode");
-    dlg->set_modal();
-
-    Fl_Round_Button *main_btn = new Fl_Round_Button(20, 15, 240, 25, "Main BPM");
-    Fl_Round_Button *max_btn = new Fl_Round_Button(20, 45, 240, 25, "Max BPM");
-    Fl_Button *ok = new Fl_Button(200, 80, 60, 25, "OK");
-
-    if (current_mode == 0)
-        main_btn->set();
+    if (current_mode == main_bpm_mode)
+        main_btn.set();
     else
-        max_btn->set();
+        max_btn.set();
 
-    main_btn->callback([](Fl_Widget *, void *d) {
+    main_btn.callback([](Fl_Widget *, void *d) {
         ((Fl_Round_Button*)d)->clear();
-    }, max_btn);
-    max_btn->callback([](Fl_Widget *, void *d) {
+    }, &max_btn);
+    max_btn.callback([](Fl_Widget *, void *d) {
         ((Fl_Round_Button*)d)->clear();
-    }, main_btn);
+    }, &main_btn);
 
-    ok->callback([](Fl_Widget *w, void *) {
+    ok.callback([](Fl_Widget *w, void *) {
         w->window()->hide();
     });
 
-    dlg->show();
-    while (dlg->shown())
+    ok.take_focus();
+
+    dlg.show();
+    while (dlg.shown())
         Fl::wait();
 
-    result = max_btn->value() >= 1 ? 1 : 0;
-    delete dlg;
+    result = max_btn.value() >= 1 ? max_bpm_mode : main_bpm_mode;
     return result;
 }
 
-static int handle_fltk_ev(int event)
+static char envstr[32767];
+static CosuWindow *bpm_win = NULL;
+
+int CosuWindow::handle_fltk_ev(int event)
 {
     if (event == FL_SHORTCUT)
     {
-        if (Fl::event_state(FL_CTRL) && Fl::event_key('f'))
+        if (Fl::event_state(FL_CTRL))
         {
-            const char msg[] = "Define your custom difficulty name format:";
+            if (Fl::event_key('f'))
+            {
+                const char *customfmt = getenv(CUSTOM_DIFF_VAR);
+                const char *defaultfmt = DEFAULT_FMT;
+                const char *usefmt = customfmt != NULL ? customfmt : defaultfmt;
+                const char msg[] = "Define your custom difficulty name format:";
 
-            const char *got = fl_input(msg, get_custom_diff_format());
-            if (got == NULL)
+                const char *got = fl_input(msg, usefmt);
+                if (got == NULL)
+                    return 1;
+
+                snprintf(envstr, sizeof(envstr), CUSTOM_DIFF_VAR "=%s", got);
+
+                if (putenv(envstr) != 0)
+                {
+                    perror("putenv");
+                    fl_alert("Failed setting an environment variable.\nCheck console for details.");
+                }
+                else
+                {
+                    fprintf(stderr, "New difficulty format is %s\n", getenv(CUSTOM_DIFF_VAR));
+                }
+
                 return 1;
+            }
+            else if (Fl::event_key('b') && bpm_win != NULL)
+            {
+                CosuWindow *win = bpm_win;
+                bpm_win = NULL; // prevent multiple windows from being shown
+                win->bpm_mode = show_bpm_mode_dialog(win->bpm_mode);
 
-            if (!set_custom_diff_format(got))
-            {
-                fl_alert("Failed setting an environment variable.\nCheck console for details.");
-            }
-            else if (customfmt_widget != NULL)
-            {
-                customfmt_widget->value(got);
-            }
+                if (win->bpm_mode == main_bpm_mode)
+                {
+                    if (win->main_bpm <= 0)
+                        win->main_bpm = read_main_bpm(win->info);
+                }
+                else
+                {
+                    win->main_bpm = 0;
+                }
 
-            return 1;
-        }
-        if (Fl::event_state(FL_CTRL) && Fl::event_key('b'))
-        {
-            if (bpm_win != NULL)
-            {
-                int mode = show_bpm_mode_dialog(bpm_win->get_bpm_mode());
-                bpm_win->set_bpm_mode(mode);
+                if (win->cosuui.rate->value() >= 1)
+                {
+                    win->update_rate_bpm();
+                }
+                else
+                {
+                    win->update_ar_label();
+                    win->update_od_label();
+                }
+
+                bpm_win = win;
+
+                return 1;
             }
-            return 1;
         }
     }
 
@@ -591,8 +567,6 @@ void CosuWindow::start()
 
     cosuui.rate->callback(rateradio_callb, (void*) this);
     cosuui.bpm->callback(bpmradio_callb, (void*) this);
-    cosuui.mainbpm->callback(bpmmoderadio_callb, (void*) this);
-    cosuui.maxbpm->callback(bpmmoderadio_callb, (void*) this);
     cosuui.reset->callback(resetbtn_callb, (void*) this);
     cosuui.convert->callback(convbtn_callb, (void*) this);
     cosuui.speedval->callback(speedval_callb, (void*) this);
@@ -612,6 +586,11 @@ void CosuWindow::start()
     cosuui.cutend->tooltip(cut_tooltip);
     cosuui.mainbox->deactivate();
 
+    const char cv_mapset_tooltip[] = "By default, converting an entire mapset makes converted maps retain their original difficulty values.\n"
+                                     "You need to tick the lock checkboxes below the difficulty sliders to apply values to all converted maps.";
+
+    cosuui.cv_mapset->tooltip(cv_mapset_tooltip);
+
     Fl::lock();
 
     window->show();
@@ -630,6 +609,11 @@ void CosuWindow::start()
             {
                 info = newinfo;
                 free_mapinfo(oldinfo);
+
+                if (bpm_mode == main_bpm_mode)
+                    main_bpm = read_main_bpm(info);
+                else
+                    main_bpm = 0;
 
                 cosuui.infobox->image((Fl_Image*)info->extra);
                 delete img;
@@ -750,7 +734,6 @@ void CosuWindow::start()
         cosuui.infobox->redraw();
     }
     Fl::remove_handler(handle_fltk_ev);
-    customfmt_widget = NULL;
     if (img != NULL) delete img;
 #ifndef WIN32
     if (icon != NULL) delete icon;

@@ -15,23 +15,22 @@ private:
     struct mapinfo *info;
     bool first;
     bool queue_reset;
+    enum BPM_MODE bpm_mode;
+    double main_bpm;
 
     void update_ar_label();
     void update_od_label();
     static void update_progress(void *data, float progress);
     static void bpmradio_callb(Fl_Widget *w, void *data);
-    static void bpmmoderadio_callb(Fl_Widget *w, void *data);
     static void rateradio_callb(Fl_Widget *w, void *data);
     static void resetbtn_callb(Fl_Widget *w, void *data);
     static void convbtn_callb(Fl_Widget *w, void *data);
     static void diffch_callb(Fl_Widget *w, void *data);
     static void speedval_callb(Fl_Widget *w, void *data);
+    static int handle_fltk_ev(int event);
 public:
     CosuWindow();
     ~CosuWindow();
     void start();
-    void toggle_bpm();
-    int get_bpm_mode();
-    void set_bpm_mode(int mode);
     void update_progress(float progress);
 };
