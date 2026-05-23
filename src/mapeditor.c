@@ -674,7 +674,6 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
     bool edited = false;
     unsigned int ecur = 0;
     double speed = ep->ed->speed;
-    double basebpm = ep->ed->base_bpm;
     bool prior_read = ep->prior_read && !ep->done_saving;
 
     if (!prior_read && sect == root)
@@ -1134,6 +1133,7 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
             }
 
             putsstr("Version:");
+            double disprate = ep->emuldt == 0 ? speed : ep->emuldt;
 
 #define _CMPSTR(a, b) (CMPSTR(a, b) && (i += sizeof(b) - 1))
             for (int i = 0; i < fmtlen;)
@@ -1147,23 +1147,18 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
                 }
                 else if (_CMPSTR(cur, "@rate@") || _CMPSTR(cur, "@RATE@"))
                 {
-                    double disprate = ep->emuldt == 0 ? speed : ep->emuldt;
-                    if (fabs(disprate - 1.0) >= 1e-3 || CMPSTR(cur, "@RATE@"))
+                    if (disprate != 1.0 || CMPSTR(cur, "@RATE@"))
                         snpedit("%.2lfx", disprate);
                 }
                 else if (_CMPSTR(cur, "@bpm@") || _CMPSTR(cur, "@BPM@"))
                 {
-                    double disprate = ep->emuldt == 0 ? speed : ep->emuldt;
-                    double dispbpm = basebpm * disprate;
-                    if (fabs(dispbpm - basebpm) >= 1e-3 || CMPSTR(cur, "@BPM@"))
-                        snpedit("%.0lfbpm", dispbpm);
+                    if (disprate != 1.0 || CMPSTR(cur, "@BPM@"))
+                        snpedit("%.0lfbpm", ep->ed->base_bpm * disprate);
                 }
                 else if (_CMPSTR(cur, "@(bpm)@") || _CMPSTR(cur, "@(BPM)@"))
                 {
-                    double disprate = ep->emuldt == 0 ? speed : ep->emuldt;
-                    double dispbpm = basebpm * disprate;
-                    if (fabs(dispbpm - basebpm) >= 1e-3 || CMPSTR(cur, "@(BPM)@"))
-                        snpedit("(%.0lfbpm)", dispbpm);
+                    if (disprate != 1.0 || CMPSTR(cur, "@(BPM)@"))
+                        snpedit("(%.0lfbpm)", ep->ed->base_bpm * disprate);
                 }
                 else if (_CMPSTR(cur, "@emuldt@"))
                 {
