@@ -119,7 +119,7 @@ struct editpass // temporary data that's only needed in editing (only passed wit
     float orig_ar, orig_od;
 };
 
-#define DEFAULT_FMT "@diffname@ @rate@ @bpm@ @emuldt@ @cs@ @ar@ @od@ @hp@ @cut@ @flip@ @nosv@"
+#define DEFAULT_FMT "@diffname@ @RATE@ @BPM@ @emuldt@ @cs@ @ar@ @od@ @hp@ @cut@ @flip@ @nosv@"
 
 #define CUSTOM_DIFF_VAR "COSU_CUSTOM_DIFF_FORMAT"
 
