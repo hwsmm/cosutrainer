@@ -262,6 +262,7 @@ void CosuWindow::convbtn_callb(Fl_Widget *w, void *data)
     edit.od = win->cosuui.odslider->value();
     edit.scale_ar = win->cosuui.scale_ar->value() >= 1;
     edit.scale_od = win->cosuui.scale_od->value() >= 1;
+    edit.cap_ar = edit.cap_od = false;
     edit.makezip = true;
 
     edit.speed = win->cosuui.speedval->value();

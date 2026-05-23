@@ -1437,29 +1437,21 @@ int edit_beatmap(struct editdata *edit)
 
     if (edit->scale_ar)
     {
-        double origar = edit->ar;
-        double tempar = scale_ar(origar, edit->speed, edit->mi->mode);
+        float origar = edit->ar;
+        edit->ar = scale_ar(origar, edit->speed, edit->mi->mode);
         if (edit->cap_ar)
         {
-            edit->ar = tempar > origar ? origar : tempar;
-        }
-        else
-        {
-            edit->ar = tempar;
+            edit->ar = edit->ar > origar ? origar : edit->ar;
         }
     }
 
     if (edit->scale_od)
     {
-        double origod = edit->od;
-        double tempod = scale_od(origod, edit->speed, edit->mi->mode);
+        float origod = edit->od;
+        edit->od = scale_od(origod, edit->speed, edit->mi->mode);
         if (edit->cap_od)
         {
-            edit->od = tempod > origod ? origod : tempod;
-        }
-        else
-        {
-            edit->od = tempod;
+            edit->od = edit->od > origod ? origod : edit->od;
         }
     }
 
