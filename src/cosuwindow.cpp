@@ -541,6 +541,9 @@ int CosuWindow::handle_fltk_ev(int event)
                 {
                     win->update_ar_label();
                     win->update_od_label();
+
+                    if (win->cosuui.lock->value() <= 0)
+                        win->cosuui.speedval->value(win->get_selected_bpm());
                 }
 
                 bpm_win = win;
