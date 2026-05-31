@@ -1,6 +1,7 @@
 #include <minizip/zip.h>
 #include <minizip/unzip.h>
 #include <time.h>
+#include <stdlib.h>
 #include "actualzip.h"
 #include "tools.h"
 #include "cosuplatform.h"
