@@ -885,9 +885,12 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
                         int c2 = (int)(ep->hitobjects[i].x * ep->ed->mi->cs / 512.0);
                         if (c1 == c2 && (ep->hitobjects[i].type & (1<<7 | 1)) && ep->hitobjects[i].time > time)
                         {
-                            long fourth = (long)(ep->timingpoints[ep->hitobjects[i].timing_idx].beatlength / 4.0);
-                            long end_time = ep->hitobjects[i].time - fourth;
-                            if (end_time - time >= fourth)
+                            int gap = ep->ed->inv_value;
+                            if (ep->ed->inv_divisor != 0)
+                                gap = (int)(ep->timingpoints[ep->hitobjects[i].timing_idx].beatlength * ep->ed->inv_value / ep->ed->inv_divisor);
+
+                            long end_time = ep->hitobjects[i].time - gap;
+                            if (end_time - time >= gap)
                             {
                                 char *hitsoundstr = nexttkn();
                                 char *afnul = find_null(hitsoundstr);
@@ -1246,7 +1249,14 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
                         putsstr("TRANSPOSE");
                         break;
                     case invert:
-                        putsstr("INVERT");
+                        if (ep->ed->inv_divisor == 0)
+                        {
+                            snpedit("INVERT(%dms)", ep->ed->inv_value);
+                        }
+                        else
+                        {
+                            snpedit("INVERT(%d/%d)", ep->ed->inv_value, ep->ed->inv_divisor);
+                        }
                         break;
                     case fullrc:
                         putsstr("FULL RC");
@@ -1337,6 +1347,8 @@ static unsigned int hash_editdata(const struct editdata *edit)
     HASH_FUNC(struct editdata, cut_combo);
     HASH_FUNC(struct editdata, cut_start);
     HASH_FUNC(struct editdata, cut_end);
+    HASH_FUNC(struct editdata, inv_value);
+    HASH_FUNC(struct editdata, inv_divisor);
 
     return hash;
 }

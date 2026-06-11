@@ -20,6 +20,8 @@ private:
 
     void update_ar_label();
     void update_od_label();
+    void keep_sanity();
+
     static void update_progress(void *data, float progress);
     static void bpmradio_callb(Fl_Widget *w, void *data);
     static void rateradio_callb(Fl_Widget *w, void *data);
@@ -27,6 +29,7 @@ private:
     static void convbtn_callb(Fl_Widget *w, void *data);
     static void diffch_callb(Fl_Widget *w, void *data);
     static void speedval_callb(Fl_Widget *w, void *data);
+    static void flipbox_callb(Fl_Widget *w, void *data);
     static int handle_fltk_ev(int event);
 public:
     CosuWindow();

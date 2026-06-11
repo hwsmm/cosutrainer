@@ -70,6 +70,9 @@ struct editdata // data needed to edit a map
 
     update_progress_cb progress_callback;
     void *data;
+
+    int inv_value;
+    int inv_divisor;
 };
 
 struct timingpoint

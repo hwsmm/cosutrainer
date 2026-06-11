@@ -270,6 +270,9 @@ void CosuWindow::convbtn_callb(Fl_Widget *w, void *data)
     edit.bpmmode = win->cosuui.bpm->value() >= 1 ? bpm : rate;
     edit.pitch = win->cosuui.pitch->value() >= 1;
 
+    edit.inv_value = 1;
+    edit.inv_divisor = 4;
+
     if (edit.mi->mode != 3)
     {
         edit.nospinner = win->cosuui.nospinner->value() >= 1;
@@ -294,6 +297,15 @@ void CosuWindow::convbtn_callb(Fl_Widget *w, void *data)
         break;
     case 4:
         edit.flip = invert;
+        {
+            const char *temp = win->cosuui.optioninput->value();
+            if (*temp != '\0')
+            {
+                edit.inv_value = atoi(temp);
+                temp = strchr(temp, '/');
+                edit.inv_divisor = temp != NULL ? atoi(temp + 1) : 0;
+            }
+        }
         break;
     case 5:
         edit.flip = fullrc;
@@ -360,6 +372,16 @@ void CosuWindow::diffch_callb(Fl_Widget *w, void *data)
         win->update_od_label();
         break;
     }
+}
+
+void CosuWindow::flipbox_callb(Fl_Widget *w, void *data)
+{
+    CosuWindow *win = (CosuWindow*) data;
+
+    if (win->cosuui.flipbox->value() == 4)
+        win->cosuui.optioninput->show();
+    else
+        win->cosuui.optioninput->hide();
 }
 
 #pragma GCC diagnostic pop
@@ -556,6 +578,72 @@ int CosuWindow::handle_fltk_ev(int event)
     return 0;
 }
 
+void CosuWindow::keep_sanity()
+{
+    if (info->mode == 2)
+    {
+        (cosuui.odslider)->deactivate();
+        (cosuui.odinput)->deactivate();
+        (cosuui.odlock)->deactivate();
+
+        (cosuui.scale_od)->label("Scale OD");
+        (cosuui.scale_od)->deactivate();
+    }
+    else
+    {
+        (cosuui.odslider)->minimum(lod_table[info->mode]);
+        (cosuui.odinput)->minimum(lod_table[info->mode]);
+        (cosuui.odslider)->maximum(od_table[info->mode]);
+        (cosuui.odinput)->maximum(od_table[info->mode]);
+
+        (cosuui.odslider)->activate();
+        (cosuui.odinput)->activate();
+        (cosuui.odlock)->activate();
+        (cosuui.scale_od)->activate();
+    }
+
+    if (info->mode == 1 || info->mode == 3)
+    {
+        (cosuui.arslider)->deactivate();
+        (cosuui.arinput)->deactivate();
+        (cosuui.arlock)->deactivate();
+        (cosuui.csslider)->deactivate();
+        (cosuui.csinput)->deactivate();
+        (cosuui.cslock)->deactivate();
+
+        (cosuui.scale_ar)->label("Scale AR");
+        (cosuui.scale_ar)->deactivate();
+    }
+    else
+    {
+        (cosuui.arslider)->activate();
+        (cosuui.arinput)->activate();
+        (cosuui.arlock)->activate();
+        (cosuui.csslider)->activate();
+        (cosuui.csinput)->activate();
+        (cosuui.cslock)->activate();
+
+        (cosuui.scale_ar)->activate();
+    }
+
+    if (info->mode == 3)
+    {
+        (cosuui.invert)->activate();
+        (cosuui.fullrc)->activate();
+        (cosuui.nospinner)->label("No SV");
+    }
+    else
+    {
+        if ((cosuui.flipbox)->value() == 4 || (cosuui.flipbox)->value() == 5)
+            (cosuui.flipbox)->value(0);
+
+        (cosuui.invert)->deactivate();
+        (cosuui.fullrc)->deactivate();
+        (cosuui.nospinner)->label("No Spinner");
+        (cosuui.optioninput)->hide();
+    }
+}
+
 void CosuWindow::start()
 {
     bpm_win = this;
@@ -574,6 +662,7 @@ void CosuWindow::start()
     cosuui.reset->callback(resetbtn_callb, (void*) this);
     cosuui.convert->callback(convbtn_callb, (void*) this);
     cosuui.speedval->callback(speedval_callb, (void*) this);
+    cosuui.flipbox->callback(flipbox_callb, (void*) this);
 
     Fl_Widget *const *diffw = cosuui.diffgroup->array();
     for (int gi = cosuui.diffgroup->children() - 1; gi >= 0; gi--)
@@ -585,6 +674,7 @@ void CosuWindow::start()
                                "Blanking the first box makes the converted map start from 0, and blanking the second makes it end at the end of an original map.\n"
                                "Note that combo count works properly only on the standard mode.\n"
                                "Example: 2385 for combo count, and 1:30 or 0:30 for time";
+
     cosuui.cutlabel->tooltip(cut_tooltip);
     cosuui.cutstart->tooltip(cut_tooltip);
     cosuui.cutend->tooltip(cut_tooltip);
@@ -594,6 +684,13 @@ void CosuWindow::start()
                                      "You need to tick the lock checkboxes below the difficulty sliders to apply values to all converted maps.";
 
     cosuui.cv_mapset->tooltip(cv_mapset_tooltip);
+
+    const char optioninput_tooltip[] = "You can set gap time between long notes in 'Invert' transform.\n"
+                                       "Put 1/4 if you want it to be relative to BPM, or 5 if you want it to be 5ms.";
+
+    cosuui.optioninput->tooltip(optioninput_tooltip);
+    cosuui.optioninput->value("1/4");
+    cosuui.optioninput->hide();
 
     Fl::lock();
 
@@ -657,67 +754,7 @@ void CosuWindow::start()
             (cosuui.arinput)->value(info->ar);
         }
 
-        if (info->mode == 2)
-        {
-            (cosuui.odslider)->deactivate();
-            (cosuui.odinput)->deactivate();
-            (cosuui.odlock)->deactivate();
-
-            (cosuui.scale_od)->label("Scale OD");
-            (cosuui.scale_od)->deactivate();
-        }
-        else
-        {
-            (cosuui.odslider)->minimum(lod_table[info->mode]);
-            (cosuui.odinput)->minimum(lod_table[info->mode]);
-            (cosuui.odslider)->maximum(od_table[info->mode]);
-            (cosuui.odinput)->maximum(od_table[info->mode]);
-
-            (cosuui.odslider)->activate();
-            (cosuui.odinput)->activate();
-            (cosuui.odlock)->activate();
-            (cosuui.scale_od)->activate();
-        }
-
-        if (info->mode == 1 || info->mode == 3)
-        {
-            (cosuui.arslider)->deactivate();
-            (cosuui.arinput)->deactivate();
-            (cosuui.arlock)->deactivate();
-            (cosuui.csslider)->deactivate();
-            (cosuui.csinput)->deactivate();
-            (cosuui.cslock)->deactivate();
-
-            (cosuui.scale_ar)->label("Scale AR");
-            (cosuui.scale_ar)->deactivate();
-        }
-        else
-        {
-            (cosuui.arslider)->activate();
-            (cosuui.arinput)->activate();
-            (cosuui.arlock)->activate();
-            (cosuui.csslider)->activate();
-            (cosuui.csinput)->activate();
-            (cosuui.cslock)->activate();
-
-            (cosuui.scale_ar)->activate();
-        }
-
-        if (info->mode == 3)
-        {
-            (cosuui.invert)->activate();
-            (cosuui.fullrc)->activate();
-            (cosuui.nospinner)->label("No SV");
-        }
-        else
-        {
-            if ((cosuui.flipbox)->value() == 4 || (cosuui.flipbox)->value() == 5)
-                (cosuui.flipbox)->value(0);
-
-            (cosuui.invert)->deactivate();
-            (cosuui.fullrc)->deactivate();
-            (cosuui.nospinner)->label("No Spinner");
-        }
+        keep_sanity();
 
         cosuui.songtitlelabel->label(info->songname);
         cosuui.difflabel->label(info->diffname);

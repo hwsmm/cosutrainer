@@ -1,5 +1,5 @@
 # data file for the Fltk User Interface Designer (fluid)
-version 1.0311
+version 1.0404
 header_name {.h}
 code_name {.cpp}
 class CosuUI {open
@@ -7,11 +7,11 @@ class CosuUI {open
   Function {make_window()} {open
   } {
     Fl_Window window {
-      label {cosu-trainer} open
-      xywh {132 230 390 530} type Single align 80 size_range {390 530 390 530} visible
+      label {cosu-trainer} open selected
+      xywh {0 0 390 530} type Single align 80 hide size_range {390 530 390 530}
     } {
       Fl_Group mainbox {open
-        xywh {10 10 370 570}
+        xywh {10 10 370 510}
       } {
         Fl_Box infobox {
           xywh {10 10 370 130} align 64
@@ -46,31 +46,31 @@ class CosuUI {open
         }
         Fl_Check_Button scale_ar {
           label {Scale AR}
-          xywh {210 250 170 25} down_box DOWN_BOX value 1
+          xywh {210 248 170 22} down_box DOWN_BOX value 1
         }
         Fl_Check_Button scale_od {
-          label {Scale OD} selected
-          xywh {210 275 170 25} down_box DOWN_BOX value 1
+          label {Scale OD}
+          xywh {210 271 170 22} down_box DOWN_BOX value 1
         }
         Fl_Check_Button pitch {
           label {Adjust Pitch}
-          xywh {210 300 170 25} down_box DOWN_BOX
+          xywh {210 294 170 22} down_box DOWN_BOX
         }
         Fl_Check_Button nospinner {
           label {No Spinner}
-          xywh {210 325 170 25} down_box DOWN_BOX
+          xywh {210 317 170 22} down_box DOWN_BOX
         }
         Fl_Check_Button cv_mapset {
           label {Convert Mapset}
-          xywh {210 350 170 25} down_box DOWN_BOX
+          xywh {210 340 170 22} down_box DOWN_BOX
         }
         Fl_Round_Button rate {
           label Rate
-          xywh {210 388 85 25} down_box ROUND_DOWN_BOX value 1
+          xywh {210 391 85 25} down_box ROUND_DOWN_BOX value 1
         }
         Fl_Round_Button bpm {
           label BPM
-          xywh {295 388 85 25} down_box ROUND_DOWN_BOX
+          xywh {295 391 85 25} down_box ROUND_DOWN_BOX
         }
         Fl_Spinner speedval {
           xywh {210 416 80 25} type Float minimum 0.1 maximum 99999 step 0.01
@@ -153,6 +153,9 @@ class CosuUI {open
         Fl_Input cutend {
           label {~ }
           xywh {130 416 70 25}
+        }
+        Fl_Input optioninput {
+          xywh {210 365 170 22} align 16
         }
       }
       Fl_Progress progress {

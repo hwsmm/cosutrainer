@@ -119,6 +119,9 @@ int cuimain(int argc, char *argv[])
     edit.cut_end = LONG_MAX;
     edit.remove_sv = false;
 
+    edit.inv_value = 1;
+    edit.inv_divisor = 4;
+
     unsigned char cv_mapset = 0;
 
     if (argstart < argc)
@@ -144,6 +147,13 @@ int cuimain(int argc, char *argv[])
                 continue;
             case 'i':
                 edit.flip = invert;
+                char *temp = curarg + 1;
+                if (*temp != '\0')
+                {
+                    edit.inv_value = atoi(temp);
+                    temp = strchr(temp, '/');
+                    edit.inv_divisor = temp != NULL ? atoi(temp + 1) : 0;
+                }
                 continue;
             case 'r':
                 edit.flip = fullrc;
