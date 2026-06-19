@@ -30,7 +30,7 @@ bool match_pattern(struct sigscan_status *st, ptr_type *baseaddr)
     if (baseaddr != NULL && *baseaddr == PTR_NULL)
     {
         const uint8_t ptrn[] = OSU_BASE_SIG;
-        *baseaddr = find_pattern(st, ptrn, OSU_BASE_SIZE, NULL);
+        *baseaddr = find_pattern(st, ptrn, OSU_BASE_SIZE);
     }
     return (baseaddr == NULL || *baseaddr != PTR_NULL);
 }

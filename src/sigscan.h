@@ -87,7 +87,7 @@ void *start_regionit(struct sigscan_status *st);
 int next_regionit(void *regionit, struct vm_region *res);
 void stop_regionit(void *regionit);
 
-ptr_type find_pattern(struct sigscan_status *st, const uint8_t bytearray[], const unsigned int pattern_size, const bool mask[]);
+ptr_type find_pattern(struct sigscan_status *st, const uint8_t bytearray[], const unsigned int pattern_size);
 
 #ifdef __cplusplus
 }

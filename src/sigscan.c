@@ -1,7 +1,8 @@
 #include "sigscan.h"
 #include <stdlib.h>
+#include <string.h>
 
-ptr_type find_pattern(struct sigscan_status *st, const uint8_t bytearray[], const unsigned int pattern_size, const bool mask[])
+ptr_type find_pattern(struct sigscan_status *st, const uint8_t bytearray[], const unsigned int pattern_size)
 {
     ptr_type result = NULL;
     uint8_t *buffer = NULL;
@@ -44,17 +45,7 @@ ptr_type find_pattern(struct sigscan_status *st, const uint8_t bytearray[], cons
         unsigned long i;
         for (i = 0; i < rg.len - pattern_size + 1L; i++)
         {
-            unsigned int e;
-            bool match = true;
-            for (e = 0; e < pattern_size; e++)
-            {
-                if (*(buffer + i + e) != bytearray[e] && (mask == NULL || mask[e] != true))
-                {
-                    match = false;
-                    break;
-                }
-            }
-            if (match)
+            if (memcmp(buffer + i, bytearray, pattern_size) == 0)
             {
                 result = ptr_add(rg.start, i);
                 break;
