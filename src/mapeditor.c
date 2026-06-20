@@ -1020,10 +1020,9 @@ static int convert_map(char *line, void *vinfo, enum SECTION sect)
                     snpedit("%d,%d,%ld,%s,%s", x, y, time, typestr, afnul);
                 }
             }
-        }
 
-        if (!prior_read)
             ep->hitobjects_idx++;
+        }
     }
     else if (!prior_read && sect == editor)
     {

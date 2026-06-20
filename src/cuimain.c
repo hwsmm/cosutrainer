@@ -115,7 +115,7 @@ int cuimain(int argc, char *argv[])
     edit.nospinner = false;
 
     edit.cut_combo = false;
-    edit.cut_start = 0;
+    edit.cut_start = LONG_MIN;
     edit.cut_end = LONG_MAX;
     edit.remove_sv = false;
 

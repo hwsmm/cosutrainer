@@ -219,7 +219,7 @@ void CosuWindow::convbtn_callb(Fl_Widget *w, void *data)
     bool end_valid = *cutend_str != '\0';
 
     edit.cut_combo = false;
-    edit.cut_start = 0;
+    edit.cut_start = LONG_MIN;
     edit.cut_end = LONG_MAX;
 
     if (start_valid || end_valid)
