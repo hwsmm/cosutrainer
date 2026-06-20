@@ -304,6 +304,13 @@ void CosuWindow::convbtn_callb(Fl_Widget *w, void *data)
                 edit.inv_value = atoi(temp);
                 temp = strchr(temp, '/');
                 edit.inv_divisor = temp != NULL ? atoi(temp + 1) : 0;
+
+                if (edit.inv_value <= 0 || edit.inv_divisor < 0)
+                {
+                    fl_alert("Invalid invert value. Please check.");
+                    win->cosuui.mainbox->activate();
+                    return;
+                }
             }
         }
         break;
